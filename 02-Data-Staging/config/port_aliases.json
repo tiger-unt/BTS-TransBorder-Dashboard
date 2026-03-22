@@ -1,0 +1,4 @@
+{
+  "_note": "Port name spelling variations discovered during data normalization. Maps variant spellings to canonical port name. Built iteratively during Phase 2 processing.",
+  "aliases": {}
+}

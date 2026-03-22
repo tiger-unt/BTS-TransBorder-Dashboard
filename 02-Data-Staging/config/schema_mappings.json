@@ -1,0 +1,299 @@
+{
+  "field_mappings": {
+    "_note": "Legacy column name -> modern column name. Apply after .upper().strip() on all column names.",
+    "USSTATE": "USASTATE",
+    "ORSTATE": "USASTATE",
+    "DESTATE": "USASTATE",
+    "EXSTATE": "USASTATE",
+    "SCH_B": "COMMODITY2",
+    "SCH_B_GRP": "COMMODITY2",
+    "TSUSA": "COMMODITY2",
+    "TSUSA_GRP": "COMMODITY2",
+    "HTS": "COMMODITY2",
+    "PROV": "CANPROV",
+    "VAL": "VALUE",
+    "VALU": "VALUE",
+    "CHARGES": "FREIGHT_CHARGES",
+    "FREIGHT": "FREIGHT_CHARGES",
+    "FREIGHT_CH": "FREIGHT_CHARGES",
+    "FREIGES": "FREIGHT_CHARGES"
+  },
+
+  "identical_fields": {
+    "_note": "Fields that have the same name in legacy and modern. Listed for completeness.",
+    "fields": ["DISAGMOT", "DF", "CONTCODE", "DEPE", "MEXSTATE", "COUNTRY", "VALUE", "SHIPWT"]
+  },
+
+  "dropped_fields": {
+    "_note": "Legacy fields with no modern equivalent. Safe to discard during normalization.",
+    "COUNT": {
+      "description": "Number of trade transactions aggregated into the row",
+      "found_in": "All tables, 1993-1996 only",
+      "impact": "Low - dropped by BTS in 1997"
+    },
+    "USREGION": {
+      "description": "US Census region grouping",
+      "found_in": "D04, D09, D10 (1993 only)",
+      "impact": "None - derivable from USASTATE"
+    },
+    "MEXREGION": {
+      "description": "Mexican region grouping",
+      "found_in": "D03 (1993 only)",
+      "impact": "None - derivable from MEXSTATE"
+    },
+    "DISTGROUP": {
+      "description": "Customs district grouping",
+      "found_in": "D04, D10 (1993 only)",
+      "impact": "None - derivable from DEPE port codes"
+    },
+    "NTAR": {
+      "description": "National Transportation Analysis Region (import tariff/customs area)",
+      "found_in": "D5B, D6B (1994-2002 import tables)",
+      "impact": "Low - not used in standard analysis"
+    },
+    "MERGE": {
+      "description": "Processing artifact",
+      "found_in": "D05FEB94 only",
+      "impact": "None - discard"
+    }
+  },
+
+  "modern_table_schemas": {
+    "_note": "The 3 modern (2007+) table column definitions. Target schema for normalization.",
+    "DOT1": {
+      "description": "State x Port",
+      "columns": ["TRDTYPE", "USASTATE", "DEPE", "DISAGMOT", "MEXSTATE", "CANPROV", "COUNTRY", "VALUE", "SHIPWT", "FREIGHT_CHARGES", "DF", "CONTCODE", "MONTH", "YEAR"]
+    },
+    "DOT2": {
+      "description": "State x Commodity",
+      "columns": ["TRDTYPE", "USASTATE", "COMMODITY2", "DISAGMOT", "MEXSTATE", "CANPROV", "COUNTRY", "VALUE", "SHIPWT", "FREIGHT_CHARGES", "DF", "CONTCODE", "MONTH", "YEAR"]
+    },
+    "DOT3": {
+      "description": "Port x Commodity (no legacy equivalent, 2007+ only)",
+      "columns": ["TRDTYPE", "DEPE", "COMMODITY2", "DISAGMOT", "COUNTRY", "VALUE", "SHIPWT", "FREIGHT_CHARGES", "DF", "CONTCODE", "MONTH", "YEAR"]
+    }
+  },
+
+  "legacy_table_definitions": {
+    "_note": "Maps legacy table numbers to their dimensions and modern equivalents.",
+    "surface": {
+      "D03": {
+        "description": "Commodity x Mexican State (surface)",
+        "dimensions": ["DISAGMOT", "SCH_B", "MEXSTATE"],
+        "modern_equivalent": "DOT2",
+        "country_scope": "Mexico",
+        "has_fields": ["DISAGMOT", "SCH_B", "MEXSTATE", "COUNTRY", "VALUE", "STATMOYR"],
+        "missing_vs_modern": ["CONTCODE", "SHIPWT", "FREIGHT_CHARGES"]
+      },
+      "D04": {
+        "description": "Commodity x Canadian Province (surface)",
+        "dimensions": ["DISAGMOT", "SCH_B", "PROV"],
+        "modern_equivalent": "DOT2",
+        "country_scope": "Canada",
+        "has_fields": ["DISAGMOT", "SCH_B", "PROV", "COUNTRY", "VALUE", "FREIGHT", "STATMOYR"],
+        "missing_vs_modern": ["CONTCODE", "SHIPWT"]
+      },
+      "D05": {
+        "description": "State x Port - Mexico (surface)",
+        "dimensions": ["DISAGMOT", "USASTATE", "DEPE", "MEXSTATE"],
+        "modern_equivalent": "DOT1",
+        "country_scope": "Mexico",
+        "has_fields": ["DISAGMOT", "ORSTATE", "DEPE", "MEXSTATE", "COUNTRY", "VALUE", "DF", "STATMOYR"],
+        "missing_vs_modern": ["CONTCODE", "SHIPWT", "FREIGHT_CHARGES"]
+      },
+      "D06": {
+        "description": "State x Port - Canada (surface)",
+        "dimensions": ["DISAGMOT", "USASTATE", "DEPE", "PROV"],
+        "modern_equivalent": "DOT1",
+        "country_scope": "Canada",
+        "has_fields": ["DISAGMOT", "ORSTATE", "DEPE", "PROV", "COUNTRY", "VALUE", "DF", "FREIGHT", "STATMOYR"],
+        "missing_vs_modern": ["CONTCODE", "SHIPWT"]
+      }
+    },
+    "air_vessel": {
+      "D09": {
+        "description": "Commodity x State (air/vessel, no province)",
+        "dimensions": ["DISAGMOT", "TSUSA", "DESTATE", "CONTCODE"],
+        "modern_equivalent": "DOT2",
+        "country_scope": "both",
+        "has_fields": ["DISAGMOT", "TSUSA", "DESTATE", "CONTCODE", "COUNTRY", "VALUE", "SHIPWT", "CHARGES", "DF", "STATMOYR"],
+        "missing_vs_modern": []
+      },
+      "D10": {
+        "description": "Commodity x State x Province (air/vessel)",
+        "dimensions": ["DISAGMOT", "TSUSA", "DESTATE", "PROV", "CONTCODE"],
+        "modern_equivalent": "DOT2",
+        "country_scope": "both",
+        "has_fields": ["DISAGMOT", "TSUSA", "DESTATE", "PROV", "CONTCODE", "COUNTRY", "VALUE", "SHIPWT", "CHARGES", "DF", "STATMOYR"],
+        "missing_vs_modern": []
+      },
+      "D11": {
+        "description": "State x Port (air/vessel, no province)",
+        "dimensions": ["DISAGMOT", "DESTATE", "DEPE", "CONTCODE"],
+        "modern_equivalent": "DOT1",
+        "country_scope": "both",
+        "has_fields": ["DISAGMOT", "DESTATE", "DEPE", "CONTCODE", "COUNTRY", "VALUE", "SHIPWT", "CHARGES", "DF", "STATMOYR"],
+        "missing_vs_modern": []
+      },
+      "D12": {
+        "description": "State x Port x Province (air/vessel)",
+        "dimensions": ["DISAGMOT", "DESTATE", "DEPE", "PROV", "CONTCODE"],
+        "modern_equivalent": "DOT1",
+        "country_scope": "both",
+        "has_fields": ["DISAGMOT", "DESTATE", "DEPE", "PROV", "CONTCODE", "COUNTRY", "VALUE", "SHIPWT", "CHARGES", "DF", "STATMOYR"],
+        "missing_vs_modern": []
+      }
+    }
+  },
+
+  "filename_suffix_rules": {
+    "_note": "Legacy filenames encode country + trade direction in suffix letters. These must be derived into columns during normalization.",
+    "suffix_to_trdtype": {
+      "A": 1, "D": 1, "M": 1, "O": 1,
+      "B": 2, "J": 2, "N": 2, "S": 2
+    },
+    "suffix_to_country": {
+      "A": 2010, "B": 2010, "M": 2010, "N": 2010,
+      "D": 1220, "J": 1220, "O": 1220, "S": 1220
+    },
+    "suffix_descriptions": {
+      "A": "Mexico Export (surface)",
+      "B": "Mexico Import (surface)",
+      "D": "Canada Export (surface)",
+      "J": "Canada Import (surface)",
+      "M": "Mexico Export (air/vessel)",
+      "N": "Mexico Import (air/vessel)",
+      "O": "Canada Export (air/vessel)",
+      "S": "Canada Import (air/vessel)",
+      "F": "Foreign Trade Zone (FTZ) - TRDTYPE varies"
+    }
+  },
+
+  "date_mappings": {
+    "_note": "STATMOYR changed format mid-stream. Modern files use separate MONTH and YEAR columns.",
+    "pre_2007": {
+      "source_field": "STATMOYR",
+      "target_month": "MONTH",
+      "target_year": "YEAR",
+      "formats": {
+        "1993_to_1997": {
+          "format": "MMYY",
+          "length": 4,
+          "parse_month": "first 2 digits",
+          "parse_year": "19xx from last 2 digits",
+          "example": "0493 = April 1993"
+        },
+        "1998_to_2006": {
+          "format": "YYYYMM",
+          "length": 6,
+          "parse_month": "last 2 digits",
+          "parse_year": "first 4 digits",
+          "example": "199804 = April 1998"
+        }
+      }
+    },
+    "post_2007": {
+      "source_month": "MONTH",
+      "source_year": "YEAR"
+    }
+  },
+
+  "legacy_table_evolution": {
+    "_note": "Which table types exist in which time periods. Critical for knowing what files to expect per year.",
+    "1993_apr_dec": {
+      "period": "1993-04 to 1993-12",
+      "description": "Original format. No A/B suffix split for surface tables.",
+      "surface_tables": ["D03", "D04", "D05", "D06"],
+      "air_vessel_tables": ["D09", "D10", "D11", "D12"],
+      "suffixes_surface": ["A", "B", "D", "J"],
+      "suffixes_air_vessel": ["M", "N", "O", "S"],
+      "notes": "1993 uses SCH_B_GRP and TSUSA_GRP instead of SCH_B/TSUSA. Also has MEXREGION, USREGION, DISTGROUP columns."
+    },
+    "1994_transition": {
+      "period": "1994-01 to 1994-12",
+      "description": "Jan-Mar: old format. Apr-Dec: A/B split for surface tables.",
+      "surface_tables_pre_apr": ["D03", "D04", "D05", "D06"],
+      "surface_tables_post_apr": ["D3A", "D3B", "D4A", "D4B", "D5A", "D5B", "D6A", "D6B"],
+      "air_vessel_tables": ["D09", "D10", "D11", "D12"],
+      "notes": "A = export, B = import for surface tables. Air/vessel tables keep single suffix."
+    },
+    "1995_to_2002": {
+      "period": "1995-01 to 2002-12",
+      "description": "Stable era with A/B split.",
+      "surface_tables": ["D3A", "D3B", "D4A", "D4B", "D5A", "D5B", "D6A", "D6B"],
+      "air_vessel_tables": ["D09", "D10", "D11", "D12"],
+      "suffixes_surface": ["A", "B", "D", "J"],
+      "suffixes_air_vessel": ["M", "N", "O", "S"],
+      "notes": "1995 has 26 revision files (X-prefix and R-prefix) for Jan-Mar and Jul. Use revisions instead of originals."
+    },
+    "2003_to_2006": {
+      "period": "2003-01 to 2006-12",
+      "description": "B-variants dropped. A-tables now contain both exports AND imports.",
+      "surface_tables": ["D3A", "D4A", "D5A", "D6A"],
+      "air_vessel_tables": ["D09", "D10", "D11", "D12"],
+      "notes": "Since A-tables now have both directions, TRDTYPE must be derived from COUNTRY field or data content, not filename suffix alone."
+    },
+    "2007_onward": {
+      "period": "2007-01 to present",
+      "description": "Major consolidation into 3 unified tables.",
+      "tables": ["DOT1", "DOT2", "DOT3"],
+      "notes": "All countries, directions, and modes in single files. TRDTYPE and COUNTRY are explicit columns."
+    }
+  },
+
+  "processing_caveats": {
+    "case_sensitivity": {
+      "description": "2006 DBF files use lowercase column names (e.g., 'disagmot', 'depe'). All other years use uppercase.",
+      "fix": "Apply .upper().strip() to all column names before mapping."
+    },
+    "trailing_spaces": {
+      "description": "2006 DBF files have trailing spaces in column names (e.g., 'disagmot  ').",
+      "fix": "Apply .strip() to all column names before mapping."
+    },
+    "revision_files_1995": {
+      "description": "26 revision files with X-prefix and R-prefix exist for Jan-Mar 1995 and Jul 1995.",
+      "fix": "Use revision files INSTEAD OF original files for those months."
+    },
+    "may_1993_date_mismatch": {
+      "description": "4 files in May 1993 (D04MAY93, D06MAY93, D10MAY93, D12MAY93) contain STATMOYR=0493 (April), not 0593.",
+      "fix": "These are likely re-released April data with May filenames. Trust STATMOYR value over filename."
+    },
+    "commodity_code_1993": {
+      "description": "1993 uses SCH_B_GRP and TSUSA_GRP which may be grouped/aggregated commodity codes rather than individual HS 2-digit codes.",
+      "fix": "Verify that values match the same coding scheme used from 1994+. Flag if discrepancies found."
+    },
+    "b_tables_dropped_2003": {
+      "description": "When B-variants were dropped in 2003, A-variant tables began containing both exports AND imports.",
+      "fix": "For 2003-2006 surface tables, do NOT derive TRDTYPE from suffix. Check COUNTRY field or data content."
+    }
+  },
+
+  "known_issues": {
+    "MEXSTATE_BN": {
+      "description": "Baja California Norte code BN used erroneously Apr 1994 - May 1998",
+      "correct_code": "BC",
+      "affected_period": "1994-04 to 1998-05",
+      "fix": "Replace MEXSTATE='BN' with 'BC' during normalization"
+    }
+  },
+
+  "fields_missing_in_legacy": {
+    "_note": "Modern columns that have no legacy equivalent. These will be null/empty for pre-2007 records.",
+    "CONTCODE_surface": {
+      "description": "Containerization code not available in legacy surface tables (D03-D06)",
+      "available_from": "2007 (DOT1/DOT2), or legacy D09-D12 (air/vessel only)"
+    },
+    "SHIPWT_surface": {
+      "description": "Shipping weight not available in legacy surface tables (D03-D06)",
+      "available_from": "2007 (DOT1/DOT2), or legacy D09-D12 (air/vessel only)"
+    },
+    "FREIGHT_CHARGES_mexico_surface": {
+      "description": "Freight charges not in legacy Mexico surface tables (D03, D05). Available in Canada surface (D04, D06) as FREIGHT.",
+      "available_from": "2007 (DOT1/DOT2) for Mexico surface"
+    },
+    "DOT3_pre_2007": {
+      "description": "Port x Commodity cross-tabulation did not exist before January 2007. Cannot reconstruct from legacy data.",
+      "available_from": "2007"
+    }
+  }
+}
