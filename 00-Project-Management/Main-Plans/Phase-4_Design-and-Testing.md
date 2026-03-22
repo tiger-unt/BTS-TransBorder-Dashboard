@@ -104,7 +104,7 @@ All charts are **data-agnostic** -- they receive `data`, `xKey`, `yKey`, formatt
 | **BarChart** | Rankings (H/V) | H: max(220, count x 32+margins); V: 320px | Width/height grow, 600ms, 30ms/bar |
 | **StackedBarChart** | Category breakdown over time | 320px | Upward growth, 600ms, 20ms col + 100ms layer |
 | **DonutChart** | Proportional share | 300px max diameter | Fade 0->1, 600ms, 60ms/slice |
-| **TreemapChart** | Hierarchical area comparison | Responsive | Fade 0->0.85, 500ms, 30ms/cell |
+| **TreemapChart** | Hierarchical area comparison (supports 2-level drilldown) | Responsive | Fade 0->0.85, 500ms, 30ms/cell |
 | **DivergingBarChart** | Bilateral (export/import) balance | max(240, count x 36+margins) | Center outward, 600ms, 30ms/bar |
 | **LollipopChart** | Ranked data with long labels | Scales with data | Stem grow, 600ms, 30ms/item |
 | **BoxPlotChart** | Statistical distribution | Responsive | Expand from center, 600ms |
@@ -182,6 +182,13 @@ space-12: 48px   space-16: 64px   space-24: 96px
 
 **Markers:** Circle, sized by value. U.S. `#0056a9`/stroke `#003d75`, Mexico `#df5c16`/stroke `#a84410`. Border highlight: gold `#E8B923` 2.5px halo.
 
+**Trade Flow Arcs:** Curved SVG paths (quadratic Bezier) connecting U.S. port markers to their Mexican crossing counterparts. Adapted from the Airport Dashboard's flight route arc renderer.
+- Width: 1.5-6px proportional to trade value
+- Color: Export `#0056a9` (blue), Import `#df5c16` (orange), Both `#0056a9` at 70% opacity
+- Hover: full opacity + 2px stroke increase, tooltip with port pair + value + top commodity
+- Toggle: layers control button (default on for port-focused pages)
+- Performance: capped at top 15 ports by trade value; only filtered-visible ports rendered
+
 **Interactions:** Hover 24->28px, opacity 85->100%. Click -> popup. Scroll wheel disabled (prevents accidental zoom).
 
 **Popups:** Safe DOM APIs (no innerHTML). Port name, trade value, exports/imports, top modes.
@@ -198,7 +205,7 @@ space-12: 48px   space-16: 64px   space-24: 96px
 
 1. **Hero Banner** -- gradient-blue, HeroStardust, white title/subtitle
 2. **Narrative** -- Prose explaining why the data matters
-3. **Insight Callouts** -- 2-3 key findings (highlight/warning/neutral variants)
+3. **Insight Callouts** -- 2-3 data-driven findings computed at runtime by `insightEngine.js` (auto-update when data changes; highlight/warning/neutral variants)
 4. **KPI Stat Cards** -- 4-5 headline metrics with trends
 5. **Map** -- Spatial context (port locations)
 6. **Trend Charts** -- Time-series using `filteredNoYear` (unaffected by year filter)
@@ -209,7 +216,7 @@ space-12: 48px   space-16: 64px   space-24: 96px
 ### A.11 Interactions
 
 **Hover:** Cards shadow xs->md (300ms), bars dim to 25%, donut expand 4px, markers grow 24->28px
-**Click:** Donut explode 6px + dim 33%, bar `onBarClick`, map popup
+**Click:** Donut explode 6px + dim 33%, bar `onBarClick`, map popup, treemap cell -> drill into Level 2 (commodity group -> HS 2-digit codes) with breadcrumb navigation back to Level 1
 **Zoom:** LineChart scroll+drag, reset at >1x (300ms transition)
 **Tooltips:** Fixed on lines, floating on others, safe DOM only
 **Fullscreen:** Portal z-50, ESC/click/close to exit
@@ -218,7 +225,11 @@ space-12: 48px   space-16: 64px   space-24: 96px
 
 **CSV:** Tab-separated for Excel. `Title_YYYY-MM-DD.csv`. Respects zoom range via ZoomRangeContext.
 **PNG:** 2x DPI. Chart only. `Title_YYYY-MM-DD.png`.
+**SVG:** Self-contained SVG with inlined styles. `Title_YYYY-MM-DD.svg`. Generated via `XMLSerializer.serializeToString()` on the chart's SVG node with computed styles injected inline.
+**Embed (iframe):** Copyable `<iframe>` snippet pointing to `/embed/:pageId/:chartId` route with query params for pre-filtered state. Rendered in a minimal chrome-free layout (no nav, no sidebar). Includes "Powered by BTS TransBorder Dashboard" attribution.
 **Column maps:** `downloadColumns.js` -- key->label per chart.
+
+**Embed button:** Shown on ChartCards that have an `embedId` prop. Uses Code icon (Lucide). Opens `EmbedModal` with two tabs: SVG download and Iframe snippet with copy-to-clipboard.
 
 ### A.13 Critical Anti-Patterns
 
@@ -240,14 +251,19 @@ space-12: 48px   space-16: 64px   space-24: 96px
 - Run: `npm run check:schema`
 
 ### B.2 Visual Verification
-- Adapt `Scripts/visual-check.js` for the 8 new routes
+- Adapt `Scripts/visual-check.js` for the 9 routes (8 pages + embed route)
 - Run: `npm run check:visual` (Playwright screenshots)
 - Verify chart rendering for extreme date ranges (1993 data alongside 2025 data)
+- Verify trade flow arcs render without overlapping markers at various zoom levels
 
 ### B.3 Functional Testing
 - Run: `npm run check:functional`
-- Test: filter interactions, cascading filter behavior, CSV/PNG downloads, fullscreen mode, data table sorting/pagination
+- Test: filter interactions, cascading filter behavior, CSV/PNG/SVG downloads, embed export, fullscreen mode, data table sorting/pagination
 - Specific: verify `filteredNoYear` trend charts show full range when year filter is active
+- Specific: verify treemap drilldown (click group -> HS codes -> breadcrumb back) on all 3 pages
+- Specific: verify trade flow arcs render correctly on port map pages and respond to filters
+- Specific: verify embed route `/embed/:pageId/:chartId` renders a single chart with correct query-param filters
+- Specific: verify `insightEngine.js` produces valid, non-NaN insights for each scope
 
 ### B.4 Responsive Testing
 - Run: `npm run check:responsive`
@@ -289,8 +305,12 @@ npm run build    # produces dist/ folder
 
 - [ ] Design principles documented and applied consistently
 - [ ] schema-check.js adapted for new CSVs
-- [ ] visual-check.js adapted for 8 new routes
+- [ ] visual-check.js adapted for 9 routes (8 pages + embed)
 - [ ] All check scripts pass: schema, visual, functional, responsive
+- [ ] Trade flow arcs render correctly on port map pages
+- [ ] Treemap drilldown works on all 3 commodity treemap instances
+- [ ] insightEngine.js produces valid insights for all 6 scopes
+- [ ] Embed export (SVG + iframe) works for charts with embedId
 - [ ] Performance acceptable (<3s initial load)
 - [ ] Production build succeeds
 - [ ] Deployed to GitHub Pages

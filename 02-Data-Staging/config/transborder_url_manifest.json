@@ -1,0 +1,583 @@
+{
+  "source": "transborder_raw_data_links.md",
+  "legacy": [
+    {
+      "year": "2006",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2006/tbdrRDzip170406164948.zip"
+    },
+    {
+      "year": "2005",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2005/tbdrRDzip170406164931.zip"
+    },
+    {
+      "year": "2004",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2004/tbdrRDzip170406164852.zip"
+    },
+    {
+      "year": "2003",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2003/tbdrRDzip170406164823.zip"
+    },
+    {
+      "year": "2002",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2002/tbdrRDzip170406164806.zip"
+    },
+    {
+      "year": "2001",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2001/tbdrRDzip170406164747.zip"
+    },
+    {
+      "year": "2000",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2000/tbdrRDzip170406164722.zip"
+    },
+    {
+      "year": "1999",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1999/tbdrRDzip170406164612.zip"
+    },
+    {
+      "year": "1998",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1998/tbdrRDzip170406164556.zip"
+    },
+    {
+      "year": "1997",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1997/tbdrRDzip170406164540.zip"
+    },
+    {
+      "year": "1996",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1996/tbdrRDzip170406164515.zip"
+    },
+    {
+      "year": "1995",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1995/tbdrRDzip170406164247.zip"
+    },
+    {
+      "year": "1994",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1994/tbdrRDzip170406164226.zip"
+    },
+    {
+      "year": "1993",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/1993/tbdrRDzip170406164107.zip"
+    }
+  ],
+  "modern": [
+    {
+      "year": "2026",
+      "label": "January 2026",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2026/January2026.zip"
+    },
+    {
+      "year": "2025",
+      "label": "January 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/January2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "February 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/Feb2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "March 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/March2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "April 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/April2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "May 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/May2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "June 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/June2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "July 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/July2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "August 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/August2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "September 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/September2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "October 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/October2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "November 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/November2025.zip"
+    },
+    {
+      "year": "2025",
+      "label": "December 2025",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2025/December2025.zip"
+    },
+    {
+      "year": "2024",
+      "label": "January 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/Jan2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "February 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/Feb2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "March 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/March2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "April 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/April2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "May 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/May2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "June 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/June2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "July 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/July2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "August 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/August2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "September 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/september2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "October 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/October2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "November 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/November2024.zip"
+    },
+    {
+      "year": "2024",
+      "label": "December 2024",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2024/December2024.zip"
+    },
+    {
+      "year": "2023",
+      "label": "January 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/Jan2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "February 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/Feb2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "March 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/March2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "April 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/April2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "May 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/May2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "June 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/June2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "July 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/July2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "August 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/Aug2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "September 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/sept2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "October 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/Oct2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "November 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/Nov2023.zip"
+    },
+    {
+      "year": "2023",
+      "label": "December 2023",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2023/December2023.zip"
+    },
+    {
+      "year": "2022",
+      "label": "December 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/December2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "November 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/November2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "October 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/October2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "September 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/September2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "August 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/August2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "July 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/July2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "June 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/June2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "May 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/May2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "April 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/April2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "March 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/March-2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "February 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/Feb-2022.zip"
+    },
+    {
+      "year": "2022",
+      "label": "January 2022",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2022/Jan-2022.zip"
+    },
+    {
+      "year": "2021",
+      "label": "July to Dec 2021",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/July-to-Dec-2021.zip"
+    },
+    {
+      "year": "2021",
+      "label": "July",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/July2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2021",
+      "label": "June",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/June2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2021",
+      "label": "May",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/May2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2021",
+      "label": "April",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/April2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2021",
+      "label": "March",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/March2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2021",
+      "label": "February",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/February2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2021",
+      "label": "January",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2021/January2021TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "December",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/December2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "November",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/November2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "October",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/October2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "September",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/September2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "August",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/August2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "July",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/July2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "June",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/June2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "May",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/May2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "April",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/April2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "March",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/March2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "February",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/February2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2020",
+      "label": "January",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2020/January2020TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "December",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/December2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "November",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/November2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "October",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/October2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "September",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/September2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "August",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/August2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "July",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/July2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "June",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/June2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "May",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/May2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "April",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/April2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "March",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/March2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "February",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/February2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2019",
+      "label": "January",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2019/January2019TransBorderRawData.zip"
+    },
+    {
+      "year": "2018",
+      "label": "December (and Year-End)",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/December2018TransBorderRawData-plus-yr-end.zip"
+    },
+    {
+      "year": "2018",
+      "label": "November",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/November2018TransBorderRawData.zip"
+    },
+    {
+      "year": "2018",
+      "label": "October",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/October2018TransBorderRawData.zip"
+    },
+    {
+      "year": "2018",
+      "label": "September",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/September2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "August",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/August2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "July",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/July2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "June",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/June2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "May",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/May2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "April",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/April2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "March",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/Mar2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "February",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/Feb2018.zip"
+    },
+    {
+      "year": "2018",
+      "label": "January",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2018/Jan.2018.zip"
+    },
+    {
+      "year": "2017",
+      "label": "2017",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2017/2017.zip"
+    },
+    {
+      "year": "2016",
+      "label": "2016",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2016/2016.zip"
+    },
+    {
+      "year": "2015",
+      "label": "2015",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2015/2015.zip"
+    },
+    {
+      "year": "2014",
+      "label": "2014",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2014/2014.zip"
+    },
+    {
+      "year": "2013",
+      "label": "2013",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2013/Revised2013PublicData.zip"
+    },
+    {
+      "year": "2012",
+      "label": "2012",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2012/Revised2012PublicData.zip"
+    },
+    {
+      "year": "2011",
+      "label": "2011",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2011/Revised2011PublicData.zip"
+    },
+    {
+      "year": "2010",
+      "label": "2010",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2010/Revised2010PublicData.zip"
+    },
+    {
+      "year": "2009",
+      "label": "2009",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2009/Revised2009PublicData.zip"
+    },
+    {
+      "year": "2008",
+      "label": "2008",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2008/2008.zip"
+    },
+    {
+      "year": "2007",
+      "label": "2007",
+      "url": "https://www.bts.gov/sites/bts.dot.gov/files/transborder-raw/2007/2007.zip"
+    }
+  ]
+}

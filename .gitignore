@@ -1,7 +1,15 @@
+# Raw data — ignore bulk data, keep Scripts, docs & READMEs
+01-Raw-Data/download/
+!01-Raw-Data/download/README.md
+01-Raw-Data/unpacked/
+!01-Raw-Data/unpacked/README.md
+
 # Claude Code
 .claude/
 
-# Large files (auto-managed by pre-commit hook for files >99MB)
+# Large/generated data files (pre-commit hook also catches files >99MB)
+*.db
+02-Data-Staging/cleaned/
 
 # OS files
 Thumbs.db
@@ -11,3 +19,18 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+01-Raw-Data/download/modern/2007/2007.zip
+01-Raw-Data/download/modern/2008/2008.zip
+01-Raw-Data/download/modern/2009/Revised2009PublicData.zip
+01-Raw-Data/download/modern/2010/Revised2010PublicData.zip
+01-Raw-Data/download/modern/2011/Revised2011PublicData.zip
+01-Raw-Data/download/modern/2012/Revised2012PublicData.zip
+01-Raw-Data/download/modern/2013/Revised2013PublicData.zip
+01-Raw-Data/download/modern/2014/2014.zip
+01-Raw-Data/download/modern/2015/2015.zip
+01-Raw-Data/download/modern/2016/2016.zip
+01-Raw-Data/download/modern/2017/2017.zip
+01-Raw-Data/unpacked/legacy/2006/DOT20117.DBF
+01-Raw-Data/unpacked/modern/2007/DOT1_07.DBF
+01-Raw-Data/unpacked/modern/2007/DOT2_07.DBF
+01-Raw-Data/unpacked/modern/2008/natfd.csv

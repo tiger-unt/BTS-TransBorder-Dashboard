@@ -4,7 +4,59 @@
 
 With raw BTS data downloaded (Phase 1) and schema differences documented, this phase normalizes all data into a unified format and produces 6 dashboard-ready datasets for the web application. Each dataset is output in two formats: **JSON** (optimized for the web app) and **CSV** (human-readable reference for the team).
 
-**Deployment target:** The web application will be hosted on **GitHub Pages** — a static-only environment with no server-side processing. All data must be pre-aggregated and served as static files (JSON). This phase fulfills the project instruction to **create a unified database**: combine all years of raw data into a single database with multiple tables (one per BTS dataset type: port_commodity, mode_port, commodity, geographic).
+**Deployment target:** The web application will be hosted on **GitHub Pages** — a static-only environment with no server-side processing. All data must be pre-aggregated and served as static files (JSON). This phase fulfills the project instruction to **create a unified database**: combine all years of raw data into a single database with multiple tables (one per BTS dataset type).
+
+## Raw Data Source Strategy
+
+### Modern Era (2007–2025): Use YTD Files
+
+Each monthly BTS ZIP contains both monthly files (`dot{1,2,3}_MMYY.csv`) and cumulative year-to-date files (`dot{1,2,3}_ytd_MMYY.csv`). December ZIPs also contain annual summary files (`dot{1,2,3}_YYYY.csv`).
+
+**Preferred source: YTD files from the latest available month of each year.** These contain all months' data in a single file, eliminating the need to merge individual monthly files.
+
+| Year Range | Source | Notes |
+|---|---|---|
+| 2007–2019, 2021–2025 | December YTD files (`dot{1,2,3}_ytd_12YY.csv`) | Complete 12-month data. Full audit (2026-03-22) confirmed all months present including 2009 and 2023. |
+| **2020** | Sep YTD (months 1–9) + Nov/Dec monthly files (months 11–12) + **Oct derived via subtraction** | Nov/Dec 2020 recovered from BTS (Sean Jahanmir) on 2026-03-22. Dec 2020 "YTD" files are annual aggregates (no MONTH column). **Oct 2020 recovery:** Annual totals - (Sep YTD + Nov + Dec) = October. Verified: zero negative values across all 3 tables. |
+| 2026 | Excluded | Only Jan available; policy is complete years only |
+
+### Missing Data — Recovery Plan
+
+**No true gaps remain (as of 2026-03-22 full audit):**
+
+| Year | Tables Affected | Status |
+|---|---|---|
+| 2020 | DOT1, DOT2, DOT3 | Oct raw file missing, but **recoverable via subtraction**: Annual aggregates - (Sep YTD + Nov + Dec) = October. Verified zero negative values (DOT1: 26,789 Oct records, DOT2: 74,243, DOT3: 17,258). |
+
+Previously suspected gaps in 2009 DOT2 and 2023 Sep–Dec were **false alarms** — full audit confirmed all months present.
+
+**Oct 2020 recovery approach (implemented in normalization):**
+1. Load Dec 2020 annual aggregate files (no MONTH column — these contain full-year totals)
+2. Load Sep 2020 YTD (months 1–9) + Nov/Dec 2020 monthly files
+3. Subtract known months from annual totals to derive October values
+4. Assign MONTH=10 to the derived records
+
+**Alternative:** Contact Census at https://www.census.gov/foreign-trade/contact.html for the raw Oct 2020 file.
+
+**Current status:** Database to be rebuilt with corrected data including Nov/Dec 2020 and derived Oct 2020. See `01-Raw-Data/download/modern/2020/README.md` for provenance details.
+
+### Legacy Era (1993–2006): Monthly DBF/CSV Files
+
+Legacy data uses a different table numbering scheme (d03–d12) with up to 24 tables per month. These are nested ZIPs (year → month → data files). Pre-2007 files use DBF format (early years) transitioning to CSV. Schema mappings in `schema_mappings.json` handle the column name differences.
+
+### BTS Raw Dataset Types (DOT1/DOT2/DOT3)
+
+The post-2007 modern data is published in 3 complementary cross-tabulations of the same underlying trade records. Each provides a different dimensional breakdown:
+
+| Table | Cross-Tab | Unique Dimensions | Shared Dimensions | Missing |
+|---|---|---|---|---|
+| **DOT1** (State × Port) | US state + port of entry | `USASTATE`, `DEPE` | `TRDTYPE`, `DISAGMOT`, `MEXSTATE`, `CANPROV`, `COUNTRY`, `VALUE`, `SHIPWT`, `FREIGHT_CHARGES`, `DF`, `CONTCODE`, `MONTH`, `YEAR` | No commodity |
+| **DOT2** (State × Commodity) | US state + commodity | `USASTATE`, `COMMODITY2` | (same shared) | No port |
+| **DOT3** (Port × Commodity) | Port + commodity | `DEPE`, `COMMODITY2` | `TRDTYPE`, `DISAGMOT`, `COUNTRY`, `VALUE`, `SHIPWT`, `FREIGHT_CHARGES`, `DF`, `CONTCODE`, `MONTH`, `YEAR` | No state, no MexState/CanProv |
+
+**Important:** These are NOT subsets of each other — they are parallel aggregations. You cannot join them to get state+port+commodity in a single row because BTS does not publish that level of detail. Each table must be stored and queried independently.
+
+The annual summary files (`dot{1,2,3}_YYYY.csv`) have the same columns but drop `MONTH` (13 → 11-13 columns).
 
 ## Directory Structure
 
@@ -72,7 +124,8 @@ With raw BTS data downloaded (Phase 1) and schema differences documented, this p
 10. **Decode Mexican states**: Map `MEXSTATE` codes using `mexican_state_codes.json`. Fix known errata: code `BN` (Apr 1994 - May 1998) → `BC` (Baja California)
 11. **Parse trade values**: `VALUE` field to numeric (US dollars)
 12. **Parse weight values**: `SHIPWT` in kilograms → convert to short tons (÷ 907.185), handle blanks
-13. **Drop duplicates** and flag data quality issues
+13. **Unknown code validation**: For every decode step (mode, commodity, port, state, country, trade type, province), log any code value found in the raw data that is not present in the corresponding config JSON. Do not silently drop these records — keep them with the raw code value and log the mismatch to a report file. This catches retired port codes, historical codes not in the current BTS data dictionary, or data entry errors.
+14. **Drop duplicates** and flag data quality issues
 14. **Add computed columns**: `YearMonth` (YYYY-MM format for time series)
 
 **Unified Column Schema:**
@@ -102,15 +155,20 @@ Region        (str)     -- Texas border region (for TX ports: El Paso, Laredo, P
 **Input**: `02-Data-Staging/cleaned/`
 **Output**: `02-Data-Staging/transborder.db`
 
-**Tables:**
-- `port_commodity` -- Combined port and commodity (2006+)
-- `mode_port` -- Mode and port (1993-2025)
-- `commodity` -- Commodity detail (1993-2025)
-- `geographic` -- Port + state origin/destination (1993-2025)
+**Tables (mirroring BTS dataset types):**
 
-**Indexes** on: Year, Month, Mode, Port, State, Country, TradeType, CommodityGroup
+| Table | Source | Description | Key Columns |
+|---|---|---|---|
+| `dot1_state_port` | DOT1 YTD files | Trade by US state and port | TRDTYPE, USASTATE, DEPE, DISAGMOT, MEXSTATE, CANPROV, COUNTRY, VALUE, SHIPWT, FREIGHT_CHARGES, DF, CONTCODE, MONTH, YEAR |
+| `dot2_state_commodity` | DOT2 YTD files | Trade by US state and commodity | TRDTYPE, USASTATE, COMMODITY2, DISAGMOT, MEXSTATE, CANPROV, COUNTRY, VALUE, SHIPWT, FREIGHT_CHARGES, DF, CONTCODE, MONTH, YEAR |
+| `dot3_port_commodity` | DOT3 YTD files | Trade by port and commodity | TRDTYPE, DEPE, COMMODITY2, DISAGMOT, COUNTRY, VALUE, SHIPWT, FREIGHT_CHARGES, DF, CONTCODE, MONTH, YEAR |
+| `legacy_combined` | Pre-2007 DBF/CSV | Legacy data (d03–d12 tables normalized) | Mapped to modern column names via schema_mappings.json |
 
-**Purpose**: Validation and ad-hoc exploration only. Not consumed by the web app.
+**Note on 2020:** Months 1–9 from Sep YTD, months 11–12 from recovered monthly files, month 10 derived via subtraction from annual aggregates.
+
+**Indexes** on: Year, Month, DISAGMOT, DEPE, USASTATE, COUNTRY, TRDTYPE, COMMODITY2
+
+**Purpose**: Validation, ad-hoc exploration, and source for dashboard CSV/JSON generation.
 
 ## 2.3 Generate Dashboard-Ready CSVs
 

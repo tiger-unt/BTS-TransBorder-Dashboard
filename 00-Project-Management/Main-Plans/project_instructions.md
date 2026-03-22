@@ -64,7 +64,7 @@ This mirrors the hierarchical approach used in the airport dashboard.
 
 ```
 BTS-TransBorder/
-  00-Project-Plans/        <- Project planning documents (this folder)
+  00-Project-Management/        <- Project planning documents (this folder)
   01-Raw-Data/             <- Raw data from source, never modified after download
   02-Data-Staging/         <- Scripts, configs, intermediary/in-progress data
     Scripts/               <- All processing scripts live here
