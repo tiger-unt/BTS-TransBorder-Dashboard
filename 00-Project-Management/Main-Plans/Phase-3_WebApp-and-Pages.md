@@ -4,7 +4,7 @@
 
 The web application is built by forking the Airport Dashboard (`Task 6 - Airport Connectivity/07_WebApp`) and replacing aviation-specific data/pages with TransBorder freight data/pages. The Airport Dashboard provides the full tech stack, all reusable components, and design system. Per project instructions: the dashboard must be **more comprehensive than the older TxDOT version** and **support broader analysis**. Incorporate **visualization concepts** from the **Original BTS dashboard** (https://data.bts.gov/stories/s/myhq-rm6q), **analytical components** from the **TxDOT dashboard** (https://tiger-unt.github.io/Data-Dashboard-Boilerplate/#/border-ports), and **design system + UI features** from the Airport Dashboard (project clone). Data usage follows the hierarchical approach: full U.S. dataset → subset U.S.–Mexico → deep dive Texas–Mexico (mirroring the airport dashboard).
 
-**Source to fork**: `c:/Users/UNT/UNT System/TxDOT IAC 2025-26 - General/Task 6 - Airport Connectivity/07_WebApp/`
+**Source to fork**: `D:/UNT/UNT System/TxDOT IAC 2025-26 - General/Task 6 - Airport Connectivity/07_WebApp/`
 
 **Deployment target:** **GitHub Pages** — static hosting only, no server-side processing. The app loads pre-aggregated JSON files from `03-Processed-Data/json/` at runtime.
 
@@ -59,15 +59,15 @@ Before starting dashboard development, clean up the large staging artifacts from
 
 **Chart-driven datasets:** Each dataset is designed to serve specific charts. Shared tables serve multiple pages where their grain is sufficient. There is no `us_mexico_commodities` dataset — commodity charts on the US-Mexico page use `commodityDetail` filtered to Country=Mexico in the browser.
 
-| Dataset | Source | JSON Raw | gzipped (est) | Loaded When | Pages & Charts |
-|---|---|---|---|---|---|
-| `usTransborder` | DOT2 | ~0.2 MB | ~0.05 MB | **App init** | Overview (StatCards, LineChart, DonutChart, StackedBarChart), Trade by Mode (all charts) |
-| `usMexicoPorts` | DOT1 | ~28 MB | ~5 MB | US-Mexico / US-Mexico Ports | US-Mexico port BarChart/DataTable, US-Mexico Ports PortMap/BarChart/LineChart/DataTable |
-| `texasMexicoPorts` | DOT1 | ~0.5 MB | ~0.1 MB | Texas-Mexico | TX Overview/Ports/Modes tabs (all charts) |
-| `texasMexicoCommodities` | DOT3 | ~10.6 MB | ~1.8 MB | TX Commodities tab | TX Commodities TreemapChart/BarChart/LineChart/DataTable |
-| `usStateTrade` | DOT1 | ~4.1 MB | ~0.8 MB | Trade by State / Overview | Trade by State (all charts), Overview Top 10 States BarChart |
-| `commodityDetail` | DOT2 | ~13 MB | ~2.5 MB | Commodities / US-Mexico | Commodity Analysis (all charts), US-Mexico commodity TreemapChart/BarChart/DataTable (filtered to Mexico) |
-| `monthlyTrends` | DOT1 | ~1.1 MB | ~0.2 MB | TX Monthly tab | Monthly LineChart, Heatmap/StackedBarChart, DataTable |
+| Dataset | Source | Years | JSON Raw | gzipped (est) | Loaded When | Pages & Charts |
+|---|---|---|---|---|---|---|
+| `usTransborder` | DOT2 | **1993–2025** | ~0.2 MB | ~0.05 MB | **App init** | Overview (StatCards, LineChart, DonutChart, StackedBarChart), Trade by Mode (all charts) |
+| `usMexicoPorts` | DOT1 | 2007+ | ~15 MB | ~3 MB | US-Mexico / US-Mexico Ports | US-Mexico port BarChart/DataTable, US-Mexico Ports PortMap/BarChart/LineChart/DataTable |
+| `texasMexicoPorts` | DOT1 | 2007+ | ~0.3 MB | ~0.06 MB | Texas-Mexico | TX Overview/Ports/Modes tabs (all charts) |
+| `texasMexicoCommodities` | DOT3 | 2007+ | ~10.6 MB | ~1.8 MB | TX Commodities tab | TX Commodities TreemapChart/BarChart/LineChart/DataTable |
+| `usStateTrade` | DOT1 | 2007+ | ~2.5 MB | ~0.5 MB | Trade by State / Overview | Trade by State (all charts), Overview Top 10 States BarChart |
+| `commodityDetail` | DOT2 | 2007+ | ~8 MB | ~1.5 MB | Commodities / US-Mexico | Commodity Analysis (all charts), US-Mexico commodity TreemapChart/BarChart/DataTable (filtered to Mexico) |
+| `monthlyTrends` | DOT1 | 2007+ | ~0.6 MB | ~0.1 MB | TX Monthly tab | Monthly LineChart, Heatmap/StackedBarChart, DataTable |
 
 **Store implementation:**
 
@@ -121,7 +121,14 @@ export default function USMexicoPorts() {
 - Trim strings: Port, State, Mode, CommodityGroup, Commodity, Country, TradeType, Region
 - Collapse empty strings to null
 
-**Year range (per project instructions):** Include all available years (1993–2025) for now. The dashboard reads min/max year from the data (dynamic). We may decide later whether to limit the timeline shown in visualizations (e.g., via filter default or config).
+**Year range strategy — legacy data at overview level only:**
+
+Legacy data (1993–2006) is reliable for trade value totals at high aggregation but has significant field-level gaps at the detail level (NULL weight/freight for exports, no surface DOT3, mode discontinuity at Nov 2003). The dashboard handles this with a split approach:
+
+- **Overview page** (`usTransborder`): Shows all years (1993–2025) — the full 33-year story at Year/Country/Mode/TradeType granularity. Legacy data shines here because the VALUE field is complete and consistent.
+- **All detail pages** (ports, commodities, states, monthly): Show **2007+ only** — starting at the January 2007 consolidation boundary. This avoids exposing legacy-era NULL fields, the Nov 2003 air/vessel discontinuity, and the 1993 commodity code ambiguity in drill-down charts.
+
+The `05_build_outputs.py` script enforces this: `us_transborder` queries all years; all other datasets have `WHERE "Year" >= 2007`. See `01-Raw-Data/data_dictionary/data_caveats.md` for full rationale.
 
 **Remove aviation-specific code:**
 - Remove `airportUtils.js` (GeoJSON indexing, airport enrichment)
@@ -373,18 +380,20 @@ export default function SomePage() {
 ### Page 1: Overview (`pages/Overview/index.jsx`)
 
 **Template**: Adapt from Airport's `Overview/index.jsx`
-**Data**: `usTransborder` (full US, both countries)
+**Data**: `usTransborder` (full US, both countries, **1993–2025** — the only page showing legacy data)
 **Layout**: No filter sidebar (landing page pattern)
+
+This is the only page that displays pre-2007 legacy data. It uses `usTransborder`, which is aggregated at the Year/Country/Mode/TradeType level — high enough that legacy field gaps (NULL weight/freight for exports, mode discontinuity) do not affect the visualizations. The LineChart spanning 1993–2025 tells the full 33-year trade story. A brief note on the page explains that detailed analysis pages cover 2007–2025.
 
 **Sections:**
 1. **Hero** with HeroStardust animation -- "U.S. TransBorder Freight Data (1993-2025)"
-2. **Narrative intro** -- Brief context about the TransBorder program
+2. **Narrative intro** -- Brief context about the TransBorder program, note that detail pages cover 2007+
 3. **InsightCallout cards** -- 2-3 data-driven findings computed at runtime by `insightEngine.js` (see section 3.8)
 4. **StatCards** (4): Total Trade, Total Exports, Total Imports, Year-over-Year Change
 5. **LineChart**: Annual trade trends 1993-2025 (Exports vs Imports, two series)
 6. **DonutChart**: Trade by Transportation Mode (interactive)
 7. **StackedBarChart**: Canada vs Mexico trade share by year
-8. **BarChart**: Top 10 States by trade value (horizontal)
+8. **BarChart**: Top 10 States by trade value (horizontal) — computed from `usTransborder` for overview, not `usStateTrade`
 9. **Navigation cards** -- "Our Approach" linking to US-Mexico, Texas-Mexico, analytical pages
 10. **Data Source section** with download buttons
 
@@ -393,8 +402,8 @@ export default function SomePage() {
 ### Page 2: US-Mexico Trade (`pages/USMexico/index.jsx`)
 
 **Template**: New page, modeled on Airport's `USMexico/index.jsx`
-**Data**: `usMexicoPorts` (port charts) + `commodityDetail` filtered to Mexico (commodity charts) + `usTransborder` filtered to Mexico (summary stats)
-**Filters**: Year (multi), TradeType (single), Mode (multi)
+**Data**: `usMexicoPorts` (port charts, 2007+) + `commodityDetail` filtered to Mexico (commodity charts, 2007+) + `usTransborder` filtered to Mexico (summary stats, 1993–2025)
+**Filters**: Year (multi, 2007–2025), TradeType (single), Mode (multi)
 
 **Sections:**
 1. **Hero banner** -- "U.S.-Mexico TransBorder Freight"
@@ -411,8 +420,8 @@ export default function SomePage() {
 ### Page 3: US-Mexico Ports (`pages/USMexicoPorts/index.jsx`)
 
 **Template**: New page
-**Data**: `usMexicoPorts`
-**Filters**: Year (multi), TradeType (single), Mode (multi), State (multi)
+**Data**: `usMexicoPorts` (2007+)
+**Filters**: Year (multi, 2007–2025), TradeType (single), Mode (multi), State (multi)
 
 **Sections:**
 1. **Hero banner** -- "U.S.-Mexico Ports of Entry"
@@ -427,8 +436,8 @@ export default function SomePage() {
 ### Page 4: Texas-Mexico Deep-Dive (`pages/TexasMexico/index.jsx`)
 
 **Template**: Adapt from Airport's `TexasMexico/index.jsx` (tabbed structure)
-**Data**: `texasMexicoPorts` + `texasMexicoCommodities` + `monthlyTrends` (each lazy-loaded per tab)
-**Filters**: Year (multi), TradeType (single), Mode (multi), Region (single)
+**Data**: `texasMexicoPorts` + `texasMexicoCommodities` + `monthlyTrends` (each lazy-loaded per tab, all 2007+)
+**Filters**: Year (multi, 2007–2025), TradeType (single), Mode (multi), Region (single)
 
 **Tabs** (each in `pages/TexasMexico/tabs/`):
 
@@ -466,8 +475,10 @@ export default function SomePage() {
 ### Page 5: Trade by Mode (`pages/TradeByMode/index.jsx`)
 
 **Template**: New page
-**Data**: `usTransborder`
-**Filters**: Year (multi), TradeType (single), Country (single)
+**Data**: `usTransborder` (1993–2025 — uses the overview dataset, so legacy data is included at aggregate level)
+**Filters**: Year (multi, 1993–2025), TradeType (single), Country (single)
+
+Note: This page uses `usTransborder` which includes all years. The mode breakdown is at the Year/Country/Mode/TradeType grain, which is safe for legacy data (trade values are complete). However, the air/vessel modes will show as starting in Nov 2003 — the page should note this in a footnote on mode trend charts.
 
 **Sections:**
 1. **Hero banner** -- "TransBorder Trade by Transportation Mode"
@@ -484,8 +495,8 @@ export default function SomePage() {
 ### Page 6: Commodity Analysis (`pages/TradeByCommodity/index.jsx`)
 
 **Template**: New page
-**Data**: `commodityDetail`
-**Filters**: Year (multi), TradeType (single), Mode (multi), Country (single)
+**Data**: `commodityDetail` (2007+)
+**Filters**: Year (multi, 2007–2025), TradeType (single), Mode (multi), Country (single)
 
 **Sections:**
 1. **Hero banner** -- "TransBorder Trade by Commodity"
@@ -500,8 +511,8 @@ export default function SomePage() {
 ### Page 7: Trade by State (`pages/TradeByState/index.jsx`)
 
 **Template**: New page
-**Data**: `usStateTrade`
-**Filters**: Year (multi), TradeType (single), Mode (multi), Country (single)
+**Data**: `usStateTrade` (2007+)
+**Filters**: Year (multi, 2007–2025), TradeType (single), Mode (multi), Country (single)
 
 **Sections:**
 1. **Hero banner** -- "TransBorder Trade by U.S. State"
@@ -527,10 +538,12 @@ export default function SomePage() {
   - Port Coast: The U.S. coast where the Port of Entry is located
   - Port Border: The border (Canadian or Mexican) where the Port of Entry is located
   - HS Codes: Harmonized Schedule 2-digit commodity codes (NOT SCTG)
-- **Known data limitations** (confirmed from actual data, see Phase 2 section 2.3.1):
+- **Year range strategy**: The Overview page shows the full 1993–2025 time series at aggregate level. All detail pages (ports, commodities, states, monthly) show 2007–2025 only, starting at the January 2007 data consolidation. This avoids exposing legacy-era field gaps in drill-down charts. See `01-Raw-Data/data_dictionary/data_caveats.md` for the complete rationale.
+- **Known data limitations** (confirmed from actual data, see `01-Raw-Data/data_dictionary/data_caveats.md`):
   - Shipment weight for exports is only available for Air and Vessel modes. For Truck, Rail, Pipeline, Mail, and Other/Unknown exports, weight is zero/unavailable. Import weight is available for all modes.
   - Freight charges are partially available for exports (~50%) but near-complete for imports.
   - Port x Commodity cross-tabulation (DOT3) only exists from January 2007 onward.
+  - Air/vessel modes were added to TransBorder in November 2003. Pre-Nov 2003 totals are surface-only.
   - All pre-2007 legacy records have known trade direction (derived from table number: D03–D06 = Export, D09–D12 = Import).
   - DF (Domestic/Foreign) indicator is only meaningful for exports (1=domestic origin, 2=re-export).
 - **Port history changes**:
