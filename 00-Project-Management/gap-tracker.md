@@ -4,12 +4,12 @@ Living document tracking known issues, missing pieces, and open questions across
 
 ---
 
-## Status Summary (as of 2026-03-22)
+## Status Summary (as of 2026-03-23)
 
 | Phase | Planning | Implementation |
 |---|---|---|
 | Phase 1 — Data Acquisition | Complete | **Complete** |
-| Phase 2 — Data Processing | Complete | **In progress** (normalize + DB done, outputs pending) |
+| Phase 2 — Data Processing | Complete | **Complete** |
 | Phase 3 — WebApp & Pages | Complete | Not started |
 | Phase 4 — Design & Testing | Complete | Not started |
 
@@ -87,24 +87,45 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 | `transborder.db` (full 1993-2025) | 2026-03-22 — 39.6M rows across 3 tables, 10.1 GB |
 | Legacy data (1993-2006) loaded | 2026-03-22 — via `03_normalize.py` legacy DBF/CSV parsing |
 | Oct 2020 derived (all 3 tables) | 2026-03-22 — subtraction method, zero negative values verified (DOT1: 26,790, DOT2: 74,243, DOT3: 17,259 rows) |
-| `unknown_codes_report.txt` | 2026-03-22 — 73 unknown port codes, DU state, XX MexState, nan trade type documented |
+| `unknown_codes_report.txt` | 2026-03-22 — 73 unknown port codes, DU state, XX MexState, nan trade type documented. Re-run after config update: only `nan` (NULL values) remain. |
 | Data caveats documented | 2026-03-22 — weight/freight availability, Ysleta/El Paso split, port terminology in Phase 2 and Phase 3 plans |
+| `05_build_outputs.py` | 2026-03-22 (rewritten 2026-03-23: chart-driven redesign, 8→7 datasets, eliminated `us_mexico_commodities`, slimmed `us_transborder`) |
+| `06_validate.py` | 2026-03-22 (updated 2026-03-23 for 7-dataset schema) |
+| 7 output datasets in `03-Processed-Data/` | 2026-03-23 — 296K rows total, 57.6 MB JSON, 26.6 MB CSV (down from 8 datasets / 167.5 MB) |
+| `validation_report.md` | 2026-03-22 — in `02-Data-Staging/docs/` |
+| Chrome extension validation prompt | 2026-03-22 — in `02-Data-Staging/docs/chrome_extension_validation_prompt.md` |
 
-### Missing Deliverables
+### Phase 2 — Requires Re-Run (critical normalization fixes 2026-03-23)
 
-| Item | Priority | Blocked By |
-|---|---|---|
-| `05_build_outputs.py` | High | Output strategy decision (dataset definitions, aggregation approach) |
-| `06_validate.py` | High | Output files |
-| 6 output datasets in `03-Processed-Data/` (JSON + CSV) | High | `05_build_outputs.py` |
+**⚠️ CRITICAL FIXES (2026-03-23):** Multiple legacy data corrections discovered by verifying against actual DBF file contents:
 
-### Open Questions
+1. **D3B/D4B/D5B/D6B mislabeled as imports** — These are EXPORT tables (State of Exporter variant), not imports. A/B suffix encodes geographic methodology, not trade direction. Fixed in `03_normalize.py` and `schema_mappings.json`. Source: BTS README4.TXT (1994), confirmed by actual DBF column names (`EXSTATE`, `SCH_B`).
 
-- [x] ~~Legacy-to-modern schema reconciliation~~ — Documented in `01-Raw-Data/data_dictionary/legacy-to-modern-mapping.md`. Key finding: DOT3 (Port×Commodity) has no legacy equivalent. Legacy tables map to DOT1/DOT2 via column renaming + filename-derived fields (TRDTYPE, COUNTRY, MONTH, YEAR).
-- [x] ~~Weight data gaps~~ — Resolved: weight kept as NULL where unavailable. Documented in Phase 2 plan section 2.3.1: export weight only for air/vessel modes; import weight available for all modes. Dashboard must show footnotes.
+2. **D-tables are SURFACE-ONLY** — All D-prefix tables (D03-D12) contain only DISAGMOT 4-9 (mail, truck, rail, pipeline, other, FTZ). Air (1) and vessel (3) modes **never** appear. Previous documentation incorrectly stated D09-D12 "contain ALL transport modes." Verified against actual DBF files across all years 1993-2006.
+
+3. **AV (air/vessel) files discovered and added** — 12 AV tables (AV1-AV12) exist from Nov 2003 to Dec 2006, providing air and vessel freight data. Before Nov 2003, TransBorder was surface-only. AV4/6/10/12 provide Port×Commodity (DOT3-equivalent) for air/vessel modes. Added to `03_normalize.py`, `schema_mappings.json`, and `legacy-to-modern-mapping.md`.
+
+4. **Fictional filename suffixes D/J/M/N/O/S removed** — These were documented but never existed in actual BTS filenames. Removed from `schema_mappings.json`.
+
+5. **2003-2006 "A-tables contain both exports and imports" corrected** — A-tables remained export-only through 2006 (confirmed by `ORSTATE` and `SCH_B` columns in 2003 data). Imports stayed in D09-D12.
+
+6. **D5...S files missing (1993–Mar 1994)** — Before the A/B suffix system (introduced Apr 1994), BTS used a trailing `S` suffix for State of Origin files (e.g., `D5AUG93S.DBF`). The parser regex didn't match these, silently dropping all State of Origin data for the first year of the dataset. Fixed: `S` suffix now mapped to `D5A` (State of Origin). Affects 12 files (9 in 1993, 3 in 1994).
+
+7. **R-files (revised replacements) ignored in 1995** — BTS issued corrected `R`-prefix files (e.g., `r3afeb95.dbf`) to replace erroneous original `D` files for Jan–Mar and Jul 1995. The pipeline was processing the bad originals. Fixed: R-files now detected and preferred; corresponding D-files skipped. X-files (deltas) ignored. Affects 14 table×month combinations across D3A/B, D5A/B, D09, D11.
+
+8. **DO9 typo (May 1994)** — File `DO9MAY94.DBF` uses letter O instead of digit 0. Regex `D\d{1,2}` couldn't match it, silently dropping May 1994 Mexico imports (Table 09). Fixed: auto-corrected `DO` → `D0` before parsing.
+
+9. **2017 data in 2006 folder (BTS packaging error)** — Files `DOT10117.DBF`, `DOT20117.DBF`, `DOT30117.DBF` in the 2006 legacy folder contain January 2017 modern data (YEAR=2017). No fix needed — these don't match the legacy filename regex and are correctly ignored. The 2017 data is already loaded from the modern 2017 folder.
+
+**Files corrected:** `03_normalize.py`, `schema_mappings.json`, `legacy-to-modern-mapping.md`. **Pending:** full pipeline re-run (`03_normalize.py` → `04_create_db.py` → `05_build_outputs.py` → `06_validate.py`).
+
+### Open Questions (all resolved)
+
+- [x] ~~Legacy-to-modern schema reconciliation~~ — Documented in `01-Raw-Data/data_dictionary/legacy-to-modern-mapping.md`. Key finding: DOT3 (Port×Commodity) has no legacy equivalent. Legacy tables map to DOT1/DOT2 via column renaming + table-number-derived fields (TRDTYPE, COUNTRY) and STATMOYR-parsed fields (MONTH, YEAR).
+- [x] ~~Weight data gaps~~ — Resolved: weight kept as NULL where unavailable. Documented in Phase 2 plan section 2.3.1: export weight unavailable in legacy export tables (D03-D06); import weight available in legacy import tables (D09-D12). Dashboard must show footnotes.
 - [x] ~~Commodity code changes~~ — TransBorder uses **HS 2-digit codes** throughout (1993–2025). SCTG is a different system (Commodity Flow Survey) and is NOT used here. No crosswalk needed.
 - [x] ~~CSV size budget~~ — Removed. No size cap on output files per user decision. Both JSON and CSV carry full HS-code detail.
-- [ ] **Output dataset structure**: The 6 planned datasets have a structural issue — `us_mexico` and `texas_mexico` datasets want port + commodity in the same row, but no single BTS table has state + port + commodity. DOT1 has state+port (no commodity), DOT3 has port+commodity (no state). Need to decide how to handle this.
+- [x] ~~Output dataset structure~~ — Resolved: chart-driven design. 7 datasets, each serving specific dashboard charts. Eliminated `us_mexico_commodities` (no chart needs state×commodity); `commodity_detail` serves US-Mexico commodity charts filtered to Mexico in browser. `us_transborder` slimmed by dropping CommodityGroup (no chart needs it). Total: 57.6 MB JSON (down from 167.5 MB). GitHub Pages serves with automatic gzip (~10 MB over the wire).
 
 ---
 
@@ -114,9 +135,9 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 
 | Item | Priority | Blocked By |
 |---|---|---|
-| WebApp directory (fork from Airport Dashboard) | High | Phase 2 processed CSVs |
+| WebApp directory (fork from Airport Dashboard) | High | Phase 2 processed JSONs |
 | `transborderStore.js` (Zustand data store) | High | WebApp fork |
-| 8 page components | High | Data store |
+| 7 page components | High | Data store |
 | Navigation and branding updates | Medium | WebApp fork |
 | CSV loading utilities | Medium | WebApp fork |
 
@@ -176,6 +197,12 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 | 2026-03-22 | 3 cleaned CSVs generated: DOT1 (10.3M rows), DOT2 (25.4M rows), DOT3 (3.9M rows). |
 | 2026-03-22 | `04_create_db.py` rewritten to read from cleaned CSVs. `transborder.db` rebuilt: 39.6M rows, 10.1 GB, full 1993-2025. |
 | 2026-03-22 | Data caveats documented in Phase 2 plan (section 2.3.1) and Phase 3 plan (About Data page): weight availability, Ysleta/El Paso split, port terminology. |
+| 2026-03-22 | `05_build_outputs.py` created: 8 datasets (JSON + CSV) from SQLite DB. Each sourced from exactly one DOT table — no joins. Split us_mexico and texas_mexico into port + commodity views. |
+| 2026-03-22 | `06_validate.py` created and run: 59 checks, all passed. Trade values match DB exactly. |
+| 2026-03-22 | 8 output datasets generated in `03-Processed-Data/`: 734K rows, 167.5 MB JSON, 86.7 MB CSV. |
+| 2026-03-22 | Chrome extension validation prompt created in `02-Data-Staging/docs/`. |
+| 2026-03-23 | Output datasets redesigned: chart-driven, 8→7 datasets, 167.5→57.6 MB JSON. `us_mexico_commodities` eliminated, `us_transborder` slimmed. Phase 2 & 3 plans updated. |
+| 2026-03-22 | **Phase 2 complete.** Full pipeline: normalize -> DB -> outputs -> validate. |
 | 2026-03-15 | BTS raw data page reconnaissance completed. |
 | 2026-03-15 | Historical format comparison Excel (now in `01-Raw-Data/data_dictionary/`). |
 
@@ -185,7 +212,8 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 
 | Date | Update |
 |---|---|
-| 2026-03-22 | Phase 2 major progress: `03_normalize.py` + `04_create_db.py` complete. Full 1993-2025 database built (39.6M rows). Data caveats documented. Output strategy discussion pending before `05_build_outputs.py`. |
+| 2026-03-23 | **Output datasets redesigned (chart-driven).** Eliminated `us_mexico_commodities` (108 MB, 423K rows) — no chart needs state×commodity. `commodity_detail` serves US-Mexico commodity charts filtered in browser. Slimmed `us_transborder` by dropping CommodityGroup (15K→954 rows). 8→7 datasets, 167.5→57.6 MB JSON (65% reduction). ~10 MB gzipped over the wire via GitHub Pages. Phase 2 & 3 plans updated. |
+| 2026-03-22 | **Phase 2 completed.** Full pipeline: `03_normalize.py` -> `04_create_db.py` -> `05_build_outputs.py` -> `06_validate.py`. 39.6M rows in DB, 8 output datasets (734K aggregated rows), 59/59 validation checks passed. |
 | 2026-03-14 | Initial gap tracker created. Full inventory of missing deliverables across all 4 phases. |
 | 2026-03-15 | Phase 2 started: `04_create_db.py` created, `transborder.db` built with 25.1M rows (modern era 2007–2025). Discovered additional data gaps: 2023 Sep–Dec missing from BTS, 2009 DOT2 partial. 2020 DOT3 recovered from archives (XLSX). Phase 2 plan updated with YTD strategy, DOT1/DOT2/DOT3 table definitions, and 2020 handling. |
 | 2026-03-15 | Major Phase 1 progress: raw data downloaded, config files created, gap tracker updated. Identified Oct–Dec 2020 data gap on BTS website. |
