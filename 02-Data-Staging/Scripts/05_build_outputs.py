@@ -5,14 +5,23 @@ Produces 7 datasets in two formats (JSON + CSV) in 03-Processed-Data/.
 Each dataset draws from exactly ONE DOT table -- no joins between tables.
 Datasets are designed to serve specific Phase 3 dashboard charts.
 
+Year-range strategy:
+  - us_transborder: ALL years (1993-2025) -- Overview page shows the full 33-year story
+    at a high aggregation level (Year/Country/Mode/TradeType). Legacy data is reliable
+    for trade value totals.
+  - All other datasets: 2007+ ONLY -- Detail pages (ports, commodities, states, monthly)
+    start at the Jan 2007 consolidation boundary. This avoids exposing legacy-era field
+    gaps (NULL weight/freight for exports, no DOT3 surface data, mode discontinuity at
+    Nov 2003) in drill-down charts. See 01-Raw-Data/data_dictionary/data_caveats.md.
+
 Datasets:
-  1. us_transborder           DOT2  Annual  Year/Country/Mode/TradeType summary (Overview, Trade by Mode)
-  2. us_mexico_ports          DOT1  Annual  US-Mexico port-level with Mode (port map, rankings, trends)
-  3. texas_mexico_ports       DOT1  Annual  TX border ports with region/coordinates (TX port tabs)
-  4. texas_mexico_commodities DOT3  Annual  TX border port-commodity detail, 2007+ (TX Commodities tab)
-  5. us_state_trade           DOT1  Annual  State-level trade (Trade by State, Overview Top 10 States)
-  6. commodity_detail         DOT2  Annual  Commodity by country/mode (Commodities page + US-Mexico commodity charts)
-  7. monthly_trends           DOT1  Monthly Country/mode time series (TX Monthly tab)
+  1. us_transborder           DOT2  Annual  Year/Country/Mode/TradeType summary (Overview, Trade by Mode) -- 1993-2025
+  2. us_mexico_ports          DOT1  Annual  US-Mexico port-level with Mode (port map, rankings, trends) -- 2007+
+  3. texas_mexico_ports       DOT1  Annual  TX border ports with region/coordinates (TX port tabs) -- 2007+
+  4. texas_mexico_commodities DOT3  Annual  TX border port-commodity detail (TX Commodities tab) -- 2007+
+  5. us_state_trade           DOT1  Annual  State-level trade (Trade by State, Overview Top 10 States) -- 2007+
+  6. commodity_detail         DOT2  Annual  Commodity by country/mode (Commodities page + US-Mexico commodity charts) -- 2007+
+  7. monthly_trends           DOT1  Monthly Country/mode time series (TX Monthly tab) -- 2007+
 
 Design note: The previous us_mexico_commodities dataset (DOT2, Mexico-only with State
 dimension) was eliminated. No US-Mexico chart needs commodities broken down by state.
@@ -36,6 +45,10 @@ OUTPUT_DIR = STAGING_DIR.parent / "03-Processed-Data"
 JSON_DIR = OUTPUT_DIR / "json"
 CSV_DIR = OUTPUT_DIR / "csv"
 CONFIG_DIR = STAGING_DIR / "config"
+
+# Year boundary: detail datasets start at the Jan 2007 consolidation.
+# Overview (us_transborder) uses all years for the full 33-year story.
+MODERN_START_YEAR = 2007
 
 # Texas border POE port codes (from Texas_Ports.csv, BorderPOE=Yes)
 TX_BORDER_PORTS = {
@@ -119,13 +132,13 @@ def build_us_transborder(conn):
 
 
 def build_us_mexico_ports(conn):
-    """Dataset 2: US-Mexico port-level trade with Mode. Source: DOT1, Mexico only.
+    """Dataset 2: US-Mexico port-level trade with Mode. Source: DOT1, Mexico only, 2007+.
 
     Charts: US-Mexico BarChart (top ports), DataTable.
             US-Mexico Ports: PortMap, BarChart, LineChart, DataTable.
     Mode kept for port-by-mode filtering on the Ports page.
     """
-    sql = """
+    sql = f"""
         SELECT
             "Year",
             "PortCode",
@@ -140,7 +153,7 @@ def build_us_mexico_ports(conn):
             CASE WHEN SUM(CASE WHEN "FreightCharges" IS NOT NULL THEN 1 ELSE 0 END) > 0
                  THEN ROUND(SUM("FreightCharges"), 2) ELSE NULL END AS "FreightCharges"
         FROM dot1_state_port
-        WHERE "Country" = 'Mexico' AND "Year" IS NOT NULL
+        WHERE "Country" = 'Mexico' AND "Year" >= {MODERN_START_YEAR}
         GROUP BY "Year", "PortCode", "Port", "StateCode", "State", "Mode", COALESCE("TradeType", 'Unknown')
         ORDER BY "Year", "PortCode", "Mode", "TradeType"
     """
@@ -148,7 +161,7 @@ def build_us_mexico_ports(conn):
 
 
 def build_texas_mexico_ports(conn, port_coords):
-    """Dataset 3: Texas border port trade with region/coordinates. Source: DOT1.
+    """Dataset 3: Texas border port trade with region/coordinates. Source: DOT1, 2007+.
 
     Charts: TX Overview tab (StatCards, LineChart, DonutChart, BarChart).
             TX Ports tab (PortMap, BarChart, LineChart, DataTable).
@@ -170,7 +183,7 @@ def build_texas_mexico_ports(conn, port_coords):
         FROM dot1_state_port
         WHERE "Country" = 'Mexico'
           AND "PortCode" IN ({port_list})
-          AND "Year" IS NOT NULL
+          AND "Year" >= {MODERN_START_YEAR}
         GROUP BY "Year", "PortCode", "Port", "Mode", COALESCE("TradeType", 'Unknown')
         ORDER BY "Year", "PortCode", "Mode", "TradeType"
     """
@@ -189,6 +202,8 @@ def build_texas_mexico_commodities(conn):
     """Dataset 4: TX border port commodity detail. Source: DOT3, 2007+.
 
     Charts: TX Commodities tab TreemapChart, BarChart, LineChart, DataTable.
+    Note: DOT3 surface data doesn't exist before 2007 anyway, but the explicit
+    year filter keeps this consistent with other detail datasets.
     """
     port_list = ",".join(f"'{p}'" for p in TX_BORDER_PORTS)
     sql = f"""
@@ -207,7 +222,7 @@ def build_texas_mexico_commodities(conn):
         FROM dot3_port_commodity
         WHERE "Country" = 'Mexico'
           AND "PortCode" IN ({port_list})
-          AND "Year" IS NOT NULL
+          AND "Year" >= {MODERN_START_YEAR}
         GROUP BY "Year", "PortCode", "Port", "HSCode", "Commodity",
                  "CommodityGroup", "Mode", COALESCE("TradeType", 'Unknown')
         ORDER BY "Year", "PortCode", "HSCode", "Mode", "TradeType"
@@ -216,12 +231,12 @@ def build_texas_mexico_commodities(conn):
 
 
 def build_us_state_trade(conn):
-    """Dataset 5: State-level trade by country/mode. Source: DOT1.
+    """Dataset 5: State-level trade by country/mode. Source: DOT1, 2007+.
 
     Charts: Trade by State BarChart, LineChart, DataTable.
             Overview Top 10 States BarChart.
     """
-    sql = """
+    sql = f"""
         SELECT
             "Year",
             "StateCode",
@@ -231,7 +246,7 @@ def build_us_state_trade(conn):
             COALESCE("TradeType", 'Unknown') AS "TradeType",
             ROUND(SUM("TradeValue"), 2) AS "TradeValue"
         FROM dot1_state_port
-        WHERE "Year" IS NOT NULL
+        WHERE "Year" >= {MODERN_START_YEAR}
         GROUP BY "Year", "StateCode", "State", "Country", "Mode", COALESCE("TradeType", 'Unknown')
         ORDER BY "Year", "StateCode", "Country", "Mode", "TradeType"
     """
@@ -239,12 +254,12 @@ def build_us_state_trade(conn):
 
 
 def build_commodity_detail(conn):
-    """Dataset 6: Commodity detail by country/mode. Source: DOT2.
+    """Dataset 6: Commodity detail by country/mode. Source: DOT2, 2007+.
 
     Charts: Commodity Analysis TreemapChart, BarChart, LineChart, DataTable.
             US-Mexico commodity TreemapChart, BarChart, DataTable (filtered to Mexico in browser).
     """
-    sql = """
+    sql = f"""
         SELECT
             "Year",
             "Country",
@@ -257,7 +272,7 @@ def build_commodity_detail(conn):
             CASE WHEN SUM(CASE WHEN "Weight" IS NOT NULL THEN 1 ELSE 0 END) > 0
                  THEN ROUND(SUM("Weight"), 2) ELSE NULL END AS "Weight"
         FROM dot2_state_commodity
-        WHERE "Year" IS NOT NULL
+        WHERE "Year" >= {MODERN_START_YEAR}
         GROUP BY "Year", "Country", "HSCode", "Commodity", "CommodityGroup",
                  "Mode", COALESCE("TradeType", 'Unknown')
         ORDER BY "Year", "Country", "HSCode", "Mode", "TradeType"
@@ -266,11 +281,11 @@ def build_commodity_detail(conn):
 
 
 def build_monthly_trends(conn):
-    """Dataset 7: Monthly time series by country/mode. Source: DOT1.
+    """Dataset 7: Monthly time series by country/mode. Source: DOT1, 2007+.
 
     Charts: TX Monthly tab LineChart, Heatmap/StackedBarChart, DataTable.
     """
-    sql = """
+    sql = f"""
         SELECT
             "Year",
             "Month",
@@ -279,7 +294,7 @@ def build_monthly_trends(conn):
             COALESCE("TradeType", 'Unknown') AS "TradeType",
             ROUND(SUM("TradeValue"), 2) AS "TradeValue"
         FROM dot1_state_port
-        WHERE "Year" IS NOT NULL AND "Month" IS NOT NULL
+        WHERE "Year" >= {MODERN_START_YEAR} AND "Month" IS NOT NULL
         GROUP BY "Year", "Month", "Country", "Mode", COALESCE("TradeType", 'Unknown')
         ORDER BY "Year", "Month", "Country", "Mode", "TradeType"
     """

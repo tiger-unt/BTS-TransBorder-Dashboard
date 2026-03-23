@@ -93,6 +93,7 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 | `06_validate.py` | 2026-03-22 (updated 2026-03-23 for 7-dataset schema) |
 | 7 output datasets in `03-Processed-Data/` | 2026-03-23 — 296K rows total, 57.6 MB JSON, 26.6 MB CSV (down from 8 datasets / 167.5 MB) |
 | `validation_report.md` | 2026-03-22 — in `02-Data-Staging/docs/` |
+| `data_caveats.md` | 2026-03-23 — in `01-Raw-Data/data_dictionary/`. Consolidated reference for all data limitations, structural breaks, field gaps, and required dashboard footnotes. |
 | Chrome extension validation prompt | 2026-03-22 — in `02-Data-Staging/docs/chrome_extension_validation_prompt.md` |
 
 ### Phase 2 — Requires Re-Run (critical normalization fixes 2026-03-23)
@@ -105,7 +106,7 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 
 3. **AV (air/vessel) files discovered and added** — 12 AV tables (AV1-AV12) exist from Nov 2003 to Dec 2006, providing air and vessel freight data. Before Nov 2003, TransBorder was surface-only. AV4/6/10/12 provide Port×Commodity (DOT3-equivalent) for air/vessel modes. Added to `03_normalize.py`, `schema_mappings.json`, and `legacy-to-modern-mapping.md`.
 
-4. **Fictional filename suffixes D/J/M/N/O/S removed** — These were documented but never existed in actual BTS filenames. Removed from `schema_mappings.json`.
+4. **Fictional filename suffixes D/J/M/N/O removed** — These were documented but never existed in actual BTS filenames. Removed from `schema_mappings.json`. (Note: S suffix DOES exist — see fix #6 below.)
 
 5. **2003-2006 "A-tables contain both exports and imports" corrected** — A-tables remained export-only through 2006 (confirmed by `ORSTATE` and `SCH_B` columns in 2003 data). Imports stayed in D09-D12.
 
@@ -117,7 +118,21 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 
 9. **2017 data in 2006 folder (BTS packaging error)** — Files `DOT10117.DBF`, `DOT20117.DBF`, `DOT30117.DBF` in the 2006 legacy folder contain January 2017 modern data (YEAR=2017). No fix needed — these don't match the legacy filename regex and are correctly ignored. The 2017 data is already loaded from the modern 2017 folder.
 
-**Files corrected:** `03_normalize.py`, `schema_mappings.json`, `legacy-to-modern-mapping.md`. **Pending:** full pipeline re-run (`03_normalize.py` → `04_create_db.py` → `05_build_outputs.py` → `06_validate.py`).
+10. **D5B/D6B tables producing malformed DOT1 records** — D5B (Mexico) and D6B (Canada) use `NTAR` (89 multicounty regions) instead of state codes. They were routed to DOT1 which requires `USASTATE`, producing rows with blank state fields (1.4M malformed rows across 1994–2002). Fixed: D5B/D6B excluded from `LEGACY_TABLE_INFO` entirely. D5A/D6A already cover the same exports with proper state geography. NTAR removed from `DROP_FIELDS` — no longer silently discarded.
+
+11. **`schema_mappings.json` loaded but unused** — `03_normalize.py` loaded the schema config but never read it. Normalization logic is hardcoded (FIELD_MAPPINGS, DROP_FIELDS, LEGACY_TABLE_INFO, etc.) because the conditional behavior is too complex for flat config. Fixed: removed the dead load; added note clarifying the JSON is a reference data dictionary, not a code driver. Updated JSON header with `_role` field.
+
+12. **Phase 2 doc drift — normalization vs enrichment** — Phase 2 plan described enrichment steps (`Lat`, `Lon`, `Region`, `YearMonth`, `port_aliases.json`) as normalization responsibilities. In reality these happen in `05_build_outputs.py`. Fixed: Phase 2 plan section 2.1 rewritten to match actual `03_normalize.py` behavior, output schema split into normalization vs. enrichment columns.
+
+**Files corrected:** `03_normalize.py`, `schema_mappings.json`, `legacy-to-modern-mapping.md`, `Phase-2_Data-Processing.md`. **Pending:** full pipeline re-run (`03_normalize.py` → `04_create_db.py` → `05_build_outputs.py` → `06_validate.py`).
+
+### Low-Severity Doc/Data Items (from 2026-03-23 code review)
+
+| # | Finding | Severity | Status |
+|---|---------|----------|--------|
+| 6 | **`01-Raw-Data/README.md` mode-coverage description outdated** — Describes dataset as "surface freight trade from April 1993 to present." Incomplete: pre-Nov 2003 is surface-only, Nov 2003–Dec 2006 includes AV air/vessel, 2007+ all modes. README is okay as origin story but not reliable as mode-coverage description. | Low | Open |
+| 7 | **Raw-data dictionary docs reference absent source assets** — `01-Raw-Data/data_dictionary/README.md` and `02-Data-Staging/config/README.md` reference `codes-north-american-transborder-freight-raw-data.pdf`, `legacy-reference/`, and `Historical and current data format comparison.xlsx`. These are not in the repo. Docs may be historically accurate but not fully reproducible from this checkout. | Low | Open |
+| 8 | **Legacy normalizer only ingests DBF, may miss CSV-only records** — `03_normalize.py` only reads `.DBF` files from legacy years. Some docs describe legacy unpacked contents as DBF/TAB/CSV. If any required analytical records live only in CSV for some years, they would be silently missed. Needs verification against actual unpacked legacy year folders. | Low–Med | Open — verify |
 
 ### Open Questions (all resolved)
 
@@ -143,7 +158,7 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 
 ### Open Questions
 
-- [ ] Airport Dashboard source: Is `c:/Users/UNT/UNT System/TxDOT IAC 2025-26 - General/Task 6 - Airport Connectivity/07_WebApp/` still the correct path for the fork source?
+- [x] ~~Airport Dashboard source~~ — Confirmed at `D:/UNT/UNT System/TxDOT IAC 2025-26 - General/Task 6 - Airport Connectivity/07_WebApp/` (updated 2026-03-23).
 - [x] ~~Deployment target~~ — GitHub Pages (static-only). Confirmed in Phase 2 plan.
 - [x] ~~Map visualizations: Phase 3 mentions geographic/port maps — are GeoJSON boundaries available for Texas border ports?~~ Resolved: lat/lon coordinates for all 28 US-Mexico border POEs obtained from BTS Border Crossing Entry Data (Socrata `keg4-3bc2`). Saved to `02-Data-Staging/config/port_coordinates.json`. GeoJSON boundaries not needed — point markers sized by trade value are sufficient.
 
@@ -212,7 +227,9 @@ All Phase 1 deliverables are done. Download scripts were not needed (data downlo
 
 | Date | Update |
 |---|---|
+| 2026-03-23 | **Code review fixes (D5B/D6B, schema_mappings, doc drift).** D5B/D6B excluded from normalization (NTAR regions incompatible with DOT1 state×port). schema_mappings.json reclassified as reference doc (was loaded but unused). Phase 2 plan section 2.1 rewritten to match actual code behavior. S-suffix doc corrected in legacy-to-modern-mapping.md. |
 | 2026-03-23 | **Output datasets redesigned (chart-driven).** Eliminated `us_mexico_commodities` (108 MB, 423K rows) — no chart needs state×commodity. `commodity_detail` serves US-Mexico commodity charts filtered in browser. Slimmed `us_transborder` by dropping CommodityGroup (15K→954 rows). 8→7 datasets, 167.5→57.6 MB JSON (65% reduction). ~10 MB gzipped over the wire via GitHub Pages. Phase 2 & 3 plans updated. |
+| 2026-03-23 | **Legacy data year-range strategy decided.** Overview page shows all years (1993–2025) at aggregate level; all detail pages (ports, commodities, states, monthly) show 2007+ only. `05_build_outputs.py` updated with `MODERN_START_YEAR = 2007`. `data_caveats.md` created consolidating all limitations. Phase 3 plan updated with per-page year ranges. |
 | 2026-03-22 | **Phase 2 completed.** Full pipeline: `03_normalize.py` -> `04_create_db.py` -> `05_build_outputs.py` -> `06_validate.py`. 39.6M rows in DB, 8 output datasets (734K aggregated rows), 59/59 validation checks passed. |
 | 2026-03-14 | Initial gap tracker created. Full inventory of missing deliverables across all 4 phases. |
 | 2026-03-15 | Phase 2 started: `04_create_db.py` created, `transborder.db` built with 25.1M rows (modern era 2007–2025). Discovered additional data gaps: 2023 Sep–Dec missing from BTS, 2009 DOT2 partial. 2020 DOT3 recovered from archives (XLSX). Phase 2 plan updated with YTD strategy, DOT1/DOT2/DOT3 table definitions, and 2020 handling. |
