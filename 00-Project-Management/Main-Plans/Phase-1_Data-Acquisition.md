@@ -55,7 +55,7 @@ There is no public API for TransBorder freight data. The BTS website (`bts.gov/t
 
 ### Major Schema Change: January 2007
 
-Before January 2007, TransBorder data was published as up to **24 separate tables** (split by mode, trade direction, surface/air/vessel). In January 2007, BTS consolidated these into **3 unified tables** with new/renamed fields:
+Before January 2007, TransBorder data was published as up to **24 separate tables** (split by trade direction, country, and geographic dimension — with A/B variants for export methodology). In January 2007, BTS consolidated these into **3 unified tables** with new/renamed fields:
 
 | Change | Pre-2007 | Post-2007 |
 |---|---|---|
@@ -183,7 +183,7 @@ Schema differences between legacy and modern eras are documented in `01-Raw-Data
 - Table structure comparison (24 legacy tables → 3 modern DOT tables)
 - Column-by-column mapping (legacy names → modern names)
 - Columns derived from filename in legacy (TRDTYPE, COUNTRY, MONTH, YEAR)
-- Information lost in normalization (DOT3 has no legacy equivalent, CONTCODE/SHIPWT gaps for surface trade pre-2007)
+- Information lost in normalization (DOT3 has no legacy equivalent, CONTCODE/SHIPWT gaps for export tables pre-2007)
 - STATMOYR date parsing (MMYY for 1993–1997, YYYYMM for 1998–2006)
 - Legacy table evolution (15 types in 1993 → 12 in 1995 → 8 in 2003 → 3 in 2007)
 - Known errata (BN→BC Baja California code, 2006 lowercase columns, 1995 revision files)

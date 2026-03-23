@@ -17,12 +17,12 @@ Before starting dashboard development, clean up the large staging artifacts from
 | Action | Path | Size | Rationale |
 |---|---|---|---|
 | **Delete** | `01-Raw-Data/unpacked/` | ~20 GB | Raw files have been normalized into `02-Data-Staging/cleaned/` and loaded into `transborder.db`. Re-unpackable from ZIPs if ever needed. |
-| **Delete** | `02-Data-Staging/cleaned/` | TBD | Intermediate normalized CSVs. The database and final outputs in `03-Processed-Data/` supersede these. |
+| **Delete** | `02-Data-Staging/cleaned/` | ~6 GB | Intermediate normalized CSVs (DOT1: 906 MB, DOT2: 4.4 GB, DOT3: 656 MB). The database and final outputs in `03-Processed-Data/` supersede these. Reproducible via `03_normalize.py`. |
 | **Keep** | `01-Raw-Data/download/` | ~2 GB (ZIPs) | Source of truth. Compact. Required for reproducibility. |
-| **Keep** | `02-Data-Staging/transborder.db` | TBD | Working database for ad-hoc queries and future re-generation. |
+| **Keep** | `02-Data-Staging/transborder.db` | ~10 GB | Working database (39.6M rows) for ad-hoc queries and future re-generation. |
 | **Keep** | `03-Processed-Data/` | <100 MB | Final outputs (JSON + CSV). |
 
-**Verification before deleting:** Confirm that `06_validate.py` passed and that all 6 JSON + 6 CSV files exist in `03-Processed-Data/` with expected row counts. Only then proceed with cleanup.
+**Verification before deleting:** Confirm that `06_validate.py` passed and that all 7 JSON + 7 CSV files exist in `03-Processed-Data/` with expected row counts. Only then proceed with cleanup.
 
 ## 3.1 Fork the Airport Dashboard
 
@@ -55,30 +55,34 @@ Before starting dashboard development, clean up the large staging artifacts from
 
 **Data source**: The WebApp reads pre-aggregated JSON files from `03-Processed-Data/json/` (copied to `WebApp/public/data/` for deployment). JSON is used instead of CSV for faster browser parsing and smaller payload (no repeated header names per row).
 
-**Lazy-loading strategy**: Instead of fetching all 6 datasets upfront (which could be 50-80 MB total), datasets are loaded on-demand when the user first navigates to a page that needs them. Once loaded, they stay in memory — no re-fetching.
+**Lazy-loading strategy**: Instead of fetching all 7 datasets upfront (~58 MB total, ~10 MB gzipped), datasets are loaded on-demand when the user first navigates to a page that needs them. Once loaded, they stay in memory — no re-fetching. GitHub Pages automatically serves JSON with gzip compression (~5:1 ratio).
 
-| Dataset | Est. Size | Loaded When | Used By |
-|---|---|---|---|
-| `usTransborder` | ~0.8 MB | **App startup** (landing page data) | Overview, US-Mexico (filtered), Trade by Mode |
-| `usMexico` | ~30-54 MB | First visit to US-Mexico or US-Mexico Ports | US-Mexico, US-Mexico Ports |
-| `texasMexico` | ~5-18 MB | First visit to Texas-Mexico | Texas-Mexico (all tabs except Monthly) |
-| `usStateTrade` | ~2.8 MB | First visit to Trade by State | Trade by State |
-| `commodityDetail` | ~5.6 MB | First visit to Commodities | Commodity Analysis |
-| `monthlyTrends` | ~0.6 MB | First visit to Texas-Mexico Monthly tab | Texas-Mexico Monthly tab |
+**Chart-driven datasets:** Each dataset is designed to serve specific charts. Shared tables serve multiple pages where their grain is sufficient. There is no `us_mexico_commodities` dataset — commodity charts on the US-Mexico page use `commodityDetail` filtered to Country=Mexico in the browser.
+
+| Dataset | Source | JSON Raw | gzipped (est) | Loaded When | Pages & Charts |
+|---|---|---|---|---|---|
+| `usTransborder` | DOT2 | ~0.2 MB | ~0.05 MB | **App init** | Overview (StatCards, LineChart, DonutChart, StackedBarChart), Trade by Mode (all charts) |
+| `usMexicoPorts` | DOT1 | ~28 MB | ~5 MB | US-Mexico / US-Mexico Ports | US-Mexico port BarChart/DataTable, US-Mexico Ports PortMap/BarChart/LineChart/DataTable |
+| `texasMexicoPorts` | DOT1 | ~0.5 MB | ~0.1 MB | Texas-Mexico | TX Overview/Ports/Modes tabs (all charts) |
+| `texasMexicoCommodities` | DOT3 | ~10.6 MB | ~1.8 MB | TX Commodities tab | TX Commodities TreemapChart/BarChart/LineChart/DataTable |
+| `usStateTrade` | DOT1 | ~4.1 MB | ~0.8 MB | Trade by State / Overview | Trade by State (all charts), Overview Top 10 States BarChart |
+| `commodityDetail` | DOT2 | ~13 MB | ~2.5 MB | Commodities / US-Mexico | Commodity Analysis (all charts), US-Mexico commodity TreemapChart/BarChart/DataTable (filtered to Mexico) |
+| `monthlyTrends` | DOT1 | ~1.1 MB | ~0.2 MB | TX Monthly tab | Monthly LineChart, Heatmap/StackedBarChart, DataTable |
 
 **Store implementation:**
 
 Each dataset has three states: `null` (not yet requested), loading (promise in flight), or loaded (array in memory). The store exposes a `loadDataset(name)` action that pages call on mount.
 
 ```js
-// Store state — datasets start as null (not loaded)
-usTransborder: [],       // loaded at app init (small, needed for landing page)
-usMexico: null,          // lazy
-texasMexico: null,       // lazy
-usStateTrade: null,      // lazy
-commodityDetail: null,   // lazy
-monthlyTrends: null,     // lazy
-datasetLoading: {},      // { usMexico: true, ... } tracks in-flight requests
+// Store state — 7 datasets, start as null (not loaded)
+usTransborder: [],              // loaded at app init (~0.2 MB — Year/Country/Mode/TradeType summary)
+usMexicoPorts: null,            // lazy — DOT1 port view (Mexico, with Mode for filtering)
+texasMexicoPorts: null,          // lazy — DOT1 TX border ports (with Region/Lat/Lon)
+texasMexicoCommodities: null,    // lazy — DOT3 TX port-commodity detail (2007+)
+usStateTrade: null,              // lazy — DOT1 state-level trade
+commodityDetail: null,           // lazy — DOT2 commodity detail (serves Commodities + US-Mexico commodity charts)
+monthlyTrends: null,             // lazy — DOT1 monthly time series
+datasetLoading: {},              // { usMexicoPorts: true, ... } tracks in-flight requests
 
 // Generic lazy-loader (called by pages on mount)
 loadDataset: async (name) => {
@@ -103,12 +107,12 @@ init: async () => {
 
 **Page usage pattern:**
 ```jsx
-export default function USMexico() {
-  const { usMexico, loadDataset } = useTransborderStore()
-  useEffect(() => { loadDataset('usMexico') }, [])
+export default function USMexicoPorts() {
+  const { usMexicoPorts, loadDataset } = useTransborderStore()
+  useEffect(() => { loadDataset('usMexicoPorts') }, [])
 
-  if (!usMexico) return <LoadingSpinner />
-  // ... render page with usMexico data
+  if (!usMexicoPorts) return <LoadingSpinner />
+  // ... render page with usMexicoPorts data
 }
 ```
 
@@ -389,25 +393,25 @@ export default function SomePage() {
 ### Page 2: US-Mexico Trade (`pages/USMexico/index.jsx`)
 
 **Template**: New page, modeled on Airport's `USMexico/index.jsx`
-**Data**: `usMexico` + `usTransborder` filtered to Country=Mexico
+**Data**: `usMexicoPorts` (port charts) + `commodityDetail` filtered to Mexico (commodity charts) + `usTransborder` filtered to Mexico (summary stats)
 **Filters**: Year (multi), TradeType (single), Mode (multi)
 
 **Sections:**
 1. **Hero banner** -- "U.S.-Mexico TransBorder Freight"
 2. **StatCards** (4): Total US-Mexico Trade, Exports, Imports, Port Count
-3. **LineChart**: US-Mexico trade trends over time (filteredNoYear)
-4. **DonutChart**: Trade by Mode
-5. **BarChart**: Top 15 Ports of Entry (horizontal)
-6. **TreemapChart**: Top commodity groups (click to drill into HS 2-digit codes within group -- see section 3.9)
-7. **StackedBarChart**: Mode composition by year
-8. **DataTable**: Port-level detail (Port, State, Total, Exports, Imports)
+3. **LineChart**: US-Mexico trade trends over time (filteredNoYear) — from `usTransborder`
+4. **DonutChart**: Trade by Mode — from `usTransborder`
+5. **BarChart**: Top 15 Ports of Entry (horizontal) — from `usMexicoPorts`
+6. **TreemapChart**: Top commodity groups (click to drill into HS 2-digit codes within group -- see section 3.9) — from `commodityDetail`
+7. **StackedBarChart**: Mode composition by year — from `usTransborder`
+8. **DataTable**: Port-level detail (Port, State, Total, Exports, Imports) — from `usMexicoPorts`
 
 ---
 
 ### Page 3: US-Mexico Ports (`pages/USMexicoPorts/index.jsx`)
 
 **Template**: New page
-**Data**: `usMexico`
+**Data**: `usMexicoPorts`
 **Filters**: Year (multi), TradeType (single), Mode (multi), State (multi)
 
 **Sections:**
@@ -423,7 +427,7 @@ export default function SomePage() {
 ### Page 4: Texas-Mexico Deep-Dive (`pages/TexasMexico/index.jsx`)
 
 **Template**: Adapt from Airport's `TexasMexico/index.jsx` (tabbed structure)
-**Data**: `texasMexico` + `monthlyTrends` (for Monthly tab)
+**Data**: `texasMexicoPorts` + `texasMexicoCommodities` + `monthlyTrends` (each lazy-loaded per tab)
 **Filters**: Year (multi), TradeType (single), Mode (multi), Region (single)
 
 **Tabs** (each in `pages/TexasMexico/tabs/`):
@@ -527,7 +531,7 @@ export default function SomePage() {
   - Shipment weight for exports is only available for Air and Vessel modes. For Truck, Rail, Pipeline, Mail, and Other/Unknown exports, weight is zero/unavailable. Import weight is available for all modes.
   - Freight charges are partially available for exports (~50%) but near-complete for imports.
   - Port x Commodity cross-tabulation (DOT3) only exists from January 2007 onward.
-  - Legacy air/vessel records (1993-2006, ~3.6M rows) have unknown trade direction (Export vs Import).
+  - All pre-2007 legacy records have known trade direction (derived from table number: D03–D06 = Export, D09–D12 = Import).
   - DF (Domestic/Foreign) indicator is only meaningful for exports (1=domestic origin, 2=re-export).
 - **Port history changes**:
   - CBP separated the Ysleta Port of Entry (code 2401) from El Paso (code 2402) beginning with March 2020 data. Pre-March 2020, Ysleta activity is included under El Paso. Time-series comparisons for these ports must account for this split.

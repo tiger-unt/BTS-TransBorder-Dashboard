@@ -94,15 +94,17 @@ The annual summary files (`dot{1,2,3}_YYYY.csv`) have the same columns but drop 
 03-Processed-Data/         <- Final dashboard-ready outputs
   json/                    <- JSON files for GitHub Pages web app
     us_transborder.json
-    us_mexico.json
-    texas_mexico.json
+    us_mexico_ports.json
+    texas_mexico_ports.json
+    texas_mexico_commodities.json
     us_state_trade.json
     commodity_detail.json
     monthly_trends.json
   csv/                     <- CSV files for human/team reference
     us_transborder.csv
-    us_mexico.csv
-    texas_mexico.csv
+    us_mexico_ports.csv
+    texas_mexico_ports.csv
+    texas_mexico_commodities.csv
     us_state_trade.csv
     commodity_detail.csv
     monthly_trends.csv
@@ -127,7 +129,7 @@ The annual summary files (`dot{1,2,3}_YYYY.csv`) have the same columns but drop 
 9. **Decode Canadian provinces**: Map `CANPROV` X-prefix codes using `canadian_province_codes.json`
 10. **Decode Mexican states**: Map `MEXSTATE` codes using `mexican_state_codes.json`. Fix known errata: code `BN` (Apr 1994 - May 1998) → `BC` (Baja California)
 11. **Parse trade values**: `VALUE` field to numeric (US dollars)
-12. **Parse weight values**: `SHIPWT` in kilograms → convert to short tons (÷ 907.185). **Missing weight policy: store as NULL** (not zero). Weight is unavailable for most exports (except air/vessel) and some legacy records. NULLs are preserved through aggregation — sums skip NULLs, and dashboard displays "N/A" where weight is unavailable.
+12. **Parse weight values**: `SHIPWT` in kilograms → convert to short tons (÷ 907.185). **Missing weight policy: store as NULL** (not zero). Weight is unavailable for legacy export tables (D03–D06, which lack `SHIPWT`) and some modern export records. NULLs are preserved through aggregation — sums skip NULLs, and dashboard displays "N/A" where weight is unavailable.
 13. **Unknown code validation**: For every decode step (mode, commodity, port, state, country, trade type, province), log any code value found in the raw data that is not present in the corresponding config JSON. Do not silently drop these records — keep them with the raw code value and log the mismatch to a report file. This catches retired port codes, historical codes not in the current BTS data dictionary, or data entry errors.
 14. **Drop duplicates** and flag data quality issues
 14. **Add computed columns**: `YearMonth` (YYYY-MM format for time series)
@@ -146,7 +148,7 @@ Commodity     (str)     -- HS 2-digit commodity description (decoded from commod
 HSCode        (str)     -- HS 2-digit commodity code (01-99)
 TradeType     (str)     -- Export, Import
 TradeValue    (float)   -- Value in US dollars
-Weight        (float)   -- Weight in short tons; NULL when not reported (exports except air/vessel, and some legacy records)
+Weight        (float)   -- Weight in short tons; NULL when not reported (legacy export tables D03–D06 lack SHIPWT)
 Lat           (float)   -- Port latitude (where available)
 Lon           (float)   -- Port longitude (where available)
 Region        (str)     -- Texas border region (for TX ports: El Paso, Laredo, Pharr)
@@ -179,49 +181,104 @@ Region        (str)     -- Texas border region (for TX ports: El Paso, Laredo, P
 **Script**: `02-Data-Staging/Scripts/05_build_outputs.py`
 
 **Input**: `02-Data-Staging/cleaned/` or `02-Data-Staging/transborder.db`
-**Output**: 6 datasets, each in two formats, placed in `03-Processed-Data/`
+**Output**: 7 datasets, each in two formats (JSON + CSV), placed in `03-Processed-Data/`
 
 ### Two output formats, two purposes
 
-| Format | Location | Purpose | Size Constraint |
-|---|---|---|---|
-| **CSV** | `03-Processed-Data/csv/` | Human review — open in Excel, spot-check data, share with team | None |
-| **JSON** | `03-Processed-Data/json/` | Dashboard — loaded via `fetch()` + `JSON.parse()` in the browser | None (optimize later if needed) |
+| Format | Location | Purpose |
+|---|---|---|
+| **JSON** | `03-Processed-Data/json/` | Dashboard — loaded via `fetch()` + `JSON.parse()` in the browser. GitHub Pages serves these with automatic gzip compression (~5:1 ratio for JSON), so a 28 MB file transfers as ~5 MB over the wire. |
+| **CSV** | `03-Processed-Data/csv/` | Human review — open in Excel, spot-check data, share with team |
 
-**Both formats carry the same full level of detail** — individual HS commodity codes at every aggregation level. JSON uses compact formatting (no pretty-print) with short key names where appropriate.
+### Dataset design principles
+
+**Chart-driven:** Each dataset is designed to serve specific dashboard charts. The minimum number of tables covers all Phase 3 charts. Shared tables serve multiple pages where their grain is sufficient; larger tables are split only when necessary to avoid loading data no chart needs.
+
+**No joins:** The BTS publishes 3 parallel cross-tabulations (DOT1=State×Port, DOT2=State×Commodity, DOT3=Port×Commodity). These are independent aggregations. Each output dataset draws from exactly one DOT table.
+
+**Evolving:** This dataset list is tuned to the Phase 3 chart plan as of initial design. As Phase 3 development reveals new chart needs or performance issues, `05_build_outputs.py` is updated to add or restructure datasets.
+
+**Legacy trade direction:** All pre-2007 records have known trade direction derived from the table number: D03–D06 = Export, D09–D12 = Import. There are no "Unknown" TradeType records in the dataset.
 
 ### Dataset definitions
 
-| Dataset | Description | CSV Aggregation | JSON Aggregation | Key Columns | Store Property |
-|---|---|---|---|---|---|
-| `us_transborder` | All US trade (Canada + Mexico) | Annual, by country/mode/commodity group | Same as CSV | Year, Country, Mode, CommodityGroup, TradeType, TradeValue, Weight | `usTransborder` |
-| `us_mexico` | US-Mexico subset, port-level detail | Annual, by port/state/mode/commodity | Same as CSV | Year, Port, State, Mode, CommodityGroup, Commodity, HSCode, TradeType, TradeValue, Weight, Lat, Lon | `usMexico` |
-| `texas_mexico` | Texas-Mexico deep-dive | Annual, by port/mode/commodity/region | Same as CSV | Year, Port, Mode, CommodityGroup, Commodity, HSCode, TradeType, TradeValue, Weight, Region, Lat, Lon | `texasMexico` |
-| `us_state_trade` | State-level trade (all countries) | Annual, by state/country/mode | Same as CSV | State, StateCode, Year, Country, TradeType, Mode, TradeValue | `usStateTrade` |
-| `commodity_detail` | Commodity-level detail | Annual, by commodity/country/mode | Same as CSV | Year, Country, CommodityGroup, Commodity, HSCode, TradeType, Mode, TradeValue, Weight | `commodityDetail` |
-| `monthly_trends` | Monthly time-series | Monthly, by country/mode | Same as CSV | Year, Month, YearMonth, Country, Mode, TradeType, TradeValue | `monthlyTrends` |
+| # | Dataset | Source | Grain | Key Columns | Store Property | Dashboard Pages & Charts |
+|---|---|---|---|---|---|---|
+| 1 | `us_transborder` | DOT2 | Annual | Year, Country, Mode, TradeType, TradeValue, Weight | `usTransborder` | **Overview:** StatCards, LineChart (annual trends), DonutChart (by mode), StackedBarChart (Canada vs Mexico). **Trade by Mode:** all mode charts. Loaded at app init (~0.2 MB). |
+| 2 | `us_mexico_ports` | DOT1 (Mexico) | Annual | Year, PortCode, Port, StateCode, State, Mode, TradeType, TradeValue, Weight, FreightCharges | `usMexicoPorts` | **US-Mexico:** BarChart (top ports), DataTable (port detail). **US-Mexico Ports:** PortMap, BarChart (port ranking), LineChart (port trends), DataTable. Mode kept for port-by-mode filtering. |
+| 3 | `texas_mexico_ports` | DOT1 (TX border ports) | Annual | Year, PortCode, Port, Mode, TradeType, TradeValue, Weight, FreightCharges, Region, Lat, Lon | `texasMexicoPorts` | **Texas-Mexico Overview tab:** StatCards, LineChart, DonutChart, BarChart. **Ports tab:** PortMap, BarChart, LineChart, DataTable. **Modes tab:** all mode charts. |
+| 4 | `texas_mexico_commodities` | DOT3 (TX border ports, 2007+) | Annual | Year, PortCode, Port, HSCode, Commodity, CommodityGroup, Mode, TradeType, TradeValue, Weight | `texasMexicoCommodities` | **Texas-Mexico Commodities tab:** TreemapChart, BarChart (top commodities), LineChart (commodity trends), DataTable. |
+| 5 | `us_state_trade` | DOT1 | Annual | Year, StateCode, State, Country, Mode, TradeType, TradeValue | `usStateTrade` | **Trade by State:** BarChart (state ranking), LineChart (state trends), DataTable. **Overview:** BarChart (Top 10 States). |
+| 6 | `commodity_detail` | DOT2 | Annual | Year, Country, HSCode, Commodity, CommodityGroup, Mode, TradeType, TradeValue, Weight | `commodityDetail` | **Commodity Analysis:** TreemapChart, BarChart, LineChart, DataTable. **US-Mexico** (commodity section): TreemapChart, BarChart, DataTable (filtered to Country=Mexico in browser). |
+| 7 | `monthly_trends` | DOT1 | Monthly | Year, Month, Country, Mode, TradeType, TradeValue | `monthlyTrends` | **Texas-Mexico Monthly tab:** LineChart (monthly trends), Heatmap/StackedBarChart (month×year), DataTable. |
+
+**Why 7 and not 8:** The previous `us_mexico_commodities` dataset (DOT2, Mexico-only with State dimension, 423K rows / 108 MB) was eliminated. No US-Mexico page chart breaks down commodities by state — the TreemapChart and commodity BarChart only need HSCode × CommodityGroup × Mode × TradeType, which `commodity_detail` already provides (54K rows / 13 MB). Filter to Country=Mexico in the browser.
+
+**Why `us_transborder` dropped CommodityGroup:** No chart on the Overview or Trade by Mode pages uses CommodityGroup. Commodity charts on the Commodity Analysis and US-Mexico pages pull from `commodity_detail`. Dropping the dimension collapses ~15K rows to ~1.6K rows (33 years × 2 countries × 8 modes × 3 trade types).
 
 ### Estimated sizes
 
-Both CSV and JSON files carry the same full detail. Estimated sizes per format:
-
-| Dataset | Estimated Size |
-|---|---|
-| `us_transborder` | ~0.8 MB |
-| `us_mexico` | ~30–54 MB |
-| `texas_mexico` | ~5–18 MB |
-| `us_state_trade` | ~2.8 MB |
-| `commodity_detail` | ~5.6 MB |
-| `monthly_trends` | ~0.6 MB |
-| **Total** | **~45–82 MB** |
+| Dataset | Source | Rows (est) | JSON Raw | JSON gzipped (est) | Loaded When |
+|---|---|---|---|---|---|
+| `us_transborder` | DOT2 | ~1,600 | ~0.2 MB | ~0.05 MB | App init |
+| `us_mexico_ports` | DOT1 | ~153,000 | ~28 MB | ~5 MB | Lazy (US-Mexico page) |
+| `texas_mexico_ports` | DOT1 | ~2,500 | ~0.5 MB | ~0.1 MB | Lazy (Texas-Mexico page) |
+| `texas_mexico_commodities` | DOT3 | ~42,000 | ~10.6 MB | ~1.8 MB | Lazy (TX Commodities tab) |
+| `us_state_trade` | DOT1 | ~32,000 | ~4.1 MB | ~0.8 MB | Lazy (Trade by State / Overview) |
+| `commodity_detail` | DOT2 | ~54,000 | ~13 MB | ~2.5 MB | Lazy (Commodities / US-Mexico) |
+| `monthly_trends` | DOT1 | ~11,000 | ~1.1 MB | ~0.2 MB | Lazy (TX Monthly tab) |
+| **Total** | | **~296,000** | **~58 MB** | **~10 MB** | |
 
 **Pre-Aggregation Strategy:**
-- Annual aggregation for most views (reduces row count dramatically)
+- Annual aggregation for 6 of 7 datasets (reduces row count dramatically)
 - Monthly granularity only for `monthly_trends` (used only on Texas-Mexico Monthly tab)
-- Trade values summed per group
-- Weight summed per group (NULLs preserved — `SUM` skips NULLs; result is NULL only if all inputs are NULL)
+- Trade values summed per group; Weight summed per group (NULLs preserved — `SUM` skips NULLs; result is NULL only if all inputs are NULL)
+- No joins between DOT tables — each dataset sourced from exactly one table
 
-**Size Note:** No size cap is enforced. If browser performance becomes an issue with the JSON files, optimization (CommodityGroup aggregation, top-N filtering, etc.) will be addressed in a later phase.
+**Future optimization (if needed in Phase 3):** If `us_mexico_ports` (28 MB) causes slow page loads despite gzip, it can be split into a port-summary table (without Mode, ~3 MB) loaded immediately, and a port-by-mode table (28 MB) loaded only when the Mode filter is applied.
+
+## 2.3.1 Data Caveats (for dashboard display)
+
+The following caveats were confirmed by querying the normalized database (2026-03-22). These match the notes shown on the BTS TransBorder dashboard and must be surfaced in our dashboard wherever the affected fields are displayed.
+
+### Weight & Freight Caveats
+
+| Caveat | Scope | Details |
+|---|---|---|
+| **Shipment weight for exports: only Air & Vessel modes** | All export records for Truck, Rail, Pipeline, Mail, Other/Unknown | Weight = 0 for these modes. Applies 1993-2025. Dashboard should show "N/A" or a note when displaying export weight for surface modes. |
+| **Shipment weight for imports: available for all modes** | All import records | Near-100% availability across all modes. No caveat needed for import weight. |
+| **Freight charges: partial for exports** | Export records (~50% have nonzero values) | Imports have near-100% freight charge data. Export freight charges are less reliable. |
+
+### Geographic Terminology (from BTS)
+
+| Term | BTS Definition |
+|---|---|
+| **Port State** | The U.S. state where the Port of Entry is located. |
+| **Port Coast** | The U.S. coast where the Port of Entry is located. |
+| **Port Border** | The border (Canadian or Mexican) where the Port of Entry is located. |
+
+These terms should be used consistently in the dashboard and defined in the About Data page.
+
+### Port History Changes
+
+| Change | Date | Details |
+|---|---|---|
+| **Ysleta separated from El Paso** | March 2020 | Customs and Border Protection separated the Ysleta Port of Entry from the El Paso Port of Entry beginning with March 2020 data. Historical data before March 2020 includes Ysleta activity under El Paso. This affects time-series comparisons for both ports. |
+
+### Other Caveats
+
+| Caveat | Scope | Details |
+|---|---|---|
+| **DF (Domestic/Foreign) only meaningful for exports** | Export records | DF=1 (domestic origin), DF=2 (re-export/foreign origin). For imports, DF is NULL in modern data. |
+| **Port x Commodity data starts Jan 2007** | DOT3-sourced views (us_mexico, texas_mexico with commodity detail) | The Port x Commodity cross-tabulation did not exist before Jan 2007. Views combining port + commodity are limited to 2007+. |
+| **Legacy trade direction is known** | All pre-2007 rows | Trade direction is derived from table number: D03–D06 = Export, D09–D12 = Import. No records have unknown TradeType. |
+| **Containerization code values** | All modes, modern data | 0 = not containerized, 1 = containerized, X = not applicable/unknown. Pipeline always 0 or X. |
+
+### How to surface these caveats
+
+1. **JSON output files**: Encode caveats as a `_notes` metadata array per dataset so the dashboard can display them contextually.
+2. **Dashboard UI (Phase 3)**: Show relevant notes as footnotes or info-tooltips wherever the affected fields are displayed (e.g., a note under any chart showing export weight).
+3. **About Data page (Phase 3)**: Dedicate a section to data limitations and terminology. Include all caveats above, the BTS geographic terminology definitions, port history changes, and the HS commodity code system explanation.
 
 ## 2.4 Validation
 
@@ -259,8 +316,8 @@ To reduce rework and avoid validating the wrong intermediate outputs, Phase 2 sh
    - Use the database for validation, exploration, and downstream output generation.
 
 4. **Implement and run `05_build_outputs.py`**
-   - Generate the 6 dashboard JSON files and 6 reference CSVs.
-   - Apply browser-size optimization only at this stage, after the normalized source data is stable.
+   - Generate the 7 dashboard JSON files and 7 reference CSVs.
+   - Datasets are chart-driven: each serves specific Phase 3 dashboard charts.
 
 5. **Implement and run `06_validate.py`**
    - Validate normalized data, database tables, and final outputs.
@@ -271,12 +328,12 @@ To reduce rework and avoid validating the wrong intermediate outputs, Phase 2 sh
 
 ## Deliverables Checklist
 
-- [ ] `02-Data-Staging/Scripts/03_normalize.py` -- Normalization script
-- [ ] `02-Data-Staging/cleaned/` -- Normalized CSVs
-- [ ] `02-Data-Staging/Scripts/04_create_db.py` -- SQLite creation script
-- [ ] `02-Data-Staging/transborder.db` -- Validation database
-- [ ] `02-Data-Staging/Scripts/05_build_outputs.py` -- Dashboard JSON + reference CSV generator
-- [ ] 6 dashboard-ready JSON files in `03-Processed-Data/json/` (full HS-code detail)
-- [ ] 6 reference CSV files in `03-Processed-Data/csv/` (same detail, for human review in Excel)
+- [x] `02-Data-Staging/Scripts/03_normalize.py` -- Normalization script (completed 2026-03-22)
+- [x] `02-Data-Staging/cleaned/` -- Normalized CSVs: dot1 (10.3M rows, 906 MB), dot2 (25.4M rows, 4.4 GB), dot3 (3.9M rows, 656 MB)
+- [x] `02-Data-Staging/Scripts/04_create_db.py` -- SQLite creation script (completed 2026-03-22)
+- [x] `02-Data-Staging/transborder.db` -- SQLite database (10.1 GB, 3 tables, 1993-2025)
+- [ ] `02-Data-Staging/Scripts/05_build_outputs.py` -- Chart-driven dashboard JSON + reference CSV generator
+- [ ] 7 dashboard-ready JSON files in `03-Processed-Data/json/` (~58 MB raw, ~10 MB gzipped)
+- [ ] 7 reference CSV files in `03-Processed-Data/csv/` (same data, for human review in Excel)
 - [ ] `02-Data-Staging/Scripts/06_validate.py` -- Validation script
 - [ ] Validation report (printed to console or saved to `02-Data-Staging/docs/validation_report.md`)

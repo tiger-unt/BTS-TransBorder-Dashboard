@@ -1,0 +1,955 @@
+Year,Country,Mode,TradeType,TradeValue,Weight
+1993,Canada,Mail (U.S. Postal Service),Export,16493744.0,
+1993,Canada,Mail (U.S. Postal Service),Unknown,4688398.0,683.53
+1993,Canada,Other/Unknown,Export,18041459644.0,
+1993,Canada,Other/Unknown,Unknown,2535334995.0,9644.06
+1993,Canada,Pipeline,Export,78784736.0,
+1993,Canada,Pipeline,Unknown,6744526443.0,41958584.06
+1993,Canada,Rail,Export,7886686903.0,
+1993,Canada,Rail,Unknown,16522423806.0,32523073.87
+1993,Canada,Truck,Export,59944288351.0,
+1993,Canada,Truck,Unknown,51192036132.0,37383710.95
+1993,Mexico,Mail (U.S. Postal Service),Export,6160726.0,
+1993,Mexico,Mail (U.S. Postal Service),Unknown,1333259.0,
+1993,Mexico,Other/Unknown,Export,7829641001.0,
+1993,Mexico,Other/Unknown,Unknown,438580112.0,
+1993,Mexico,Pipeline,Export,618329.0,
+1993,Mexico,Pipeline,Unknown,227810779.0,
+1993,Mexico,Rail,Export,2103568900.0,
+1993,Mexico,Rail,Unknown,6222798108.0,
+1993,Mexico,Truck,Export,18744071935.0,
+1993,Mexico,Truck,Unknown,19839542881.0,
+1994,Canada,Mail (U.S. Postal Service),Export,69256773.0,
+1994,Canada,Mail (U.S. Postal Service),Import,57836617.0,
+1994,Canada,Mail (U.S. Postal Service),Unknown,5547317.0,287.95
+1994,Canada,Other/Unknown,Export,21753164389.0,
+1994,Canada,Other/Unknown,Import,15347812875.0,
+1994,Canada,Other/Unknown,Unknown,3991574151.0,42189.16
+1994,Canada,Pipeline,Export,133772054.0,
+1994,Canada,Pipeline,Import,114587941.0,
+1994,Canada,Pipeline,Unknown,9728559613.0,62846183.07
+1994,Canada,Rail,Export,13593911057.0,
+1994,Canada,Rail,Import,10392814229.0,
+1994,Canada,Rail,Unknown,30322800351.0,47927799.18
+1994,Canada,Truck,Export,89151128363.0,
+1994,Canada,Truck,Import,68797678683.0,
+1994,Canada,Truck,Unknown,79456401325.0,55885841.3
+1994,Mexico,Mail (U.S. Postal Service),Export,5492502.0,
+1994,Mexico,Mail (U.S. Postal Service),Import,5443761.0,
+1994,Mexico,Mail (U.S. Postal Service),Unknown,1757141.0,
+1994,Mexico,Other/Unknown,Export,3238867830.0,
+1994,Mexico,Other/Unknown,Import,2296598850.0,
+1994,Mexico,Other/Unknown,Unknown,608674365.0,
+1994,Mexico,Pipeline,Export,420097.0,
+1994,Mexico,Pipeline,Import,420097.0,
+1994,Mexico,Pipeline,Unknown,155757728.0,
+1994,Mexico,Rail,Export,4191978336.0,
+1994,Mexico,Rail,Import,3186431034.0,
+1994,Mexico,Rail,Unknown,7143925073.0,
+1994,Mexico,Truck,Export,39066439439.0,
+1994,Mexico,Truck,Import,30212939246.0,
+1994,Mexico,Truck,Unknown,32199733742.0,
+1995,Canada,Foreign Trade Zones (FTZs),Unknown,207640317.0,40257.45
+1995,Canada,Mail (U.S. Postal Service),Export,56994146.0,
+1995,Canada,Mail (U.S. Postal Service),Import,56994146.0,
+1995,Canada,Mail (U.S. Postal Service),Unknown,5243988.0,1022.15
+1995,Canada,Other/Unknown,Export,17010453713.0,
+1995,Canada,Other/Unknown,Import,17010453713.0,
+1995,Canada,Other/Unknown,Unknown,3888236267.0,3721.45
+1995,Canada,Pipeline,Export,121349044.0,
+1995,Canada,Pipeline,Import,121349044.0,
+1995,Canada,Pipeline,Unknown,10606587701.0,67665102.12
+1995,Canada,Rail,Export,15271929531.0,
+1995,Canada,Rail,Import,15271929531.0,
+1995,Canada,Rail,Unknown,39996872600.0,51004289.56
+1995,Canada,Truck,Export,97423373370.0,
+1995,Canada,Truck,Import,97423373370.0,
+1995,Canada,Truck,Unknown,88964914249.0,59043831.27
+1995,Mexico,Foreign Trade Zones (FTZs),Unknown,1099153524.0,413450.41
+1995,Mexico,Mail (U.S. Postal Service),Export,26833420.0,
+1995,Mexico,Mail (U.S. Postal Service),Import,26833420.0,
+1995,Mexico,Mail (U.S. Postal Service),Unknown,1252973.0,100.28
+1995,Mexico,Other/Unknown,Export,2025760124.0,
+1995,Mexico,Other/Unknown,Import,2025760124.0,
+1995,Mexico,Other/Unknown,Unknown,865725035.0,6997.37
+1995,Mexico,Pipeline,Export,1016099.0,
+1995,Mexico,Pipeline,Import,1016099.0,
+1995,Mexico,Pipeline,Unknown,27394482.0,228794.38
+1995,Mexico,Rail,Export,4694433432.0,
+1995,Mexico,Rail,Import,4694433432.0,
+1995,Mexico,Rail,Unknown,9137946078.0,3015699.82
+1995,Mexico,Truck,Export,35476062169.0,
+1995,Mexico,Truck,Import,35476184062.0,
+1995,Mexico,Truck,Unknown,43014272051.0,10546600.45
+1996,Canada,Foreign Trade Zones (FTZs),Unknown,223433401.0,106568.39
+1996,Canada,Mail (U.S. Postal Service),Export,53831013.0,
+1996,Canada,Mail (U.S. Postal Service),Import,53831013.0,
+1996,Canada,Mail (U.S. Postal Service),Unknown,6870355.0,6611.92
+1996,Canada,Other/Unknown,Export,19298048775.0,
+1996,Canada,Other/Unknown,Import,19298048775.0,
+1996,Canada,Other/Unknown,Unknown,4968390785.0,37515.4
+1996,Canada,Pipeline,Export,123503283.0,
+1996,Canada,Pipeline,Import,123503283.0,
+1996,Canada,Pipeline,Unknown,12796162243.0,69323145.5
+1996,Canada,Rail,Export,14317099977.0,
+1996,Canada,Rail,Import,14317099977.0,
+1996,Canada,Rail,Unknown,39811012191.0,53808935.68
+1996,Canada,Truck,Export,93699525269.0,
+1996,Canada,Truck,Import,93699525269.0,
+1996,Canada,Truck,Unknown,98400755462.0,63718633.65
+1996,Mexico,Foreign Trade Zones (FTZs),Unknown,2015644833.0,748874.11
+1996,Mexico,Mail (U.S. Postal Service),Unknown,1525358.0,109.2
+1996,Mexico,Other/Unknown,Export,2540088587.0,
+1996,Mexico,Other/Unknown,Import,2540088587.0,
+1996,Mexico,Other/Unknown,Unknown,639210776.0,6356.68
+1996,Mexico,Pipeline,Export,2299845.0,
+1996,Mexico,Pipeline,Import,2299845.0,
+1996,Mexico,Pipeline,Unknown,8120219.0,124601.57
+1996,Mexico,Rail,Export,5119248882.0,
+1996,Mexico,Rail,Import,5119248882.0,
+1996,Mexico,Rail,Unknown,12297683361.0,5306022.24
+1996,Mexico,Truck,Export,44091733069.0,
+1996,Mexico,Truck,Import,44091726084.0,
+1996,Mexico,Truck,Unknown,48349990324.0,15963431.45
+1997,Canada,Foreign Trade Zones (FTZs),Unknown,122435295.0,128207.64
+1997,Canada,Mail (U.S. Postal Service),Export,24149100.0,
+1997,Canada,Mail (U.S. Postal Service),Import,24149100.0,
+1997,Canada,Mail (U.S. Postal Service),Unknown,357951.0,27.92
+1997,Canada,Other/Unknown,Export,9336130209.0,
+1997,Canada,Other/Unknown,Import,9336130209.0,
+1997,Canada,Other/Unknown,Unknown,3572468247.0,21419.08
+1997,Canada,Pipeline,Export,180563920.0,
+1997,Canada,Pipeline,Import,180563920.0,
+1997,Canada,Pipeline,Unknown,13879471184.0,72076188.3
+1997,Canada,Rail,Export,13255608755.0,
+1997,Canada,Rail,Import,13255608755.0,
+1997,Canada,Rail,Unknown,38293042491.0,56607741.1
+1997,Canada,Truck,Export,111173822544.0,
+1997,Canada,Truck,Import,111173822544.0,
+1997,Canada,Truck,Unknown,99814840232.0,66794313.91
+1997,Mexico,Foreign Trade Zones (FTZs),Unknown,2119594219.0,472076.24
+1997,Mexico,Mail (U.S. Postal Service),Export,109745.0,
+1997,Mexico,Mail (U.S. Postal Service),Import,109745.0,
+1997,Mexico,Mail (U.S. Postal Service),Unknown,159475.0,44.28
+1997,Mexico,Other/Unknown,Export,2860539553.0,
+1997,Mexico,Other/Unknown,Import,2860539553.0,
+1997,Mexico,Other/Unknown,Unknown,668196266.0,9510.18
+1997,Mexico,Pipeline,Export,68272041.0,
+1997,Mexico,Pipeline,Import,68272041.0,
+1997,Mexico,Pipeline,Unknown,3595254.0,84676.97
+1997,Mexico,Rail,Export,5648002070.0,
+1997,Mexico,Rail,Import,5648002070.0,
+1997,Mexico,Rail,Unknown,12646931446.0,5617278.12
+1997,Mexico,Truck,Export,55592603601.0,
+1997,Mexico,Truck,Import,55592456005.0,
+1997,Mexico,Truck,Unknown,56716496950.0,17810239.19
+1998,Canada,Foreign Trade Zones (FTZs),Unknown,177916758.0,117031.17
+1998,Canada,Mail (U.S. Postal Service),Export,6814829.0,
+1998,Canada,Mail (U.S. Postal Service),Import,6814829.0,
+1998,Canada,Mail (U.S. Postal Service),Unknown,1736879.0,230.85
+1998,Canada,Other/Unknown,Export,10559549158.0,
+1998,Canada,Other/Unknown,Import,10559549158.0,
+1998,Canada,Other/Unknown,Unknown,4575131543.0,6557.26
+1998,Canada,Pipeline,Export,93380963.0,
+1998,Canada,Pipeline,Import,93380963.0,
+1998,Canada,Pipeline,Unknown,11120091335.0,71943533.84
+1998,Canada,Rail,Export,12279599021.0,
+1998,Canada,Rail,Import,12279599021.0,
+1998,Canada,Rail,Unknown,37374081763.0,58785753.25
+1998,Canada,Truck,Export,114806067118.0,
+1998,Canada,Truck,Import,114806067118.0,
+1998,Canada,Truck,Unknown,108856723057.0,68017260.52
+1998,Mexico,Foreign Trade Zones (FTZs),Unknown,2886691988.0,442063.51
+1998,Mexico,Mail (U.S. Postal Service),Export,95443.0,
+1998,Mexico,Mail (U.S. Postal Service),Import,95443.0,
+1998,Mexico,Mail (U.S. Postal Service),Unknown,166655.0,6.54
+1998,Mexico,Other/Unknown,Export,3470010019.0,
+1998,Mexico,Other/Unknown,Import,3470010019.0,
+1998,Mexico,Other/Unknown,Unknown,917752553.0,9930.77
+1998,Mexico,Pipeline,Export,73350041.0,
+1998,Mexico,Pipeline,Import,73350041.0,
+1998,Mexico,Pipeline,Unknown,2383433.0,63121.34
+1998,Mexico,Rail,Export,6188777197.0,
+1998,Mexico,Rail,Import,6188777197.0,
+1998,Mexico,Rail,Unknown,12029664622.0,5985858.89
+1998,Mexico,Truck,Export,60432106020.0,
+1998,Mexico,Truck,Import,60432066902.0,
+1998,Mexico,Truck,Unknown,65883686596.0,19286194.51
+1999,Canada,Foreign Trade Zones (FTZs),Unknown,111175376.0,107601.15
+1999,Canada,Mail (U.S. Postal Service),Export,5636633.0,
+1999,Canada,Mail (U.S. Postal Service),Import,5636633.0,
+1999,Canada,Mail (U.S. Postal Service),Unknown,13089003.0,181.6
+1999,Canada,Other/Unknown,Export,11359973389.0,
+1999,Canada,Other/Unknown,Import,11359973389.0,
+1999,Canada,Other/Unknown,Unknown,6386898151.0,49026.07
+1999,Canada,Pipeline,Export,113863544.0,
+1999,Canada,Pipeline,Import,113863544.0,
+1999,Canada,Pipeline,Unknown,12055490881.0,57610093.8
+1999,Canada,Rail,Export,11754606520.0,
+1999,Canada,Rail,Import,11754606520.0,
+1999,Canada,Rail,Unknown,46255372213.0,61408153.94
+1999,Canada,Truck,Export,123140019543.0,
+1999,Canada,Truck,Import,123140019543.0,
+1999,Canada,Truck,Unknown,118901435380.0,78677094.42
+1999,Mexico,Foreign Trade Zones (FTZs),Unknown,2624357339.0,242299.13
+1999,Mexico,Mail (U.S. Postal Service),Export,728429.0,
+1999,Mexico,Mail (U.S. Postal Service),Import,728429.0,
+1999,Mexico,Mail (U.S. Postal Service),Unknown,215689.0,21.16
+1999,Mexico,Other/Unknown,Export,3349582950.0,
+1999,Mexico,Other/Unknown,Import,3349582950.0,
+1999,Mexico,Other/Unknown,Unknown,1255828144.0,21131.3
+1999,Mexico,Pipeline,Export,144200146.0,
+1999,Mexico,Pipeline,Import,144200146.0,
+1999,Mexico,Pipeline,Unknown,1549472.0,45669.47
+1999,Mexico,Rail,Export,5710614158.0,
+1999,Mexico,Rail,Import,5710614158.0,
+1999,Mexico,Rail,Unknown,14693445318.0,6681943.02
+1999,Mexico,Truck,Export,66923840039.0,
+1999,Mexico,Truck,Import,66923840039.0,
+1999,Mexico,Truck,Unknown,76447963851.0,21679457.28
+2000,Canada,Foreign Trade Zones (FTZs),Unknown,62798984.0,50281.45
+2000,Canada,Mail (U.S. Postal Service),Export,590803.0,
+2000,Canada,Mail (U.S. Postal Service),Import,590803.0,
+2000,Canada,Mail (U.S. Postal Service),Unknown,4053831.0,80.54
+2000,Canada,Other/Unknown,Export,11913380061.0,
+2000,Canada,Other/Unknown,Import,11913380061.0,
+2000,Canada,Other/Unknown,Unknown,9571012422.0,44389.48
+2000,Canada,Pipeline,Export,161558050.0,
+2000,Canada,Pipeline,Import,161558050.0,
+2000,Canada,Pipeline,Unknown,23117108092.0,76000507.35
+2000,Canada,Rail,Export,12946503608.0,
+2000,Canada,Rail,Import,12946503608.0,
+2000,Canada,Rail,Unknown,49699239528.0,66094271.9
+2000,Canada,Truck,Export,129825337837.0,
+2000,Canada,Truck,Import,129825337837.0,
+2000,Canada,Truck,Unknown,127816281336.0,72445115.93
+2000,Mexico,Foreign Trade Zones (FTZs),Unknown,2125681006.0,125426.39
+2000,Mexico,Mail (U.S. Postal Service),Export,45000.0,
+2000,Mexico,Mail (U.S. Postal Service),Import,45000.0,
+2000,Mexico,Mail (U.S. Postal Service),Unknown,552299.0,8.35
+2000,Mexico,Other/Unknown,Export,3971997607.0,
+2000,Mexico,Other/Unknown,Import,3971997607.0,
+2000,Mexico,Other/Unknown,Unknown,1573883110.0,26687.89
+2000,Mexico,Pipeline,Export,301804909.0,
+2000,Mexico,Pipeline,Import,301804909.0,
+2000,Mexico,Pipeline,Unknown,11533034.0,128690.38
+2000,Mexico,Rail,Export,10495792020.0,
+2000,Mexico,Rail,Import,10495792020.0,
+2000,Mexico,Rail,Unknown,21056113884.0,7314574.05
+2000,Mexico,Truck,Export,82389232448.0,
+2000,Mexico,Truck,Import,82389232448.0,
+2000,Mexico,Truck,Unknown,88668745099.0,22804586.96
+2001,Canada,Foreign Trade Zones (FTZs),Unknown,86067978.0,197037.33
+2001,Canada,Mail (U.S. Postal Service),Export,1078924.0,
+2001,Canada,Mail (U.S. Postal Service),Import,1078924.0,
+2001,Canada,Mail (U.S. Postal Service),Unknown,7238835.0,141.61
+2001,Canada,Other/Unknown,Export,14772024051.0,
+2001,Canada,Other/Unknown,Import,14772024051.0,
+2001,Canada,Other/Unknown,Unknown,10523789931.0,65640.55
+2001,Canada,Pipeline,Export,221326323.0,
+2001,Canada,Pipeline,Import,221326323.0,
+2001,Canada,Pipeline,Unknown,25908459316.0,75381270.9
+2001,Canada,Rail,Export,12972688646.0,
+2001,Canada,Rail,Import,12972688646.0,
+2001,Canada,Rail,Unknown,47197912163.0,66631588.83
+2001,Canada,Truck,Export,117694456635.0,
+2001,Canada,Truck,Import,117694456635.0,
+2001,Canada,Truck,Unknown,117129882407.0,69119662.23
+2001,Mexico,Foreign Trade Zones (FTZs),Unknown,1894932046.0,144601.61
+2001,Mexico,Mail (U.S. Postal Service),Export,107828.0,
+2001,Mexico,Mail (U.S. Postal Service),Import,107828.0,
+2001,Mexico,Mail (U.S. Postal Service),Unknown,53119.0,3.47
+2001,Mexico,Other/Unknown,Export,4017686427.0,
+2001,Mexico,Other/Unknown,Import,4017686427.0,
+2001,Mexico,Other/Unknown,Unknown,1539691853.0,35705.99
+2001,Mexico,Pipeline,Export,296119600.0,
+2001,Mexico,Pipeline,Import,296119600.0,
+2001,Mexico,Pipeline,Unknown,1620159.0,17836.17
+2001,Mexico,Rail,Export,10389405439.0,
+2001,Mexico,Rail,Import,10389405439.0,
+2001,Mexico,Rail,Unknown,22056776869.0,8401203.51
+2001,Mexico,Truck,Export,74223059580.0,
+2001,Mexico,Truck,Import,74223059580.0,
+2001,Mexico,Truck,Unknown,86377249856.0,22519648.88
+2002,Canada,Foreign Trade Zones (FTZs),Unknown,43257256.0,90199.0
+2002,Canada,Mail (U.S. Postal Service),Export,1205445.0,
+2002,Canada,Mail (U.S. Postal Service),Import,1205445.0,
+2002,Canada,Mail (U.S. Postal Service),Unknown,356308.0,28.71
+2002,Canada,Other/Unknown,Export,14026668486.0,
+2002,Canada,Other/Unknown,Import,14026668486.0,
+2002,Canada,Other/Unknown,Unknown,7992721105.0,13181.5
+2002,Canada,Pipeline,Export,174258467.0,
+2002,Canada,Pipeline,Import,174258467.0,
+2002,Canada,Pipeline,Unknown,21832268859.0,74820209.77
+2002,Canada,Rail,Export,13974058533.0,
+2002,Canada,Rail,Import,13974058533.0,
+2002,Canada,Rail,Unknown,46966827116.0,69420936.26
+2002,Canada,Truck,Export,118259121854.0,
+2002,Canada,Truck,Import,118259121854.0,
+2002,Canada,Truck,Unknown,117985262935.0,72960082.33
+2002,Mexico,Foreign Trade Zones (FTZs),Unknown,1446810676.0,456168.3
+2002,Mexico,Mail (U.S. Postal Service),Export,648935.0,
+2002,Mexico,Mail (U.S. Postal Service),Import,648935.0,
+2002,Mexico,Mail (U.S. Postal Service),Unknown,202717.0,41.8
+2002,Mexico,Other/Unknown,Export,3521503209.0,
+2002,Mexico,Other/Unknown,Import,3521503209.0,
+2002,Mexico,Other/Unknown,Unknown,1548890514.0,2126.01
+2002,Mexico,Pipeline,Export,567927109.0,
+2002,Mexico,Pipeline,Import,567927109.0,
+2002,Mexico,Pipeline,Unknown,597552.0,5497.36
+2002,Mexico,Rail,Export,10143004235.0,
+2002,Mexico,Rail,Import,10143004235.0,
+2002,Mexico,Rail,Unknown,20790689267.0,8615140.37
+2002,Mexico,Truck,Export,70924731619.0,
+2002,Mexico,Truck,Import,70924731619.0,
+2002,Mexico,Truck,Unknown,90593608682.0,23383936.26
+2003,Canada,Foreign Trade Zones (FTZs),Unknown,65315237.0,203533.88
+2003,Canada,Mail (U.S. Postal Service),Export,397598.0,
+2003,Canada,Mail (U.S. Postal Service),Unknown,277832.0,50.73
+2003,Canada,Other/Unknown,Export,15099238288.0,
+2003,Canada,Other/Unknown,Unknown,9236564911.0,21480.11
+2003,Canada,Pipeline,Export,759609997.0,
+2003,Canada,Pipeline,Unknown,31451273597.0,78008520.41
+2003,Canada,Rail,Export,14776547822.0,
+2003,Canada,Rail,Unknown,49980875043.0,72650462.55
+2003,Canada,Truck,Export,124234963543.0,
+2003,Canada,Truck,Unknown,116714063713.0,71042516.39
+2003,Mexico,Foreign Trade Zones (FTZs),Unknown,1005380554.0,361347.48
+2003,Mexico,Mail (U.S. Postal Service),Export,356671.0,
+2003,Mexico,Mail (U.S. Postal Service),Unknown,31225.0,2.54
+2003,Mexico,Other/Unknown,Export,3643347661.0,
+2003,Mexico,Other/Unknown,Unknown,1600145314.0,5312.32
+2003,Mexico,Pipeline,Export,155347265.0,
+2003,Mexico,Pipeline,Unknown,211172.0,90.72
+2003,Mexico,Rail,Export,11264930481.0,
+2003,Mexico,Rail,Unknown,19701679154.0,8216177.83
+2003,Mexico,Truck,Export,70550839672.0,
+2003,Mexico,Truck,Unknown,92535039373.0,23911941.54
+2004,Canada,Foreign Trade Zones (FTZs),Unknown,202551652.0,392803.34
+2004,Canada,Mail (U.S. Postal Service),Export,23063147.0,
+2004,Canada,Mail (U.S. Postal Service),Unknown,199981.0,86.25
+2004,Canada,Other/Unknown,Export,17776729475.0,
+2004,Canada,Other/Unknown,Unknown,8994449902.0,11315.16
+2004,Canada,Pipeline,Export,1584243359.0,
+2004,Canada,Pipeline,Unknown,36828266772.0,82605318.14
+2004,Canada,Rail,Export,16596598590.0,
+2004,Canada,Rail,Unknown,57947247940.0,81122168.18
+2004,Canada,Truck,Export,135897470107.0,
+2004,Canada,Truck,Unknown,132762148081.0,72903242.77
+2004,Mexico,Foreign Trade Zones (FTZs),Unknown,679775558.0,285518.59
+2004,Mexico,Mail (U.S. Postal Service),Export,18109359.0,
+2004,Mexico,Mail (U.S. Postal Service),Unknown,31964.0,23.43
+2004,Mexico,Other/Unknown,Export,4216367052.0,
+2004,Mexico,Other/Unknown,Unknown,1838706036.0,9075.52
+2004,Mexico,Pipeline,Export,87173939.0,
+2004,Mexico,Pipeline,Unknown,310870.0,8669.53
+2004,Mexico,Rail,Export,13632874413.0,
+2004,Mexico,Rail,Unknown,20183394150.0,9322804.28
+2004,Mexico,Truck,Export,79349171763.0,
+2004,Mexico,Truck,Unknown,104943826561.0,28203242.71
+2005,Canada,Foreign Trade Zones (FTZs),Unknown,149274359.0,331512.36
+2005,Canada,Mail (U.S. Postal Service),Export,36934554.0,
+2005,Canada,Mail (U.S. Postal Service),Unknown,83241.0,11.47
+2005,Canada,Other/Unknown,Export,19933119949.0,
+2005,Canada,Other/Unknown,Unknown,12184357284.0,10041.76
+2005,Canada,Pipeline,Export,2393860275.0,
+2005,Canada,Pipeline,Unknown,48766478039.0,80823618.11
+2005,Canada,Rail,Export,19321921453.0,
+2005,Canada,Rail,Unknown,60606286443.0,82560578.93
+2005,Canada,Truck,Export,151221654536.0,
+2005,Canada,Truck,Unknown,143695597849.0,71797937.94
+2005,Mexico,Foreign Trade Zones (FTZs),Unknown,360424046.0,48149.86
+2005,Mexico,Mail (U.S. Postal Service),Export,21608950.0,
+2005,Mexico,Mail (U.S. Postal Service),Unknown,17930.0,3.85
+2005,Mexico,Other/Unknown,Export,4622773392.0,
+2005,Mexico,Other/Unknown,Unknown,1990203024.0,36705.21
+2005,Mexico,Pipeline,Export,543280575.0,
+2005,Mexico,Rail,Export,15747653347.0,
+2005,Mexico,Rail,Unknown,20782187557.0,10892365.41
+2005,Mexico,Truck,Export,83341195015.0,
+2005,Mexico,Truck,Unknown,112267625665.0,30134163.3
+2006,Canada,Foreign Trade Zones (FTZs),Unknown,145474719.0,248634.45
+2006,Canada,Mail (U.S. Postal Service),Export,43835035.0,
+2006,Canada,Mail (U.S. Postal Service),Unknown,152957.0,1.44
+2006,Canada,Other/Unknown,Export,20263355676.0,
+2006,Canada,Other/Unknown,Unknown,11736005741.0,11131.77
+2006,Canada,Pipeline,Export,2180043390.0,
+2006,Canada,Pipeline,Unknown,53865219747.0,89299715.0
+2006,Canada,Rail,Export,22477841080.0,
+2006,Canada,Rail,Unknown,63258380901.0,83326920.91
+2006,Canada,Truck,Export,164318147851.0,
+2006,Canada,Truck,Unknown,149883996840.0,68754534.54
+2006,Mexico,Foreign Trade Zones (FTZs),Unknown,423335649.0,283770.15
+2006,Mexico,Mail (U.S. Postal Service),Export,335018.0,
+2006,Mexico,Mail (U.S. Postal Service),Unknown,47465.0,2.9
+2006,Mexico,Other/Unknown,Export,5779074596.0,
+2006,Mexico,Other/Unknown,Unknown,2399227652.0,73702.87
+2006,Mexico,Pipeline,Export,706958930.0,
+2006,Mexico,Pipeline,Unknown,55378478.0,128347.41
+2006,Mexico,Rail,Export,17271215936.0,
+2006,Mexico,Rail,Unknown,25863514447.0,11817267.84
+2006,Mexico,Truck,Export,92991597972.0,
+2006,Mexico,Truck,Unknown,126463643790.0,31287688.51
+2007,Canada,Air,Export,16956825480.0,242920.01
+2007,Canada,Air,Import,9129974902.0,93851.22
+2007,Canada,Foreign Trade Zones (FTZs),Import,433534897.0,787286.28
+2007,Canada,Mail (U.S. Postal Service),Export,50453186.0,0.0
+2007,Canada,Mail (U.S. Postal Service),Import,360648.0,13.03
+2007,Canada,Other/Unknown,Export,22833847369.0,0.0
+2007,Canada,Other/Unknown,Import,12957376853.0,10699.46
+2007,Canada,Pipeline,Export,3334488424.0,0.0
+2007,Canada,Pipeline,Import,55015564222.0,90235149.64
+2007,Canada,Rail,Export,25496819968.0,0.0
+2007,Canada,Rail,Import,65962153203.0,81947319.35
+2007,Canada,Truck,Export,174342729103.0,0.0
+2007,Canada,Truck,Import,150404072351.0,65559249.83
+2007,Canada,Vessel,Export,5422000228.0,35232315.0
+2007,Canada,Vessel,Import,19207842057.0,76533228.74
+2007,Mexico,Air,Export,6823861998.0,63113.05
+2007,Mexico,Air,Import,4684452845.0,103893.26
+2007,Mexico,Foreign Trade Zones (FTZs),Import,751125938.0,84927.05
+2007,Mexico,Mail (U.S. Postal Service),Export,2850944.0,0.0
+2007,Mexico,Other/Unknown,Export,5581047499.0,0.0
+2007,Mexico,Other/Unknown,Import,2696392377.0,1926.07
+2007,Mexico,Pipeline,Export,787353938.0,0.0
+2007,Mexico,Pipeline,Import,168626787.0,333736.51
+2007,Mexico,Rail,Export,19340034202.0,0.0
+2007,Mexico,Rail,Import,27060046647.0,11102832.11
+2007,Mexico,Truck,Export,93047207023.0,0.0
+2007,Mexico,Truck,Import,137036970391.0,31509973.44
+2007,Mexico,Vessel,Export,10958906203.0,26105530.3
+2007,Mexico,Vessel,Import,38401405895.0,103476506.28
+2008,Canada,Air,Export,17723271193.0,245676.66
+2008,Canada,Air,Import,10099291351.0,67984.94
+2008,Canada,Foreign Trade Zones (FTZs),Import,444620918.0,567014.54
+2008,Canada,Mail (U.S. Postal Service),Export,43303836.0,0.0
+2008,Canada,Mail (U.S. Postal Service),Import,75658.0,21.73
+2008,Canada,Other/Unknown,Export,23294449030.0,0.0
+2008,Canada,Other/Unknown,Import,13555096137.0,6395.3
+2008,Canada,Pipeline,Export,4313154813.0,0.0
+2008,Canada,Pipeline,Import,82018498636.0,94627537.98
+2008,Canada,Rail,Export,29437520239.0,0.0
+2008,Canada,Rail,Import,63756927777.0,75088520.31
+2008,Canada,Truck,Export,178593025833.0,0.0
+2008,Canada,Truck,Import,141352516407.0,58029942.43
+2008,Canada,Vessel,Export,7509639240.0,43791193.44
+2008,Canada,Vessel,Import,24328242539.0,71058684.21
+2008,Mexico,Air,Export,7029862478.0,58855.45
+2008,Mexico,Air,Import,5952167935.0,82866.81
+2008,Mexico,Foreign Trade Zones (FTZs),Import,1078933251.0,149231.89
+2008,Mexico,Mail (U.S. Postal Service),Export,605580.0,0.0
+2008,Mexico,Mail (U.S. Postal Service),Import,64722.0,1.3
+2008,Mexico,Other/Unknown,Export,6107213645.0,0.0
+2008,Mexico,Other/Unknown,Import,2716860324.0,1427.07
+2008,Mexico,Pipeline,Export,1250498028.0,0.0
+2008,Mexico,Pipeline,Import,193177052.0,363398.48
+2008,Mexico,Rail,Export,21965202688.0,0.0
+2008,Mexico,Rail,Import,25264779570.0,9960514.47
+2008,Mexico,Truck,Export,100263910640.0,0.0
+2008,Mexico,Truck,Import,134224191876.0,30444053.47
+2008,Mexico,Vessel,Export,14921298885.0,26453867.61
+2008,Mexico,Vessel,Import,46484679598.0,91174204.07
+2009,Canada,Air,Export,15795878180.0,186948.09
+2009,Canada,Air,Import,8570074307.0,45860.27
+2009,Canada,Foreign Trade Zones (FTZs),Import,222922791.0,355824.46
+2009,Canada,Mail (U.S. Postal Service),Export,47829704.0,0.0
+2009,Canada,Mail (U.S. Postal Service),Import,131469.0,9.52
+2009,Canada,Other/Unknown,Export,19233479458.0,0.0
+2009,Canada,Other/Unknown,Import,9098369248.0,6309.51
+2009,Canada,Pipeline,Export,2641770418.0,0.0
+2009,Canada,Pipeline,Import,45630257106.0,94692742.38
+2009,Canada,Rail,Export,19973418265.0,0.0
+2009,Canada,Rail,Import,41058183851.0,53096173.67
+2009,Canada,Truck,Export,142677944784.0,0.0
+2009,Canada,Truck,Import,105078889007.0,47922499.52
+2009,Canada,Vessel,Export,4306029378.0,23732390.16
+2009,Canada,Vessel,Import,15251921922.0,60652586.12
+2009,Mexico,Air,Export,7184983314.0,53357.91
+2009,Mexico,Air,Import,7704414561.0,51512.63
+2009,Mexico,Foreign Trade Zones (FTZs),Import,1155548412.0,88017.2
+2009,Mexico,Mail (U.S. Postal Service),Export,817228.0,0.0
+2009,Mexico,Mail (U.S. Postal Service),Import,98241.0,0.39
+2009,Mexico,Other/Unknown,Export,4881936707.0,0.0
+2009,Mexico,Other/Unknown,Import,2174967503.0,1255.98
+2009,Mexico,Pipeline,Export,788540234.0,0.0
+2009,Mexico,Pipeline,Import,155295266.0,488229.1
+2009,Mexico,Rail,Export,15288185474.0,0.0
+2009,Mexico,Rail,Import,19302532049.0,7950672.45
+2009,Mexico,Truck,Export,89408009790.0,0.0
+2009,Mexico,Truck,Import,117787364033.0,27475510.5
+2009,Mexico,Vessel,Export,11435769542.0,27593109.55
+2009,Mexico,Vessel,Import,28256828067.0,77395791.45
+2010,Canada,Air,Export,17637666040.0,212198.67
+2010,Canada,Air,Import,9427333501.0,48473.79
+2010,Canada,Foreign Trade Zones (FTZs),Import,1167244250.0,2191195.55
+2010,Canada,Mail (U.S. Postal Service),Export,52760094.0,0.0
+2010,Canada,Mail (U.S. Postal Service),Import,172854.0,2.66
+2010,Canada,Other/Unknown,Export,18996093913.0,0.0
+2010,Canada,Other/Unknown,Import,7270599733.0,5547.61
+2010,Canada,Pipeline,Export,3893498683.0,0.0
+2010,Canada,Pipeline,Import,58762369820.0,96304011.61
+2010,Canada,Rail,Export,26081386270.0,0.0
+2010,Canada,Rail,Import,56917519844.0,63854538.43
+2010,Canada,Truck,Export,176574214690.0,0.0
+2010,Canada,Truck,Import,123311656944.0,52616231.28
+2010,Canada,Vessel,Export,6020839602.0,30018484.84
+2010,Canada,Vessel,Import,20779836041.0,62008989.82
+2010,Mexico,Air,Export,7484790915.0,60645.5
+2010,Mexico,Air,Import,10932151237.0,75467.36
+2010,Mexico,Foreign Trade Zones (FTZs),Import,1863814762.0,332652.57
+2010,Mexico,Mail (U.S. Postal Service),Export,550963.0,0.0
+2010,Mexico,Mail (U.S. Postal Service),Import,1981.0,0.04
+2010,Mexico,Other/Unknown,Export,6145913953.0,0.0
+2010,Mexico,Other/Unknown,Import,1878429584.0,1406.79
+2010,Mexico,Pipeline,Export,2099648882.0,0.0
+2010,Mexico,Pipeline,Import,181563026.0,409735.51
+2010,Mexico,Rail,Export,19659821849.0,0.0
+2010,Mexico,Rail,Import,28484586856.0,10324346.58
+2010,Mexico,Truck,Export,111336112998.0,0.0
+2010,Mexico,Truck,Import,148994637881.0,33032612.03
+2010,Mexico,Vessel,Export,16937624916.0,33915472.01
+2010,Mexico,Vessel,Import,37650437679.0,84251707.45
+2011,Canada,Air,Export,18391091843.0,276634.21
+2011,Canada,Air,Import,9886612947.0,44734.47
+2011,Canada,Foreign Trade Zones (FTZs),Import,4106553500.0,7419965.92
+2011,Canada,Mail (U.S. Postal Service),Export,55333847.0,0.0
+2011,Canada,Mail (U.S. Postal Service),Import,714347.0,191.86
+2011,Canada,Other/Unknown,Export,19762171237.0,0.0
+2011,Canada,Other/Unknown,Import,6913371810.0,6559.04
+2011,Canada,Pipeline,Export,6817399675.0,0.0
+2011,Canada,Pipeline,Import,69449896940.0,106524829.54
+2011,Canada,Rail,Export,29681022811.0,0.0
+2011,Canada,Rail,Import,65116422315.0,68806675.31
+2011,Canada,Truck,Export,198233850250.0,0.0
+2011,Canada,Truck,Import,135777995663.0,53336637.12
+2011,Canada,Vessel,Export,8350661159.0,26101341.32
+2011,Canada,Vessel,Import,24073185769.0,58595493.13
+2011,Mexico,Air,Export,7565844843.0,60897.08
+2011,Mexico,Air,Import,10001778121.0,65292.51
+2011,Mexico,Foreign Trade Zones (FTZs),Import,2119622828.0,237493.86
+2011,Mexico,Mail (U.S. Postal Service),Export,1533942.0,0.0
+2011,Mexico,Other/Unknown,Export,6946349711.0,0.0
+2011,Mexico,Other/Unknown,Import,1879604844.0,1542.2
+2011,Mexico,Pipeline,Export,3491775995.0,0.0
+2011,Mexico,Pipeline,Import,281274779.0,590184.87
+2011,Mexico,Rail,Export,24963666875.0,0.0
+2011,Mexico,Rail,Import,32306809091.0,11287779.26
+2011,Mexico,Truck,Export,128047715627.0,0.0
+2011,Mexico,Truck,Import,167473866307.0,35528804.85
+2011,Mexico,Vessel,Export,27271850285.0,41613840.79
+2011,Mexico,Vessel,Import,48810639988.0,81993303.28
+2012,Canada,Air,Export,17932588190.0,286958.2
+2012,Canada,Air,Import,10409269237.0,39721.57
+2012,Canada,Foreign Trade Zones (FTZs),Import,6862104552.0,12884566.45
+2012,Canada,Mail (U.S. Postal Service),Export,56918020.0,0.0
+2012,Canada,Mail (U.S. Postal Service),Import,271314.0,19.31
+2012,Canada,Other/Unknown,Export,21000895070.0,0.0
+2012,Canada,Other/Unknown,Import,6698145190.0,7028.12
+2012,Canada,Pipeline,Export,6415021526.0,0.0
+2012,Canada,Pipeline,Import,67477187643.0,111573510.96
+2012,Canada,Rail,Export,33143882829.0,0.0
+2012,Canada,Rail,Import,69906171074.0,71179793.1
+2012,Canada,Truck,Export,205778688617.0,0.0
+2012,Canada,Truck,Import,139140290320.0,53890697.91
+2012,Canada,Vessel,Export,8322539835.0,24907266.61
+2012,Canada,Vessel,Import,23769194261.0,55746922.91
+2012,Mexico,Air,Export,7413729660.0,59250.16
+2012,Mexico,Air,Import,8664356403.0,59706.82
+2012,Mexico,Foreign Trade Zones (FTZs),Import,2284896608.0,178849.21
+2012,Mexico,Mail (U.S. Postal Service),Export,374572.0,0.0
+2012,Mexico,Mail (U.S. Postal Service),Import,233527.0,58.84
+2012,Mexico,Other/Unknown,Export,8368769735.0,0.0
+2012,Mexico,Other/Unknown,Import,1807551056.0,2199.41
+2012,Mexico,Pipeline,Export,3394695165.0,0.0
+2012,Mexico,Pipeline,Import,214457922.0,485353.77
+2012,Mexico,Rail,Export,27486969245.0,0.0
+2012,Mexico,Rail,Import,36911581837.0,10805689.55
+2012,Mexico,Truck,Export,140753990523.0,0.0
+2012,Mexico,Truck,Import,182416013398.0,37117655.58
+2012,Mexico,Vessel,Export,28487497934.0,42649289.19
+2012,Mexico,Vessel,Import,45294498484.0,72975178.78
+2013,Canada,Air,Export,17897151075.0,233455.99
+2013,Canada,Air,Import,11198227074.0,39703.35
+2013,Canada,Foreign Trade Zones (FTZs),Import,5653483394.0,12063460.39
+2013,Canada,Mail (U.S. Postal Service),Export,59820247.0,0.0
+2013,Canada,Mail (U.S. Postal Service),Import,128634.0,4.51
+2013,Canada,Other/Unknown,Export,21414691527.0,0.0
+2013,Canada,Other/Unknown,Import,8296194240.0,371398.71
+2013,Canada,Pipeline,Export,7617340648.0,0.0
+2013,Canada,Pipeline,Import,72101119868.0,119976511.23
+2013,Canada,Rail,Export,33988970869.0,0.0
+2013,Canada,Rail,Import,71420491020.0,79976776.97
+2013,Canada,Truck,Export,207814497358.0,0.0
+2013,Canada,Truck,Import,140517487442.0,55206301.55
+2013,Canada,Vessel,Export,12817126526.0,30358080.76
+2013,Canada,Vessel,Import,23365631320.0,55227788.66
+2013,Mexico,Air,Export,7646472931.0,57954.44
+2013,Mexico,Air,Import,7334161764.0,61127.24
+2013,Mexico,Foreign Trade Zones (FTZs),Import,3811205185.0,211863.23
+2013,Mexico,Mail (U.S. Postal Service),Export,564489.0,0.0
+2013,Mexico,Mail (U.S. Postal Service),Import,12315.0,0.19
+2013,Mexico,Other/Unknown,Export,9380189745.0,0.0
+2013,Mexico,Other/Unknown,Import,1908374524.0,4807.23
+2013,Mexico,Pipeline,Export,3702133383.0,0.0
+2013,Mexico,Pipeline,Import,242271498.0,526065.0
+2013,Mexico,Rail,Export,27778182485.0,0.0
+2013,Mexico,Rail,Import,42072862115.0,12423271.98
+2013,Mexico,Truck,Export,150379000681.0,0.0
+2013,Mexico,Truck,Import,184972066763.0,37874153.98
+2013,Mexico,Vessel,Export,27192525789.0,42213454.14
+2013,Mexico,Vessel,Import,40187845681.0,69969513.46
+2014,Canada,Air,Export,16959371292.0,185259.64
+2014,Canada,Air,Import,11418738986.0,38605.13
+2014,Canada,Foreign Trade Zones (FTZs),Import,6423420623.0,12918233.33
+2014,Canada,Mail (U.S. Postal Service),Export,47922354.0,0.0
+2014,Canada,Mail (U.S. Postal Service),Import,185547.0,7.97
+2014,Canada,Other/Unknown,Export,27505185666.0,0.0
+2014,Canada,Other/Unknown,Import,10068460523.0,1769249.58
+2014,Canada,Pipeline,Export,10287984638.0,0.0
+2014,Canada,Pipeline,Import,78848255343.0,132716702.02
+2014,Canada,Rail,Export,34798909290.0,0.0
+2014,Canada,Rail,Import,69356080646.0,82201992.49
+2014,Canada,Truck,Export,204856827506.0,0.0
+2014,Canada,Truck,Import,149098668993.0,59742638.17
+2014,Canada,Vessel,Export,17669009742.0,43769816.87
+2014,Canada,Vessel,Import,20848769899.0,55015548.51
+2014,Mexico,Air,Export,8664856947.0,63068.63
+2014,Mexico,Air,Import,6956004873.0,57611.21
+2014,Mexico,Foreign Trade Zones (FTZs),Import,3222982528.0,284983.71
+2014,Mexico,Mail (U.S. Postal Service),Export,555042.0,0.0
+2014,Mexico,Mail (U.S. Postal Service),Import,3831.0,0.06
+2014,Mexico,Other/Unknown,Export,9155073150.0,0.0
+2014,Mexico,Other/Unknown,Import,1909908953.0,11807.93
+2014,Mexico,Pipeline,Export,4781418653.0,0.0
+2014,Mexico,Pipeline,Import,205867401.0,590490.83
+2014,Mexico,Rail,Export,29578340282.0,0.0
+2014,Mexico,Rail,Import,44111323710.0,13524363.08
+2014,Mexico,Truck,Export,161048615367.0,0.0
+2014,Mexico,Truck,Import,199619203003.0,40498328.7
+2014,Mexico,Vessel,Export,27097321936.0,43055059.78
+2014,Mexico,Vessel,Import,38132182297.0,69928852.29
+2015,Canada,Air,Export,15974552012.0,175856.17
+2015,Canada,Air,Import,10801006641.0,37680.83
+2015,Canada,Foreign Trade Zones (FTZs),Import,3351433925.0,11189075.59
+2015,Canada,Mail (U.S. Postal Service),Export,37984792.0,0.0
+2015,Canada,Mail (U.S. Postal Service),Import,132494.0,9.32
+2015,Canada,Other/Unknown,Export,27898104893.0,0.0
+2015,Canada,Other/Unknown,Import,10014725271.0,1792119.96
+2015,Canada,Pipeline,Export,6564415367.0,0.0
+2015,Canada,Pipeline,Import,46785009310.0,148627328.02
+2015,Canada,Rail,Export,28194917521.0,0.0
+2015,Canada,Rail,Import,62334764931.0,79415488.35
+2015,Canada,Truck,Export,188487100190.0,0.0
+2015,Canada,Truck,Import,146716722725.0,59717621.82
+2015,Canada,Vessel,Export,12859575480.0,47053675.46
+2015,Canada,Vessel,Import,15186513618.0,58032960.0
+2015,Mexico,Air,Export,9795574582.0,60192.1
+2015,Mexico,Air,Import,6619547944.0,55017.06
+2015,Mexico,Foreign Trade Zones (FTZs),Import,4174514878.0,321585.76
+2015,Mexico,Mail (U.S. Postal Service),Export,1239491.0,0.0
+2015,Mexico,Mail (U.S. Postal Service),Import,32416.0,0.99
+2015,Mexico,Other/Unknown,Export,8687051939.0,0.0
+2015,Mexico,Other/Unknown,Import,1963139853.0,15998.83
+2015,Mexico,Pipeline,Export,3459986584.0,0.0
+2015,Mexico,Pipeline,Import,221925237.0,724983.6
+2015,Mexico,Rail,Export,28691637801.0,0.0
+2015,Mexico,Rail,Import,46020836063.0,13630794.52
+2015,Mexico,Truck,Export,163435910516.0,0.0
+2015,Mexico,Truck,Import,213115531291.0,40902656.2
+2015,Mexico,Vessel,Export,22305969621.0,48521211.71
+2015,Mexico,Vessel,Import,22625579708.0,65032697.72
+2016,Canada,Air,Export,14989961517.0,174604.66
+2016,Canada,Air,Import,11092730041.0,38764.67
+2016,Canada,Foreign Trade Zones (FTZs),Import,1375033340.0,5656645.28
+2016,Canada,Mail (U.S. Postal Service),Export,36243774.0,0.0
+2016,Canada,Mail (U.S. Postal Service),Import,163574.0,27.43
+2016,Canada,Other/Unknown,Export,28374564474.0,0.0
+2016,Canada,Other/Unknown,Import,8842115695.0,1714886.16
+2016,Canada,Pipeline,Export,7976096674.0,0.0
+2016,Canada,Pipeline,Import,37775378921.0,155499521.0
+2016,Canada,Rail,Export,29656163951.0,0.0
+2016,Canada,Rail,Import,58715682930.0,75969821.24
+2016,Canada,Truck,Export,178410403435.0,0.0
+2016,Canada,Truck,Import,148817229020.0,61566488.09
+2016,Canada,Vessel,Export,6517214760.0,29615450.3
+2016,Canada,Vessel,Import,11448435485.0,51385625.57
+2016,Mexico,Air,Export,8669170213.0,55995.18
+2016,Mexico,Air,Import,6925223114.0,57875.83
+2016,Mexico,Foreign Trade Zones (FTZs),Import,4392777063.0,340809.16
+2016,Mexico,Mail (U.S. Postal Service),Export,3093471.0,0.0
+2016,Mexico,Mail (U.S. Postal Service),Import,4410.0,0.09
+2016,Mexico,Other/Unknown,Export,8171466720.0,0.0
+2016,Mexico,Other/Unknown,Import,2681999808.0,97453.3
+2016,Mexico,Pipeline,Export,3737053552.0,0.0
+2016,Mexico,Pipeline,Import,195369275.0,703868.17
+2016,Mexico,Rail,Export,28581342496.0,0.0
+2016,Mexico,Rail,Import,48598581390.0,14328517.48
+2016,Mexico,Truck,Export,159542328201.0,0.0
+2016,Mexico,Truck,Import,213210756841.0,44549175.65
+2016,Mexico,Vessel,Export,22254645814.0,56108928.6
+2016,Mexico,Vessel,Import,18146327766.0,57192458.87
+2017,Canada,Air,Export,15847621739.0,178934.63
+2017,Canada,Air,Import,11322749985.0,40085.04
+2017,Canada,Foreign Trade Zones (FTZs),Import,2045699925.0,5539762.16
+2017,Canada,Mail (U.S. Postal Service),Export,43608430.0,0.0
+2017,Canada,Mail (U.S. Postal Service),Import,167951.0,8.56
+2017,Canada,Other/Unknown,Export,30523146456.0,0.0
+2017,Canada,Other/Unknown,Import,7876158538.0,47792.8
+2017,Canada,Pipeline,Export,9986381206.0,0.0
+2017,Canada,Pipeline,Import,51629903390.0,171689699.6
+2017,Canada,Rail,Export,32549846721.0,0.0
+2017,Canada,Rail,Import,61649448658.0,82823211.48
+2017,Canada,Truck,Export,185692509851.0,0.0
+2017,Canada,Truck,Import,150401225814.0,62849604.73
+2017,Canada,Vessel,Export,7828566626.0,30211715.11
+2017,Canada,Vessel,Import,15049875523.0,57501174.47
+2017,Mexico,Air,Export,9178989760.0,63264.7
+2017,Mexico,Air,Import,7478316447.0,71365.18
+2017,Mexico,Foreign Trade Zones (FTZs),Import,7488587981.0,363818.41
+2017,Mexico,Mail (U.S. Postal Service),Export,2122348.0,0.0
+2017,Mexico,Mail (U.S. Postal Service),Import,21252.0,14.49
+2017,Mexico,Other/Unknown,Export,8702764250.0,0.0
+2017,Mexico,Other/Unknown,Import,3121785776.0,193060.26
+2017,Mexico,Pipeline,Export,3469328469.0,0.0
+2017,Mexico,Pipeline,Import,158002259.0,585875.59
+2017,Mexico,Rail,Export,28056158178.0,0.0
+2017,Mexico,Rail,Import,51887804206.0,14924387.37
+2017,Mexico,Truck,Export,165271502769.0,0.0
+2017,Mexico,Truck,Import,219462100152.0,46261522.4
+2017,Mexico,Vessel,Export,28307796863.0,66602149.87
+2017,Mexico,Vessel,Import,24448576910.0,56152976.49
+2018,Canada,Air,Export,17472504660.0,192501.25
+2018,Canada,Air,Import,12279982803.0,43632.81
+2018,Canada,Foreign Trade Zones (FTZs),Import,2087872706.0,5011405.57
+2018,Canada,Mail (U.S. Postal Service),Export,43512960.0,0.0
+2018,Canada,Mail (U.S. Postal Service),Import,80721.0,0.03
+2018,Canada,Other/Unknown,Export,31163625866.0,0.0
+2018,Canada,Other/Unknown,Import,7388497473.0,81062.8
+2018,Canada,Pipeline,Export,10537383075.0,0.0
+2018,Canada,Pipeline,Import,57757096797.0,171516643.05
+2018,Canada,Rail,Export,32868522180.0,0.0
+2018,Canada,Rail,Import,67597213186.0,93435734.44
+2018,Canada,Truck,Export,192894469400.0,0.0
+2018,Canada,Truck,Import,155387996772.0,61697268.12
+2018,Canada,Vessel,Export,13739001716.0,41721469.2
+2018,Canada,Vessel,Import,15982342069.0,55363212.92
+2018,Mexico,Air,Export,9780066157.0,63950.64
+2018,Mexico,Air,Import,7294417015.0,72965.96
+2018,Mexico,Foreign Trade Zones (FTZs),Import,7689835599.0,362470.18
+2018,Mexico,Mail (U.S. Postal Service),Export,1120094.0,0.0
+2018,Mexico,Other/Unknown,Export,8961316385.0,0.0
+2018,Mexico,Other/Unknown,Import,3476992321.0,226075.95
+2018,Mexico,Pipeline,Export,5045025890.0,0.0
+2018,Mexico,Pipeline,Import,147690041.0,556558.64
+2018,Mexico,Rail,Export,29951801043.0,0.0
+2018,Mexico,Rail,Import,48421065001.0,15189532.12
+2018,Mexico,Truck,Export,177175728430.0,0.0
+2018,Mexico,Truck,Import,246779279171.0,52042151.04
+2018,Mexico,Vessel,Export,34095299330.0,73410553.7
+2018,Mexico,Vessel,Import,32718459473.0,61499137.36
+2019,Canada,Air,Export,18568501490.0,182750.27
+2019,Canada,Air,Import,14746300750.0,45078.63
+2019,Canada,Foreign Trade Zones (FTZs),Import,2279398486.0,4761858.98
+2019,Canada,Mail (U.S. Postal Service),Export,37354721.0,0.0
+2019,Canada,Mail (U.S. Postal Service),Import,54422.0,1.11
+2019,Canada,Other/Unknown,Export,30565156561.0,0.0
+2019,Canada,Other/Unknown,Import,8285483304.0,300934.88
+2019,Canada,Pipeline,Export,9131415077.0,0.0
+2019,Canada,Pipeline,Import,58230495827.0,179754895.68
+2019,Canada,Rail,Export,33121262220.0,0.0
+2019,Canada,Rail,Import,63178234582.0,92340664.55
+2019,Canada,Truck,Export,187131079110.0,0.0
+2019,Canada,Truck,Import,155943850064.0,59928183.6
+2019,Canada,Vessel,Export,13827120708.0,42940198.33
+2019,Canada,Vessel,Import,17071877681.0,61412376.89
+2019,Mexico,Air,Export,9117010502.0,53670.6
+2019,Mexico,Air,Import,7087245902.0,63868.26
+2019,Mexico,Foreign Trade Zones (FTZs),Import,5182159957.0,354855.11
+2019,Mexico,Mail (U.S. Postal Service),Export,1848351.0,0.0
+2019,Mexico,Mail (U.S. Postal Service),Import,2850.0,0.15
+2019,Mexico,Other/Unknown,Export,8648127892.0,0.0
+2019,Mexico,Other/Unknown,Import,3322757197.0,239497.67
+2019,Mexico,Pipeline,Export,4920726759.0,0.0
+2019,Mexico,Pipeline,Import,127270099.0,571212.99
+2019,Mexico,Rail,Export,28997707988.0,0.0
+2019,Mexico,Rail,Import,53271527326.0,15420453.49
+2019,Mexico,Truck,Export,173701185732.0,0.0
+2019,Mexico,Truck,Import,255498153599.0,53673823.74
+2019,Mexico,Vessel,Export,30987478053.0,67022403.21
+2019,Mexico,Vessel,Import,33636888488.0,59645148.06
+2020,Canada,Air,Export,18317156087.0,168870.38
+2020,Canada,Air,Import,13827144563.0,58248.41
+2020,Canada,Foreign Trade Zones (FTZs),Import,994783614.0,2810217.21
+2020,Canada,Mail (U.S. Postal Service),Export,23431118.0,0.0
+2020,Canada,Mail (U.S. Postal Service),Import,117578.0,0.06
+2020,Canada,Other/Unknown,Export,28629076245.0,0.0
+2020,Canada,Other/Unknown,Import,7705191138.0,25569.11
+2020,Canada,Pipeline,Export,6609665038.0,0.0
+2020,Canada,Pipeline,Import,41549249281.0,179380548.29
+2020,Canada,Rail,Export,26454109783.0,0.0
+2020,Canada,Rail,Import,52241779012.0,87329723.59
+2020,Canada,Truck,Export,166373542463.0,0.0
+2020,Canada,Truck,Import,142639099699.0,61087750.5
+2020,Canada,Vessel,Export,8742334558.0,34710018.09
+2020,Canada,Vessel,Import,11424417451.0,58049897.31
+2020,Mexico,Air,Export,7828317272.0,41453.25
+2020,Mexico,Air,Import,6519364155.0,66452.54
+2020,Mexico,Foreign Trade Zones (FTZs),Import,4555570769.0,346126.01
+2020,Mexico,Mail (U.S. Postal Service),Export,475526.0,0.0
+2020,Mexico,Other/Unknown,Export,7059170773.0,0.0
+2020,Mexico,Other/Unknown,Import,3312201584.0,276300.58
+2020,Mexico,Pipeline,Export,4891883504.0,0.0
+2020,Mexico,Pipeline,Import,61931890.0,382492.99
+2020,Mexico,Rail,Export,23519024014.0,0.0
+2020,Mexico,Rail,Import,46203698899.0,15278567.32
+2020,Mexico,Truck,Export,149550052394.0,0.0
+2020,Mexico,Truck,Import,236130615078.0,60893749.06
+2020,Mexico,Vessel,Export,19822827419.0,52603553.4
+2020,Mexico,Vessel,Import,28610926419.0,61297881.4
+2021,Canada,Air,Export,22059907096.0,185394.27
+2021,Canada,Air,Import,12687748369.0,38174.81
+2021,Canada,Foreign Trade Zones (FTZs),Import,1070662547.0,2451947.85
+2021,Canada,Mail (U.S. Postal Service),Export,24562615.0,0.0
+2021,Canada,Mail (U.S. Postal Service),Import,151077.0,0.05
+2021,Canada,Other/Unknown,Export,33540691155.0,0.0
+2021,Canada,Other/Unknown,Import,8782005638.0,7731.07
+2021,Canada,Pipeline,Export,9590087350.0,0.0
+2021,Canada,Pipeline,Import,76602207598.0,191563022.41
+2021,Canada,Rail,Export,33828374618.0,0.0
+2021,Canada,Rail,Import,68412654870.0,85929429.66
+2021,Canada,Truck,Export,196203049316.0,0.0
+2021,Canada,Truck,Import,170835555941.0,66021524.54
+2021,Canada,Vessel,Export,11754031270.0,34779816.84
+2021,Canada,Vessel,Import,18768817289.0,59010831.51
+2021,Mexico,Air,Export,10728803860.0,58642.42
+2021,Mexico,Air,Import,7257882032.0,72883.08
+2021,Mexico,Foreign Trade Zones (FTZs),Import,5095576677.0,411153.17
+2021,Mexico,Mail (U.S. Postal Service),Export,943049.0,0.0
+2021,Mexico,Other/Unknown,Export,10540602599.0,0.0
+2021,Mexico,Other/Unknown,Import,3553211260.0,225582.55
+2021,Mexico,Pipeline,Export,11935011311.0,0.0
+2021,Mexico,Pipeline,Import,90675242.0,331038.6
+2021,Mexico,Rail,Export,32708858627.0,0.0
+2021,Mexico,Rail,Import,51508629562.0,16930122.35
+2021,Mexico,Truck,Export,181294097677.0,0.0
+2021,Mexico,Truck,Import,279556052211.0,66849064.14
+2021,Mexico,Vessel,Export,29250534930.0,58167234.35
+2021,Mexico,Vessel,Import,37643440288.0,61283713.97
+2022,Canada,Air,Export,23259643624.0,196329.25
+2022,Canada,Air,Import,14200937564.0,44359.35
+2022,Canada,Foreign Trade Zones (FTZs),Import,1588994267.0,2394176.14
+2022,Canada,Mail (U.S. Postal Service),Export,25723942.0,0.0
+2022,Canada,Mail (U.S. Postal Service),Import,48118.0,0.01
+2022,Canada,Other/Unknown,Export,34615079751.0,0.0
+2022,Canada,Other/Unknown,Import,10325755882.0,46147.02
+2022,Canada,Pipeline,Export,14008291576.0,0.0
+2022,Canada,Pipeline,Import,120421455584.0,198176783.06
+2022,Canada,Rail,Export,41569668979.0,0.0
+2022,Canada,Rail,Import,77268995619.0,84619529.22
+2022,Canada,Truck,Export,222810959400.0,0.0
+2022,Canada,Truck,Import,189164716874.0,63692082.09
+2022,Canada,Vessel,Export,18704134126.0,36282927.42
+2022,Canada,Vessel,Import,24758053668.0,56811178.07
+2022,Mexico,Air,Export,11682146585.0,61819.27
+2022,Mexico,Air,Import,8703065693.0,85807.35
+2022,Mexico,Foreign Trade Zones (FTZs),Import,5795756240.0,509198.95
+2022,Mexico,Mail (U.S. Postal Service),Export,1371640.0,0.0
+2022,Mexico,Mail (U.S. Postal Service),Import,21279.0,7.01
+2022,Mexico,Other/Unknown,Export,12189024217.0,0.0
+2022,Mexico,Other/Unknown,Import,3494078650.0,174157.27
+2022,Mexico,Pipeline,Export,14608565762.0,0.0
+2022,Mexico,Pipeline,Import,119354422.0,284312.5
+2022,Mexico,Rail,Export,33282268880.0,0.0
+2022,Mexico,Rail,Import,58109138986.0,19046468.07
+2022,Mexico,Truck,Export,207858326467.0,0.0
+2022,Mexico,Truck,Import,328093137082.0,67853437.31
+2022,Mexico,Vessel,Export,44756159746.0,63117350.75
+2022,Mexico,Vessel,Import,50615398845.0,60531425.85
+2023,Canada,Air,Export,18419475202.0,197089.04
+2023,Canada,Air,Import,17157485147.0,44566.66
+2023,Canada,Foreign Trade Zones (FTZs),Import,3930010902.0,8488744.92
+2023,Canada,Mail (U.S. Postal Service),Export,25255773.0,0.0
+2023,Canada,Mail (U.S. Postal Service),Import,119259.0,0.5
+2023,Canada,Other/Unknown,Export,33855715665.0,0.0
+2023,Canada,Other/Unknown,Import,10891095654.0,43379.55
+2023,Canada,Pipeline,Export,10454744248.0,0.0
+2023,Canada,Pipeline,Import,94741851490.0,201440468.83
+2023,Canada,Rail,Export,41633035659.0,0.0
+2023,Canada,Rail,Import,72226946590.0,82046965.41
+2023,Canada,Truck,Export,233095713120.0,0.0
+2023,Canada,Truck,Import,202606520036.0,63228929.52
+2023,Canada,Vessel,Export,15358865480.0,37270472.54
+2023,Canada,Vessel,Import,19542172094.0,55439851.01
+2023,Mexico,Air,Export,13003213478.0,59820.92
+2023,Mexico,Air,Import,8560077965.0,75186.44
+2023,Mexico,Foreign Trade Zones (FTZs),Import,6273700883.0,515885.13
+2023,Mexico,Mail (U.S. Postal Service),Export,5260934.0,0.0
+2023,Mexico,Mail (U.S. Postal Service),Import,438.0,0.0
+2023,Mexico,Other/Unknown,Export,12205981507.0,0.0
+2023,Mexico,Other/Unknown,Import,3991542267.0,261599.78
+2023,Mexico,Pipeline,Export,7300762477.0,0.0
+2023,Mexico,Pipeline,Import,65580908.0,259462.37
+2023,Mexico,Rail,Export,33035383917.0,0.0
+2023,Mexico,Rail,Import,62329107287.0,18826468.48
+2023,Mexico,Truck,Export,218503831359.0,0.0
+2023,Mexico,Truck,Import,342145838148.0,61429194.32
+2023,Mexico,Vessel,Export,39173479438.0,58410631.62
+2023,Mexico,Vessel,Import,52240894090.0,63713428.87
+2024,Canada,Air,Export,17869117283.0,169524.66
+2024,Canada,Air,Import,16746037592.0,47389.85
+2024,Canada,Foreign Trade Zones (FTZs),Import,4465611416.0,10279171.96
+2024,Canada,Mail (U.S. Postal Service),Export,27114269.0,0.0
+2024,Canada,Mail (U.S. Postal Service),Import,43554.0,0.18
+2024,Canada,Other/Unknown,Export,45200434885.0,0.0
+2024,Canada,Other/Unknown,Import,10021383862.0,44102.32
+2024,Canada,Pipeline,Export,8919719320.0,0.0
+2024,Canada,Pipeline,Import,91942288155.0,204933109.86
+2024,Canada,Rail,Export,38541590794.0,0.0
+2024,Canada,Rail,Import,66300617909.0,81644465.32
+2024,Canada,Truck,Export,223093147098.0,0.0
+2024,Canada,Truck,Import,199705051489.0,63994223.11
+2024,Canada,Vessel,Export,14852292559.0,33491170.29
+2024,Canada,Vessel,Import,23514685900.0,62490856.48
+2024,Mexico,Air,Export,12659073961.0,57943.42
+2024,Mexico,Air,Import,8871781425.0,78190.15
+2024,Mexico,Foreign Trade Zones (FTZs),Import,6597038822.0,611797.29
+2024,Mexico,Mail (U.S. Postal Service),Export,2483059.0,0.0
+2024,Mexico,Other/Unknown,Export,12985317448.0,0.0
+2024,Mexico,Other/Unknown,Import,4043271292.0,259437.28
+2024,Mexico,Pipeline,Export,5732873802.0,0.0
+2024,Mexico,Pipeline,Import,9473808.0,153446.65
+2024,Mexico,Rail,Export,34319253551.0,0.0
+2024,Mexico,Rail,Import,63931910339.0,20049462.23
+2024,Mexico,Truck,Export,234000882173.0,0.0
+2024,Mexico,Truck,Import,375008576474.0,62704490.09
+2024,Mexico,Vessel,Export,34341475051.0,60240591.35
+2024,Mexico,Vessel,Import,47388546423.0,45534088.65
+2025,Canada,Air,Export,17621799682.0,131187.3
+2025,Canada,Air,Import,15315064000.0,49378.35
+2025,Canada,Foreign Trade Zones (FTZs),Import,4334798641.0,9990140.64
+2025,Canada,Mail (U.S. Postal Service),Export,26518394.0,0.0
+2025,Canada,Mail (U.S. Postal Service),Import,12818.0,0.36
+2025,Canada,Other/Unknown,Export,49422406779.0,0.0
+2025,Canada,Other/Unknown,Import,10042041849.0,100869.82
+2025,Canada,Pipeline,Export,11362578179.0,0.0
+2025,Canada,Pipeline,Import,84154278074.0,198386104.6
+2025,Canada,Rail,Export,33028142924.0,0.0
+2025,Canada,Rail,Import,56693122099.0,75766747.42
+2025,Canada,Truck,Export,203779661274.0,0.0
+2025,Canada,Truck,Import,192998923721.0,61169738.24
+2025,Canada,Vessel,Export,14559991682.0,32845688.06
+2025,Canada,Vessel,Import,19422061215.0,59437371.27
+2025,Mexico,Air,Export,22541255461.0,54104.7
+2025,Mexico,Air,Import,10610291434.0,66031.28
+2025,Mexico,Foreign Trade Zones (FTZs),Import,10224659090.0,1043659.0
+2025,Mexico,Mail (U.S. Postal Service),Export,1474692.0,0.0
+2025,Mexico,Other/Unknown,Export,13109702808.0,0.0
+2025,Mexico,Other/Unknown,Import,3553228941.0,58531.33
+2025,Mexico,Pipeline,Export,8426806404.0,0.0
+2025,Mexico,Pipeline,Import,1603856.0,26007.23
+2025,Mexico,Rail,Export,33273371037.0,0.0
+2025,Mexico,Rail,Import,61473923326.0,19414983.37
+2025,Mexico,Truck,Export,230994519284.0,0.0
+2025,Mexico,Truck,Import,411246638171.0,62456894.37
+2025,Mexico,Vessel,Export,29613011975.0,56110018.35
+2025,Mexico,Vessel,Import,37763190573.0,39636783.78

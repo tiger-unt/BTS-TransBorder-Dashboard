@@ -44,3 +44,4 @@ __pycache__/
 02-Data-Staging/cleaned/dot2_state_commodity.csv
 02-Data-Staging/cleaned/dot3_port_commodity.csv
 02-Data-Staging/transborder.db
+02-Data-Staging/transborder.db-wal

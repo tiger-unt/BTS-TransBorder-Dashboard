@@ -1,146 +1,78 @@
 """
-04_create_db.py — Load BTS TransBorder raw data into SQLite database.
+04_create_db.py -- Load cleaned/normalized CSVs into a SQLite database.
 
-Strategy:
-  - Modern (2007-2025): Use YTD files from the latest available month per year.
-    YTD files contain all months' data in one file, avoiding duplicates.
-    For 2020: Sep YTD (months 1-9) + Nov/Dec monthly files recovered from BTS.
-              Oct 2020 raw file missing — derived via subtraction in 03_normalize.py.
-    All other years (including 2009, 2023) verified complete in full audit (2026-03-22).
-  - Legacy (1993-2006): Handled separately (see 03_normalize.py, future).
+Reads from 02-Data-Staging/cleaned/ (output of 03_normalize.py).
+Creates 3 tables mirroring the BTS DOT table structure, plus a summary table.
 
 Tables created:
-  - dot1_state_port       (State x Port cross-tab)
-  - dot2_state_commodity   (State x Commodity cross-tab)
-  - dot3_port_commodity    (Port x Commodity cross-tab)
-  - data_inventory         (metadata: which years/months/sources were loaded)
+  - dot1_state_port       (State x Port, 1993-2025)
+  - dot2_state_commodity   (State x Commodity, 1993-2025)
+  - dot3_port_commodity    (Port x Commodity, 2007-2025)
+  - load_summary           (metadata about what was loaded)
 
 Usage:
   python 04_create_db.py
 """
 
 import csv
-import io
 import os
-import re
 import sqlite3
 import sys
-import tempfile
-import zipfile
 from pathlib import Path
 
-# Resolve paths relative to this script
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent.parent
-RAW_MODERN = PROJECT_ROOT / "01-Raw-Data" / "download" / "modern"
-DB_PATH = SCRIPT_DIR.parent / "transborder.db"
+STAGING_DIR = SCRIPT_DIR.parent
+CLEANED_DIR = STAGING_DIR / "cleaned"
+DB_PATH = STAGING_DIR / "transborder.db"
 
-# Column definitions for each table (matching actual BTS CSV headers)
-DOT1_COLUMNS = [
-    ("TRDTYPE", "INTEGER"),
-    ("USASTATE", "TEXT"),
-    ("DEPE", "TEXT"),
-    ("DISAGMOT", "INTEGER"),
-    ("MEXSTATE", "TEXT"),
-    ("CANPROV", "TEXT"),
-    ("COUNTRY", "TEXT"),
-    ("VALUE", "REAL"),
-    ("SHIPWT", "REAL"),
-    ("FREIGHT_CHARGES", "REAL"),
-    ("DF", "TEXT"),
-    ("CONTCODE", "TEXT"),
-    ("MONTH", "INTEGER"),
-    ("YEAR", "INTEGER"),
-]
-
-DOT2_COLUMNS = [
-    ("TRDTYPE", "INTEGER"),
-    ("USASTATE", "TEXT"),
-    ("COMMODITY2", "TEXT"),
-    ("DISAGMOT", "INTEGER"),
-    ("MEXSTATE", "TEXT"),
-    ("CANPROV", "TEXT"),
-    ("COUNTRY", "TEXT"),
-    ("VALUE", "REAL"),
-    ("SHIPWT", "REAL"),
-    ("FREIGHT_CHARGES", "REAL"),
-    ("DF", "TEXT"),
-    ("CONTCODE", "TEXT"),
-    ("MONTH", "INTEGER"),
-    ("YEAR", "INTEGER"),
-]
-
-DOT3_COLUMNS = [
-    ("TRDTYPE", "INTEGER"),
-    ("DEPE", "TEXT"),
-    ("COMMODITY2", "TEXT"),
-    ("DISAGMOT", "INTEGER"),
-    ("COUNTRY", "TEXT"),
-    ("VALUE", "REAL"),
-    ("SHIPWT", "REAL"),
-    ("FREIGHT_CHARGES", "REAL"),
-    ("DF", "TEXT"),
-    ("CONTCODE", "TEXT"),
-    ("MONTH", "INTEGER"),
-    ("YEAR", "INTEGER"),
-]
-
-TABLE_DEFS = {
-    "dot1_state_port": DOT1_COLUMNS,
-    "dot2_state_commodity": DOT2_COLUMNS,
-    "dot3_port_commodity": DOT3_COLUMNS,
+# Table definitions: (csv_filename, table_name, columns_with_types)
+TABLES = {
+    "dot1_state_port": {
+        "csv": "dot1_state_port.csv",
+        "columns": [
+            ("Year", "INTEGER"), ("Month", "INTEGER"), ("TradeType", "TEXT"),
+            ("StateCode", "TEXT"), ("State", "TEXT"), ("PortCode", "TEXT"),
+            ("Port", "TEXT"), ("Mode", "TEXT"), ("MexState", "TEXT"),
+            ("CanProv", "TEXT"), ("Country", "TEXT"), ("TradeValue", "REAL"),
+            ("Weight", "REAL"), ("FreightCharges", "REAL"), ("DF", "TEXT"),
+            ("ContCode", "TEXT"),
+        ],
+        "indexes": ["Year", "Month", "TradeType", "StateCode", "PortCode",
+                     "Mode", "Country"],
+    },
+    "dot2_state_commodity": {
+        "csv": "dot2_state_commodity.csv",
+        "columns": [
+            ("Year", "INTEGER"), ("Month", "INTEGER"), ("TradeType", "TEXT"),
+            ("StateCode", "TEXT"), ("State", "TEXT"), ("HSCode", "TEXT"),
+            ("Commodity", "TEXT"), ("CommodityGroup", "TEXT"), ("Mode", "TEXT"),
+            ("MexState", "TEXT"), ("CanProv", "TEXT"), ("Country", "TEXT"),
+            ("TradeValue", "REAL"), ("Weight", "REAL"),
+            ("FreightCharges", "REAL"), ("DF", "TEXT"), ("ContCode", "TEXT"),
+        ],
+        "indexes": ["Year", "Month", "TradeType", "StateCode", "HSCode",
+                     "CommodityGroup", "Mode", "Country"],
+    },
+    "dot3_port_commodity": {
+        "csv": "dot3_port_commodity.csv",
+        "columns": [
+            ("Year", "INTEGER"), ("Month", "INTEGER"), ("TradeType", "TEXT"),
+            ("PortCode", "TEXT"), ("Port", "TEXT"), ("HSCode", "TEXT"),
+            ("Commodity", "TEXT"), ("CommodityGroup", "TEXT"), ("Mode", "TEXT"),
+            ("Country", "TEXT"), ("TradeValue", "REAL"), ("Weight", "REAL"),
+            ("FreightCharges", "REAL"), ("DF", "TEXT"), ("ContCode", "TEXT"),
+        ],
+        "indexes": ["Year", "Month", "TradeType", "PortCode", "HSCode",
+                     "CommodityGroup", "Mode", "Country"],
+    },
 }
 
-DOT_PREFIX_MAP = {
-    "dot1": "dot1_state_port",
-    "dot2": "dot2_state_commodity",
-    "dot3": "dot3_port_commodity",
-}
-
-
-def create_tables(conn):
-    """Create all tables and indexes."""
-    cur = conn.cursor()
-    for table_name, columns in TABLE_DEFS.items():
-        col_defs = ", ".join(f"{name} {dtype}" for name, dtype in columns)
-        cur.execute(f"DROP TABLE IF EXISTS {table_name}")
-        cur.execute(f"CREATE TABLE {table_name} ({col_defs})")
-
-    cur.execute("DROP TABLE IF EXISTS data_inventory")
-    cur.execute("""
-        CREATE TABLE data_inventory (
-            year INTEGER,
-            source_file TEXT,
-            table_name TEXT,
-            row_count INTEGER,
-            months_covered TEXT,
-            is_partial INTEGER DEFAULT 0
-        )
-    """)
-    conn.commit()
-
-
-def create_indexes(conn):
-    """Create indexes after all data is loaded."""
-    cur = conn.cursor()
-    indexes = {
-        "dot1_state_port": ["YEAR", "MONTH", "DISAGMOT", "DEPE", "USASTATE", "COUNTRY", "TRDTYPE"],
-        "dot2_state_commodity": ["YEAR", "MONTH", "DISAGMOT", "USASTATE", "COMMODITY2", "COUNTRY", "TRDTYPE"],
-        "dot3_port_commodity": ["YEAR", "MONTH", "DISAGMOT", "DEPE", "COMMODITY2", "COUNTRY", "TRDTYPE"],
-    }
-    for table, cols in indexes.items():
-        for col in cols:
-            idx_name = f"idx_{table}_{col.lower()}"
-            cur.execute(f"CREATE INDEX IF NOT EXISTS {idx_name} ON {table} ({col})")
-    conn.commit()
+BATCH_SIZE = 50_000
 
 
 def parse_value(val, col_type):
-    """Parse a string value into the appropriate type."""
-    if val is None:
-        return None
-    val = str(val).strip()
-    if val == "":
+    """Parse a CSV string value into the appropriate SQLite type."""
+    if val is None or val == "" or val == "nan":
         return None
     if col_type == "INTEGER":
         try:
@@ -155,222 +87,119 @@ def parse_value(val, col_type):
     return val
 
 
-def read_csv_from_zip(zip_path, csv_name, expected_columns):
-    """Read a CSV from inside a ZIP and return rows as dicts."""
-    with zipfile.ZipFile(zip_path) as z:
-        with z.open(csv_name) as f:
-            text = io.TextIOWrapper(f, encoding="utf-8-sig")
-            reader = csv.DictReader(text)
-            rows = []
-            for raw_row in reader:
-                row = {}
-                for col_name, col_type in expected_columns:
-                    row[col_name] = parse_value(raw_row.get(col_name, ""), col_type)
-                rows.append(row)
-            return rows
-
-
-def insert_rows(conn, table_name, columns, rows):
-    """Bulk insert rows into a table."""
-    if not rows:
+def load_table(conn, table_name, table_def):
+    """Load a cleaned CSV into a SQLite table."""
+    csv_path = CLEANED_DIR / table_def["csv"]
+    if not csv_path.exists():
+        print(f"  WARNING: {csv_path} not found, skipping {table_name}")
         return 0
+
+    columns = table_def["columns"]
     col_names = [c[0] for c in columns]
-    placeholders = ", ".join(["?"] * len(col_names))
-    sql = f"INSERT INTO {table_name} ({', '.join(col_names)}) VALUES ({placeholders})"
+    col_types = {c[0]: c[1] for c in columns}
+
+    # Create table
     cur = conn.cursor()
-    cur.executemany(sql, [[row.get(c) for c in col_names] for row in rows])
+    cur.execute(f"DROP TABLE IF EXISTS {table_name}")
+    col_defs = ", ".join(f'"{name}" {dtype}' for name, dtype in columns)
+    cur.execute(f"CREATE TABLE {table_name} ({col_defs})")
     conn.commit()
-    return len(rows)
 
+    # Load CSV in batches
+    placeholders = ", ".join(["?"] * len(col_names))
+    col_list = ", ".join(f'"{c}"' for c in col_names)
+    sql = f"INSERT INTO {table_name} ({col_list}) VALUES ({placeholders})"
 
-def collect_all_csvs(year_dir):
-    """Recursively collect all CSV files from a year directory, handling nested ZIPs.
-    Returns a list of (csv_basename_lower, zip_path, csv_name_in_zip) tuples."""
-    results = []
-    zip_files = sorted([f for f in os.listdir(year_dir) if f.lower().endswith(".zip")])
-
-    for zf_name in zip_files:
-        zf_path = os.path.join(year_dir, zf_name)
-        try:
-            with zipfile.ZipFile(zf_path) as z:
-                names = z.namelist()
-                # Check for CSVs directly in this ZIP
-                csvs = [n for n in names if n.lower().endswith(".csv") and not os.path.basename(n).startswith("._")]
-                for csv_name in csvs:
-                    results.append((os.path.basename(csv_name).lower(), zf_path, csv_name))
-
-                # Check for nested ZIPs
-                inner_zips = [n for n in names if n.lower().endswith(".zip") and not os.path.basename(n).startswith("._")]
-                for inner_zip_name in inner_zips:
-                    try:
-                        with z.open(inner_zip_name) as inner_data:
-                            inner_bytes = inner_data.read()
-                        # Write to temp file and scan
-                        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
-                            tmp.write(inner_bytes)
-                            tmp_path = tmp.name
-                        try:
-                            with zipfile.ZipFile(tmp_path) as inner_z:
-                                inner_csvs = [n for n in inner_z.namelist()
-                                              if n.lower().endswith(".csv") and not os.path.basename(n).startswith("._")]
-                                for csv_name in inner_csvs:
-                                    results.append((os.path.basename(csv_name).lower(), tmp_path, csv_name))
-                            # Don't delete tmp yet — we may need to read from it later
-                            # Store the path so we can clean up after processing
-                        except zipfile.BadZipFile:
-                            os.unlink(tmp_path)
-                    except (zipfile.BadZipFile, Exception) as e:
-                        print(f"    WARNING: Could not read inner ZIP {inner_zip_name}: {e}")
-        except zipfile.BadZipFile as e:
-            print(f"    WARNING: Bad ZIP {zf_name}: {e}")
-
-    return results
-
-
-def find_best_source(csv_entries, dot_prefix):
-    """From a list of (basename, zip_path, csv_name) entries, find the best
-    YTD or annual file for a given dot prefix. Returns (zip_path, csv_name, is_partial) or None."""
-    ytd_pattern = re.compile(re.escape(dot_prefix) + r"_ytd_(\d{2})(\d{2})\.csv$", re.IGNORECASE)
-    annual_pattern = re.compile(re.escape(dot_prefix) + r"_(\d{4})\.csv$", re.IGNORECASE)
-
-    best_ytd_month = -1
-    best_ytd = None
-
-    annual_match_entry = None
-
-    for basename, zip_path, csv_name in csv_entries:
-        m = ytd_pattern.match(basename)
-        if m:
-            month = int(m.group(1))
-            if month > best_ytd_month:
-                best_ytd_month = month
-                best_ytd = (zip_path, csv_name)
-
-        m2 = annual_pattern.match(basename)
-        if m2:
-            annual_match_entry = (zip_path, csv_name)
-
-    if best_ytd:
-        return best_ytd[0], best_ytd[1], best_ytd_month < 12
-    if annual_match_entry:
-        return annual_match_entry[0], annual_match_entry[1], False
-    return None, None, False
-
-
-def log_insert(conn, year, source_desc, table_name, rows, is_partial):
-    """Insert rows and log to data_inventory."""
-    columns = TABLE_DEFS[table_name]
-    count = insert_rows(conn, table_name, columns, rows)
-    months = sorted(set(r.get("MONTH") for r in rows if r.get("MONTH") is not None))
-    months_str = ",".join(str(m) for m in months) if months else "annual"
-    print(f"  {table_name}: {count:,} rows from {source_desc} (months: {months_str})")
-    conn.execute(
-        "INSERT INTO data_inventory VALUES (?, ?, ?, ?, ?, ?)",
-        (year, source_desc, table_name, count, months_str, 1 if is_partial else 0),
-    )
+    total_rows = 0
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        batch = []
+        for row in reader:
+            values = [parse_value(row.get(c, ""), col_types[c]) for c in col_names]
+            batch.append(values)
+            if len(batch) >= BATCH_SIZE:
+                cur.executemany(sql, batch)
+                total_rows += len(batch)
+                batch = []
+                if total_rows % 500_000 == 0:
+                    print(f"    ... {total_rows:,} rows loaded")
+        if batch:
+            cur.executemany(sql, batch)
+            total_rows += len(batch)
     conn.commit()
-    return count
 
+    # Create indexes
+    for col in table_def["indexes"]:
+        idx_name = f"idx_{table_name}_{col.lower()}"
+        cur.execute(f'CREATE INDEX IF NOT EXISTS {idx_name} ON {table_name} ("{col}")')
+    conn.commit()
 
-def process_year(conn, year_dir, year):
-    """Process a single year's data directory."""
-    # Collect all CSVs from all ZIPs (including nested)
-    csv_entries = collect_all_csvs(year_dir)
-
-    if not csv_entries:
-        print(f"  WARNING: No data files found in {year_dir}")
-        return
-
-    # Track temp files to clean up
-    temp_files = set()
-    for _, zip_path, _ in csv_entries:
-        if tempfile.gettempdir() in zip_path:
-            temp_files.add(zip_path)
-
-    try:
-        for dot_prefix, table_name in DOT_PREFIX_MAP.items():
-            columns = TABLE_DEFS[table_name]
-            zip_path, csv_name, is_partial = find_best_source(csv_entries, dot_prefix)
-            if zip_path and csv_name:
-                rows = read_csv_from_zip(zip_path, csv_name, columns)
-                # Build source description
-                source_desc = os.path.basename(zip_path) + "/" + csv_name
-                if tempfile.gettempdir() in zip_path:
-                    # For nested ZIPs, show the outer ZIP name
-                    source_desc = f"(nested)/{csv_name}"
-                log_insert(conn, year, source_desc, table_name, rows, is_partial)
-            else:
-                print(f"  WARNING: No data found for {table_name} in {year}")
-    finally:
-        # Clean up temp files
-        for tmp in temp_files:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
+    return total_rows
 
 
 def main():
-    if not RAW_MODERN.exists():
-        print(f"ERROR: Raw data directory not found: {RAW_MODERN}")
+    if not CLEANED_DIR.exists():
+        print(f"ERROR: Cleaned data directory not found: {CLEANED_DIR}")
+        print("Run 03_normalize.py first.")
         sys.exit(1)
 
     print(f"Database: {DB_PATH}")
-    print(f"Source:   {RAW_MODERN}")
+    print(f"Source:   {CLEANED_DIR}")
     print()
+
+    # Remove old database if it exists
+    if DB_PATH.exists():
+        DB_PATH.unlink()
+        print("Removed existing database.")
 
     conn = sqlite3.connect(str(DB_PATH))
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA cache_size=-200000")  # 200MB cache
 
-    print("Creating tables...")
-    create_tables(conn)
+    results = {}
+    for table_name, table_def in TABLES.items():
+        print(f"\nLoading {table_name} from {table_def['csv']}...")
+        count = load_table(conn, table_name, table_def)
+        results[table_name] = count
+        print(f"  {table_name}: {count:,} rows loaded")
 
-    years = sorted(
-        int(d) for d in os.listdir(RAW_MODERN)
-        if os.path.isdir(os.path.join(RAW_MODERN, d)) and d.isdigit()
-    )
-    # Exclude 2026 (incomplete year — only Jan available)
-    years = [y for y in years if y <= 2025]
-
-    for year in years:
-        year_dir = os.path.join(RAW_MODERN, str(year))
-        print(f"\n--- {year} ---")
-        process_year(conn, year_dir, year)
-
-    print("\nCreating indexes...")
-    create_indexes(conn)
-
-    # Summary
-    print("\n=== SUMMARY ===")
+    # Create summary table
     cur = conn.cursor()
-    for table_name in TABLE_DEFS:
-        cur.execute(f"SELECT COUNT(*) FROM {table_name}")
-        total = cur.fetchone()[0]
-        cur.execute(f"SELECT MIN(YEAR), MAX(YEAR) FROM {table_name}")
-        min_yr, max_yr = cur.fetchone()
-        cur.execute(f"SELECT COUNT(DISTINCT YEAR) FROM {table_name}")
-        year_count = cur.fetchone()[0]
-        print(f"  {table_name}: {total:,} rows ({min_yr}-{max_yr}, {year_count} years)")
+    cur.execute("DROP TABLE IF EXISTS load_summary")
+    cur.execute("""
+        CREATE TABLE load_summary (
+            table_name TEXT,
+            row_count INTEGER,
+            min_year INTEGER,
+            max_year INTEGER,
+            year_count INTEGER
+        )
+    """)
+    for table_name in TABLES:
+        cur.execute(f'SELECT COUNT(*), MIN("Year"), MAX("Year"), COUNT(DISTINCT "Year") FROM {table_name}')
+        count, min_yr, max_yr, yr_count = cur.fetchone()
+        cur.execute(
+            "INSERT INTO load_summary VALUES (?, ?, ?, ?, ?)",
+            (table_name, count, min_yr, max_yr, yr_count),
+        )
+    conn.commit()
 
-    cur.execute("SELECT year, table_name, months_covered FROM data_inventory WHERE is_partial = 1")
-    partials = cur.fetchall()
-    if partials:
-        print("\n  PARTIAL YEARS:")
-        for year, table, months in partials:
-            print(f"    {year} {table}: months {months}")
+    # Print summary
+    print("\n" + "=" * 50)
+    print("SUMMARY")
+    print("=" * 50)
+    for table_name in TABLES:
+        cur.execute(f'SELECT COUNT(*), MIN("Year"), MAX("Year"), COUNT(DISTINCT "Year") FROM {table_name}')
+        count, min_yr, max_yr, yr_count = cur.fetchone()
+        print(f"  {table_name}: {count:,} rows ({min_yr}-{max_yr}, {yr_count} years)")
 
-    # Show any years with missing tables
-    all_years = set(y for y in years)
-    for table_name in TABLE_DEFS:
-        cur.execute(f"SELECT DISTINCT YEAR FROM {table_name}")
-        loaded_years = set(r[0] for r in cur.fetchall())
-        missing = all_years - loaded_years
-        if missing:
-            print(f"\n  MISSING YEARS for {table_name}: {sorted(missing)}")
+    db_size = DB_PATH.stat().st_size / (1024 * 1024)
+    print(f"\nDatabase size: {db_size:.1f} MB")
+    print(f"Saved to: {DB_PATH}")
 
     conn.close()
-    print(f"\nDone. Database saved to: {DB_PATH}")
+    print("Done.")
 
 
 if __name__ == "__main__":
