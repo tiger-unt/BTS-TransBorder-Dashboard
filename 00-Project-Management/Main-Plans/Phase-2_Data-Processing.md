@@ -2,7 +2,7 @@
 
 ## Context
 
-With raw BTS data downloaded (Phase 1) and schema differences documented, this phase normalizes all data into a unified format and produces 6 datasets in two formats: **JSON** files optimized for the dashboard (compact, aggregated to CommodityGroup at the port level, targeting ~10 MB total) and **CSV** files for human review (full detail including individual HS commodity codes, no size constraint — meant for Excel/team inspection).
+With raw BTS data downloaded (Phase 1) and schema differences documented, this phase normalizes all data into a unified format and produces 6 datasets in two formats: **JSON** files for the dashboard and **CSV** files for human review. Both formats carry the same full level of detail including individual HS commodity codes — no aggregation to CommodityGroup, no size cap. If browser performance becomes an issue with the JSON files, optimization will be addressed later.
 
 **Deployment target:** The web application will be hosted on **GitHub Pages** — a static-only environment with no server-side processing. All data must be pre-aggregated and served as static files (JSON). This phase fulfills the project instruction to **create a unified database**: combine all years of raw data into a single database with multiple tables (one per BTS dataset type).
 
@@ -185,38 +185,35 @@ Region        (str)     -- Texas border region (for TX ports: El Paso, Laredo, P
 
 | Format | Location | Purpose | Size Constraint |
 |---|---|---|---|
-| **CSV** | `03-Processed-Data/csv/` | Human review — open in Excel, spot-check data, share with team | None (can be large) |
-| **JSON** | `03-Processed-Data/json/` | Dashboard — loaded via `fetch()` + `JSON.parse()` in the browser | ~10 MB total across all 6 files |
+| **CSV** | `03-Processed-Data/csv/` | Human review — open in Excel, spot-check data, share with team | None |
+| **JSON** | `03-Processed-Data/json/` | Dashboard — loaded via `fetch()` + `JSON.parse()` in the browser | None (optimize later if needed) |
 
-**CSV files** are the full-detail reference copies. They include individual HS commodity codes at every aggregation level, making them useful for analysis but potentially large (50+ MB for port-level files). These are not served to the browser.
-
-**JSON files** are optimized for the dashboard. To stay within the ~10 MB browser budget:
-- Port-level files (`us_mexico.json`, `texas_mexico.json`) aggregate to **CommodityGroup** only (not individual HS codes). Individual commodity detail is available in `commodity_detail.json` separately.
-- If a JSON file still exceeds ~5 MB after CommodityGroup aggregation, apply **top-N filtering**: keep the top 10 commodity groups per port (by trade value), roll the rest into an "Other" group.
-- JSON uses compact formatting (no pretty-print) with short key names where appropriate.
+**Both formats carry the same full level of detail** — individual HS commodity codes at every aggregation level. JSON uses compact formatting (no pretty-print) with short key names where appropriate.
 
 ### Dataset definitions
 
 | Dataset | Description | CSV Aggregation | JSON Aggregation | Key Columns | Store Property |
 |---|---|---|---|---|---|
 | `us_transborder` | All US trade (Canada + Mexico) | Annual, by country/mode/commodity group | Same as CSV | Year, Country, Mode, CommodityGroup, TradeType, TradeValue, Weight | `usTransborder` |
-| `us_mexico` | US-Mexico subset, port-level detail | Annual, by port/state/mode/**commodity** | Annual, by port/state/mode/**CommodityGroup** | Year, Port, State, Mode, CommodityGroup, [Commodity, HSCode — CSV only], TradeType, TradeValue, Weight, Lat, Lon | `usMexico` |
-| `texas_mexico` | Texas-Mexico deep-dive | Annual, by port/mode/**commodity**/region | Annual, by port/mode/**CommodityGroup**/region | Year, Port, Mode, CommodityGroup, [Commodity, HSCode — CSV only], TradeType, TradeValue, Weight, Region, Lat, Lon | `texasMexico` |
+| `us_mexico` | US-Mexico subset, port-level detail | Annual, by port/state/mode/commodity | Same as CSV | Year, Port, State, Mode, CommodityGroup, Commodity, HSCode, TradeType, TradeValue, Weight, Lat, Lon | `usMexico` |
+| `texas_mexico` | Texas-Mexico deep-dive | Annual, by port/mode/commodity/region | Same as CSV | Year, Port, Mode, CommodityGroup, Commodity, HSCode, TradeType, TradeValue, Weight, Region, Lat, Lon | `texasMexico` |
 | `us_state_trade` | State-level trade (all countries) | Annual, by state/country/mode | Same as CSV | State, StateCode, Year, Country, TradeType, Mode, TradeValue | `usStateTrade` |
 | `commodity_detail` | Commodity-level detail | Annual, by commodity/country/mode | Same as CSV | Year, Country, CommodityGroup, Commodity, HSCode, TradeType, Mode, TradeValue, Weight | `commodityDetail` |
 | `monthly_trends` | Monthly time-series | Monthly, by country/mode | Same as CSV | Year, Month, YearMonth, Country, Mode, TradeType, TradeValue | `monthlyTrends` |
 
 ### Estimated sizes
 
-| Dataset | CSV (full detail) | JSON (dashboard) |
-|---|---|---|
-| `us_transborder` | ~0.8 MB | ~0.8 MB |
-| `us_mexico` | ~30–54 MB | ~5–12 MB (CommodityGroup only) |
-| `texas_mexico` | ~5–18 MB | ~2–5 MB (CommodityGroup only) |
-| `us_state_trade` | ~2.8 MB | ~2.8 MB |
-| `commodity_detail` | ~5.6 MB | ~5.6 MB |
-| `monthly_trends` | ~0.6 MB | ~0.6 MB |
-| **Total** | **~45–82 MB** | **~12–27 MB** (with top-N: **<10 MB**) |
+Both CSV and JSON files carry the same full detail. Estimated sizes per format:
+
+| Dataset | Estimated Size |
+|---|---|
+| `us_transborder` | ~0.8 MB |
+| `us_mexico` | ~30–54 MB |
+| `texas_mexico` | ~5–18 MB |
+| `us_state_trade` | ~2.8 MB |
+| `commodity_detail` | ~5.6 MB |
+| `monthly_trends` | ~0.6 MB |
+| **Total** | **~45–82 MB** |
 
 **Pre-Aggregation Strategy:**
 - Annual aggregation for most views (reduces row count dramatically)
@@ -224,13 +221,13 @@ Region        (str)     -- Texas border region (for TX ports: El Paso, Laredo, P
 - Trade values summed per group
 - Weight summed per group (NULLs preserved — `SUM` skips NULLs; result is NULL only if all inputs are NULL)
 
-**Target Size Budget:** ~10 MB total across all 6 JSON files (for acceptable browser load time on GitHub Pages). CSV files have no size constraint — they are for offline team use only.
+**Size Note:** No size cap is enforced. If browser performance becomes an issue with the JSON files, optimization (CommodityGroup aggregation, top-N filtering, etc.) will be addressed in a later phase.
 
 ## 2.4 Validation
 
 **Script**: `02-Data-Staging/Scripts/06_validate.py`
 
-**Checks:**
+**Automated Checks (in script):**
 - Row counts per year (no missing years in 1993-2025 range)
 - Total trade value per year cross-checked against BTS published summaries
 - All expected modes present per year
@@ -238,6 +235,12 @@ Region        (str)     -- Texas border region (for TX ports: El Paso, Laredo, P
 - Null rate report for optional columns (Weight, Lat, Lon)
 - Year coverage: all 6 CSVs cover expected year ranges
 - Dimension value validation: only expected values for Country, Mode, TradeType
+
+**Manual Cross-Check (Claude Chrome Extension):**
+- BTS data story page: https://data.bts.gov/stories/s/myhq-rm6q (Socrata-based, no public API available)
+- At the end of Phase 2, generate a **validation prompt** for the Claude Chrome extension that instructs it to open the BTS page, apply specific filter combinations (port, year, mode, trade direction), read the displayed values, and report them back
+- The user will run this prompt in Chrome and bring the results back for comparison against our processed outputs
+- Focus spot-checks on: recent years (2024–2025), high-value ports (Laredo, El Paso), and edge cases (2020)
 
 ## Recommended Implementation Order
 
@@ -273,7 +276,7 @@ To reduce rework and avoid validating the wrong intermediate outputs, Phase 2 sh
 - [ ] `02-Data-Staging/Scripts/04_create_db.py` -- SQLite creation script
 - [ ] `02-Data-Staging/transborder.db` -- Validation database
 - [ ] `02-Data-Staging/Scripts/05_build_outputs.py` -- Dashboard JSON + reference CSV generator
-- [ ] 6 dashboard-ready JSON files in `03-Processed-Data/json/` (optimized for browser, ~10 MB total)
-- [ ] 6 full-detail CSV files in `03-Processed-Data/csv/` (for human review in Excel)
+- [ ] 6 dashboard-ready JSON files in `03-Processed-Data/json/` (full HS-code detail)
+- [ ] 6 reference CSV files in `03-Processed-Data/csv/` (same detail, for human review in Excel)
 - [ ] `02-Data-Staging/Scripts/06_validate.py` -- Validation script
 - [ ] Validation report (printed to console or saved to `02-Data-Staging/docs/validation_report.md`)
