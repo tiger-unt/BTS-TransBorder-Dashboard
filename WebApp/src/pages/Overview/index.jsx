@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   TrendingUp, TrendingDown, DollarSign, ArrowRight, Database, Layers,
   ArrowRightLeft, MapPin, BarChart3, Truck, Package, Award, PieChart,
-  Globe, Map, Scale, ArrowUpDown, Lightbulb,
+  Globe, Map as MapIcon, Scale, ArrowUpDown, Lightbulb,
 } from 'lucide-react'
 import { useTransborderStore } from '@/stores/transborderStore'
 import { formatCurrency } from '@/lib/chartColors'
@@ -18,14 +18,14 @@ import StatCard from '@/components/ui/StatCard'
 import LineChart from '@/components/charts/LineChart'
 import DonutChart from '@/components/charts/DonutChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
-import PortMap from '@/components/maps/PortMap'
+import ChoroplethPortMap from '@/components/maps/ChoroplethPortMap'
 import { DL, PAGE_TRANSBORDER_COLS } from '@/lib/downloadColumns'
 
 /* ── Icon lookup for insightEngine string → component ────────────────── */
 const ICON_MAP = {
   TrendingUp, TrendingDown, DollarSign, ArrowRight, Database, Layers,
   ArrowRightLeft, MapPin, BarChart3, Truck, Package, Award, PieChart,
-  Globe, Map, Scale, ArrowUpDown, Lightbulb,
+  Globe, Map: MapIcon, Scale, ArrowUpDown, Lightbulb,
 }
 
 /* ── Country filter options ──────────────────────────────────────────── */
@@ -66,17 +66,19 @@ const MAP_LEGEND = [
 ]
 
 export default function OverviewPage() {
-  const { usTransborder, usMexicoPorts, usCanadaPorts, loading, loadDataset } = useTransborderStore()
+  const { usTransborder, usMexicoPorts, usCanadaPorts, usStateTrade, odStateFlows, loading, loadDataset } = useTransborderStore()
 
   /* ── country filter state (per-section) ───────────────────────── */
   const [countryFilter, setCountryFilter] = useState('')      // stat cards
   const [trendCountry, setTrendCountry] = useState('')         // line chart
   const [modeCountry, setModeCountry] = useState('')           // donut chart
 
-  /* ── lazy-load port data for map ───────────────────────────────── */
+  /* ── lazy-load port + state data for map ───────────────────────── */
   useEffect(() => {
     loadDataset('usMexicoPorts')
     loadDataset('usCanadaPorts')
+    loadDataset('usStateTrade')
+    loadDataset('odStateFlows')
   }, [loadDataset])
 
   const { portCoords: mxCoords } = usePortCoordinates()
@@ -96,6 +98,79 @@ export default function OverviewPage() {
     }
     return [...mx, ...ca]
   }, [usMexicoPorts, usCanadaPorts, mxCoords, caCoords])
+
+  /* ── Choropleth: US states by total trade value ───────────────── */
+  const stateMapData = useMemo(() => {
+    if (!usStateTrade?.length) return []
+    const byState = new Map()
+    for (const d of usStateTrade) {
+      const st = d.State
+      if (!st || st === 'Unknown') continue
+      byState.set(st, (byState.get(st) || 0) + (d.TradeValue || 0))
+    }
+    return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  }, [usStateTrade])
+
+  /* ── Choropleth: Mexican states by total trade value ─────────── */
+  const mexStateMapData = useMemo(() => {
+    if (!odStateFlows?.length) return []
+    const byState = new Map()
+    for (const d of odStateFlows) {
+      const st = d.MexState
+      if (!st || st === 'Unknown') continue
+      byState.set(st, (byState.get(st) || 0) + (d.TradeValue || 0))
+    }
+    return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  }, [odStateFlows])
+
+  /* ── Map layers config ─────────────────────────────────────────── */
+  const mapLayers = useMemo(() => {
+    const base = import.meta.env.BASE_URL
+    const result = []
+    if (stateMapData.length) {
+      result.push({ url: `${base}data/us_states.geojson`, data: stateMapData, nameProperty: 'name', colorRange: ['#deebf7', '#08519c'], title: 'U.S. States' })
+    }
+    if (mexStateMapData.length) {
+      result.push({ url: `${base}data/mexican_states.geojson`, data: mexStateMapData, nameProperty: 'name', colorRange: ['#fee0d2', '#de2d26'], title: 'Mexican States' })
+    }
+    // Canadian provinces: geographic context layer (no province-level trade data available)
+    result.push({ url: `${base}data/canadian_provinces.geojson`, data: [], nameProperty: 'name', colorRange: ['#e5f5e0', '#31a354'], title: 'Canadian Provinces' })
+    return result
+  }, [stateMapData, mexStateMapData])
+
+  /* ── Connections: US state ↔ port, Mexican state ↔ port ─────── */
+  const mapConnections = useMemo(() => {
+    const stateToPort = new Map()   // stateName → Map<portCode, value>
+    const portToState = new Map()   // portCode → Map<stateName, value>
+    if (!odStateFlows?.length) return { stateToPort, portToState }
+
+    for (const d of odStateFlows) {
+      if (!d.PortCode) continue
+      const code = d.PortCode.replace(/\D/g, '')
+      const val = d.TradeValue || 0
+
+      // US State ↔ Port
+      if (d.State && d.State !== 'Unknown') {
+        if (!stateToPort.has(d.State)) stateToPort.set(d.State, new Map())
+        const sp = stateToPort.get(d.State)
+        sp.set(code, (sp.get(code) || 0) + val)
+        if (!portToState.has(code)) portToState.set(code, new Map())
+        const ps = portToState.get(code)
+        ps.set(d.State, (ps.get(d.State) || 0) + val)
+      }
+
+      // Mexican State ↔ Port
+      if (d.MexState && d.MexState !== 'Unknown') {
+        if (!stateToPort.has(d.MexState)) stateToPort.set(d.MexState, new Map())
+        const sp = stateToPort.get(d.MexState)
+        sp.set(code, (sp.get(code) || 0) + val)
+        if (!portToState.has(code)) portToState.set(code, new Map())
+        const ps = portToState.get(code)
+        ps.set(d.MexState, (ps.get(d.MexState) || 0) + val)
+      }
+    }
+    return { stateToPort, portToState }
+  }, [odStateFlows])
 
   /* ── filtered data based on country selection ──────────────────── */
   const filteredData = useMemo(() => {
@@ -329,19 +404,25 @@ export default function OverviewPage() {
         )}
       </div>
 
-      {/* ── Border Ports Map ────────────────────────────────────────── */}
+      {/* ── Border Ports + State Choropleth Map ────────────────────── */}
       {mapPorts.length > 0 && (
         <SectionBlock>
-          <ChartCard title="U.S. Border Ports of Entry" subtitle="All ports sized by total trade value — Texas-Mexico ports highlighted">
-            <PortMap
+          <ChartCard title="U.S. Border Ports of Entry" subtitle="State trade value (choropleth) with border ports — click to explore connections">
+            <ChoroplethPortMap
+              layers={mapLayers}
               ports={mapPorts}
+              connections={mapConnections}
               formatValue={formatCurrency}
-              center={[42.0, -97.0]}
+              center={[35.0, -97.0]}
               zoom={4}
-              height="520px"
+              height="560px"
               groupColors={MAP_GROUP_COLORS}
               legendGroups={MAP_LEGEND}
             />
+            <p className="text-sm text-text-secondary mt-2 italic">
+              Note: Canadian province-level trade data is not available in the BTS TransBorder dataset.
+              Canadian provinces are shown for geographic context only.
+            </p>
           </ChartCard>
         </SectionBlock>
       )}
