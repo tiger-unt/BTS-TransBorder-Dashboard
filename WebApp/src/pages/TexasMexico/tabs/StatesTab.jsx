@@ -8,7 +8,8 @@ import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
 import { CHART_COLORS, formatCompact } from '@/lib/chartColors'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
-import ChoroplethMap from '@/components/maps/ChoroplethMap'
+import InteractiveFlowMap from '@/components/maps/InteractiveFlowMap'
+import { usePortCoordinates, buildMapPorts } from '@/hooks/usePortMapData'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import BarChart from '@/components/charts/BarChart'
 import LineChart from '@/components/charts/LineChart'
@@ -28,6 +29,8 @@ export default function StatesTab({
   datasetError,
 }) {
   useEffect(() => { loadDataset('texasMexicanStateTrade'); loadDataset('texasOdStateFlows') }, [loadDataset])
+
+  const { portCoords } = usePortCoordinates()
 
   /* ── filter data ───────────────────────────────────────────────────── */
   const filtered = useMemo(() => {
@@ -56,6 +59,41 @@ export default function StatesTab({
     })
     return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
   }, [filtered])
+
+  /* ── port bubble data for the interactive map ─────────────────────── */
+  const portMapData = useMemo(() => {
+    if (!texasOdStateFlows || !portCoords) return []
+    let data = texasOdStateFlows
+    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
+    if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
+    if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    return buildMapPorts(data, portCoords)
+  }, [texasOdStateFlows, portCoords, yearFilter, tradeTypeFilter, modeFilter])
+
+  /* ── connectivity: state ↔ port with per-pair trade values ──────── */
+  const connections = useMemo(() => {
+    const stateToPort = new Map()   // state → Map<portCode, tradeValue>
+    const portToState = new Map()   // portCode → Map<state, tradeValue>
+    if (!texasOdStateFlows) return { stateToPort, portToState }
+
+    let data = texasOdStateFlows
+    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
+    if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
+    if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+
+    for (const d of data) {
+      if (!d.MexState || !d.PortCode) continue
+      const code = d.PortCode.replace(/\D/g, '')
+      const val = d.TradeValue || 0
+      if (!stateToPort.has(d.MexState)) stateToPort.set(d.MexState, new Map())
+      const sp = stateToPort.get(d.MexState)
+      sp.set(code, (sp.get(code) || 0) + val)
+      if (!portToState.has(code)) portToState.set(code, new Map())
+      const ps = portToState.get(code)
+      ps.set(d.MexState, (ps.get(d.MexState) || 0) + val)
+    }
+    return { stateToPort, portToState }
+  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter])
 
   /* ── bar chart data ────────────────────────────────────────────────── */
   const barData = useMemo(
@@ -171,20 +209,21 @@ export default function StatesTab({
 
   return (
     <>
-      {/* Mexican States Choropleth */}
+      {/* Interactive Mexican States + Port Bubbles Map */}
       <SectionBlock alt>
         <div className="max-w-7xl mx-auto">
-          <ChartCard title="Mexican States Trading Through Texas" subtitle="Trade value by Mexican state of origin/destination">
-            <ChoroplethMap
+          <ChartCard title="Mexican States & Border Ports" subtitle="Click a state or port to explore trade connections">
+            <InteractiveFlowMap
               geojsonUrl={`${BASE}data/mexican_states.geojson`}
-              data={mapData}
-              nameProperty="name"
+              stateData={mapData}
+              portData={portMapData}
+              connections={connections}
               formatValue={formatCurrency}
               metricLabel="Trade Value"
               colorRange={['#fee0d2', '#de2d26']}
-              center={[23.5, -102.0]}
+              center={[26.0, -102.0]}
               zoom={5}
-              height="480px"
+              height="520px"
               title="Mexican States"
             />
           </ChartCard>
@@ -206,23 +245,23 @@ export default function StatesTab({
         </div>
       </SectionBlock>
 
-      {/* Top 15 + Trends side by side */}
+      {/* Top 15 bar + Detail table side by side */}
       <SectionBlock>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
           <ChartCard title="Top 15 Mexican States" subtitle="Ranked by trade value through Texas ports">
             <BarChart data={barData} xKey="label" yKey="value" horizontal formatY={getAxisFormatter(barMax, '$')} color={CHART_COLORS[3]} />
           </ChartCard>
-          <ChartCard title="Top 5 State Trends" subtitle="Annual trade value through Texas ports">
-            <LineChart data={stateTrends} xKey="year" yKey="value" seriesKey="MexState" formatY={getAxisFormatter(trendMax, '$')} annotations={COVID_ANNOTATION} />
+          <ChartCard title="Mexican State Detail" subtitle="Trade summary by Mexican state">
+            <DataTable columns={tableColumns} data={tableData} />
           </ChartCard>
         </div>
       </SectionBlock>
 
-      {/* Detail Table */}
+      {/* Top 5 State Trends */}
       <SectionBlock alt>
         <div className="max-w-7xl mx-auto">
-          <ChartCard title="Mexican State Detail" subtitle="Trade summary by Mexican state">
-            <DataTable columns={tableColumns} data={tableData} />
+          <ChartCard title="Top 5 State Trends" subtitle="Annual trade value through Texas ports">
+            <LineChart data={stateTrends} xKey="year" yKey="value" seriesKey="MexState" formatY={getAxisFormatter(trendMax, '$')} annotations={COVID_ANNOTATION} />
           </ChartCard>
         </div>
       </SectionBlock>
