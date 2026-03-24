@@ -1,6 +1,6 @@
 /**
  * TexasMexico Trade Flows Tab — OD analysis for trade through Texas border ports.
- * Same three visualizations as US-Mexico but filtered to Texas port flows.
+ * Choropleth flow map + bar chart + Sankey + heatmap.
  */
 import { useMemo, useEffect } from 'react'
 import { formatCurrency } from '@/lib/transborderHelpers'
@@ -10,6 +10,7 @@ import ChartCard from '@/components/ui/ChartCard'
 import BarChart from '@/components/charts/BarChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
+import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
 
 export default function TradeFlowsTab({
   texasOdStateFlows,
@@ -21,14 +22,20 @@ export default function TradeFlowsTab({
 }) {
   useEffect(() => { loadDataset('texasOdStateFlows') }, [loadDataset])
 
-  const filtered = useMemo(() => {
+  /* ── filter without year (for map animation) ──────────────────────── */
+  const filteredNoYear = useMemo(() => {
     if (!texasOdStateFlows) return []
     let data = texasOdStateFlows
-    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
     return data
-  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter])
+  }, [texasOdStateFlows, tradeTypeFilter, modeFilter])
+
+  const filtered = useMemo(() => {
+    if (!filteredNoYear.length) return []
+    if (yearFilter?.length) return filteredNoYear.filter((d) => yearFilter.includes(String(d.Year)))
+    return filteredNoYear
+  }, [filteredNoYear, yearFilter])
 
   /* ── Top trading pairs ────────────────────────────────────────────── */
   const topPairsData = useMemo(() => {
@@ -136,6 +143,25 @@ export default function TradeFlowsTab({
 
   return (
     <>
+      {/* Interactive Trade Flow Map */}
+      <SectionBlock>
+        <div className="max-w-7xl mx-auto">
+          <ChartCard
+            title="Trade Flow Map"
+            subtitle="Click a state or port to see flow arcs — use the timeline to animate through years"
+          >
+            <TradeFlowChoropleth
+              data={filteredNoYear}
+              yearFilter={yearFilter}
+              formatValue={formatCurrency}
+              center={[28, -100]}
+              zoom={5}
+              height="580px"
+            />
+          </ChartCard>
+        </div>
+      </SectionBlock>
+
       <SectionBlock alt>
         <ChartCard title="Top Trading Partners" subtitle="Largest bilateral trade flows between U.S. and Mexican states through Texas ports">
           <BarChart data={topPairsData} horizontal formatValue={formatCompact} maxBars={15} />
