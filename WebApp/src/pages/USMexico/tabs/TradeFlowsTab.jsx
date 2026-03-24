@@ -14,6 +14,7 @@ import BarChart from '@/components/charts/BarChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
 import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
+import LinkedStateMaps from '@/components/maps/LinkedStateMaps'
 
 export default function TradeFlowsTab({
   odStateFlows,
@@ -160,8 +161,23 @@ export default function TradeFlowsTab({
 
   return (
     <>
-      {/* Section 0: Interactive Trade Flow Map */}
+      {/* Section 0: Linked State Choropleths */}
       <SectionBlock>
+        <div className="max-w-7xl mx-auto">
+          <ChartCard
+            title="State-to-State Trade"
+            subtitle="Click a state on either map to see its trading partners highlighted on the other"
+          >
+            <LinkedStateMaps
+              odFlows={filtered}
+              formatValue={formatCurrency}
+            />
+          </ChartCard>
+        </div>
+      </SectionBlock>
+
+      {/* Section 1: Interactive Trade Flow Map */}
+      <SectionBlock alt>
         <div className="max-w-7xl mx-auto">
           <ChartCard
             title="Trade Flow Map"
@@ -179,8 +195,8 @@ export default function TradeFlowsTab({
         </div>
       </SectionBlock>
 
-      {/* Section 1: Trading Partners */}
-      <SectionBlock alt>
+      {/* Section 2: Trading Partners */}
+      <SectionBlock>
         <ChartCard
           title="Top Trading Partners"
           subtitle="Largest bilateral trade flows between U.S. and Mexican states by total value"
@@ -189,8 +205,8 @@ export default function TradeFlowsTab({
         </ChartCard>
       </SectionBlock>
 
-      {/* Section 2: Trade Routes (Sankey Diagram) */}
-      <SectionBlock>
+      {/* Section 3: Trade Routes (Sankey Diagram) */}
+      <SectionBlock alt>
         <ChartCard
           title="Trade Routes"
           subtitle="How trade flows from U.S. states through border ports to Mexican states (top 10 each)"
@@ -204,8 +220,8 @@ export default function TradeFlowsTab({
         </ChartCard>
       </SectionBlock>
 
-      {/* Section 3: Trade Matrix (Heatmap) */}
-      <SectionBlock alt>
+      {/* Section 4: Trade Matrix (Heatmap) */}
+      <SectionBlock>
         <ChartCard
           title="Trade Matrix"
           subtitle="U.S. states (rows) vs. Mexican states (columns) — darker = higher trade value"
