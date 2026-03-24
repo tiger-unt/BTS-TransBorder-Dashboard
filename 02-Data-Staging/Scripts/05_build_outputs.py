@@ -1,7 +1,7 @@
 """
 05_build_outputs.py -- Generate chart-driven dashboard JSON + CSV files from SQLite DB.
 
-Produces 7 datasets in two formats (JSON + CSV) in 03-Processed-Data/.
+Produces 10 datasets in two formats (JSON + CSV) in 03-Processed-Data/.
 Each dataset draws from exactly ONE DOT table -- no joins between tables.
 Datasets are designed to serve specific Phase 3 dashboard charts.
 
@@ -23,6 +23,8 @@ Datasets:
   6. commodity_detail         DOT2  Annual  Commodity by country/mode (Commodities page + US-Mexico commodity charts) -- 2007+
   7. monthly_trends           DOT1  Monthly Country/mode time series (TX Monthly tab) -- 2007+
   8. us_canada_ports          DOT1  Annual  US-Canada port-level with Mode (Overview map, future Canada page) -- 2007+
+  9. mexican_state_trade      DOT1  Annual  Mexican state trade (US-Mexico States tab choropleth) -- 2007+
+ 10. texas_mexican_state_trade DOT1  Annual  Mexican states via TX ports (TX-Mexico States tab choropleth) -- 2007+
 
 Design note: The previous us_mexico_commodities dataset (DOT2, Mexico-only with State
 dimension) was eliminated. No US-Mexico chart needs commodities broken down by state.
@@ -315,6 +317,59 @@ def build_commodity_detail(conn):
     return run_query(conn, sql)
 
 
+def build_mexican_state_trade(conn):
+    """Dataset 9: Mexican state-level trade by mode. Source: DOT1, Mexico only, 2007+.
+
+    Charts: US-Mexico States tab (ChoroplethMap, BarChart, LineChart, DataTable).
+            Shows which Mexican states are trading partners with the US.
+    """
+    sql = f"""
+        SELECT
+            "Year",
+            "MexState",
+            "Mode",
+            COALESCE("TradeType", 'Unknown') AS "TradeType",
+            ROUND(SUM("TradeValue"), 2) AS "TradeValue",
+            CASE WHEN SUM(CASE WHEN "Weight" IS NOT NULL THEN 1 ELSE 0 END) > 0
+                 THEN ROUND(SUM("Weight"), 2) ELSE NULL END AS "Weight"
+        FROM dot1_state_port
+        WHERE "Country" = 'Mexico' AND "Year" >= {MODERN_START_YEAR}
+          AND "MexState" IS NOT NULL AND "MexState" != ''
+          AND "MexState" NOT IN ('State Unknown', 'Unknown')
+        GROUP BY "Year", "MexState", "Mode", COALESCE("TradeType", 'Unknown')
+        ORDER BY "Year", "MexState", "Mode", "TradeType"
+    """
+    return run_query(conn, sql)
+
+
+def build_texas_mexican_state_trade(conn, tx_ports):
+    """Dataset 10: Mexican states trading through Texas border ports. Source: DOT1, 2007+.
+
+    Charts: Texas-Mexico States tab (ChoroplethMap, BarChart, LineChart, DataTable).
+            Shows which Mexican states trade through Texas border ports.
+    """
+    port_list = ",".join(f"'{p}'" for p in tx_ports)
+    sql = f"""
+        SELECT
+            "Year",
+            "MexState",
+            "Mode",
+            COALESCE("TradeType", 'Unknown') AS "TradeType",
+            ROUND(SUM("TradeValue"), 2) AS "TradeValue",
+            CASE WHEN SUM(CASE WHEN "Weight" IS NOT NULL THEN 1 ELSE 0 END) > 0
+                 THEN ROUND(SUM("Weight"), 2) ELSE NULL END AS "Weight"
+        FROM dot1_state_port
+        WHERE "Country" = 'Mexico'
+          AND "PortCode" IN ({port_list})
+          AND "Year" >= {MODERN_START_YEAR}
+          AND "MexState" IS NOT NULL AND "MexState" != ''
+          AND "MexState" NOT IN ('State Unknown', 'Unknown')
+        GROUP BY "Year", "MexState", "Mode", COALESCE("TradeType", 'Unknown')
+        ORDER BY "Year", "MexState", "Mode", "TradeType"
+    """
+    return run_query(conn, sql)
+
+
 def build_monthly_trends(conn):
     """Dataset 7: Monthly time series by country/mode. Source: DOT1, 2007+.
 
@@ -366,6 +421,8 @@ def main():
         ("us_state_trade", lambda: build_us_state_trade(conn)),
         ("commodity_detail", lambda: build_commodity_detail(conn)),
         ("monthly_trends", lambda: build_monthly_trends(conn)),
+        ("mexican_state_trade", lambda: build_mexican_state_trade(conn)),
+        ("texas_mexican_state_trade", lambda: build_texas_mexican_state_trade(conn, tx_ports)),
     ]
 
     print("Building datasets...")

@@ -8,7 +8,6 @@ import PageWrapper from '@/components/layout/PageWrapper'
 
 const OverviewPage = lazy(() => import('@/pages/Overview'))
 const USMexicoPage = lazy(() => import('@/pages/USMexico'))
-const USMexicoPortsPage = lazy(() => import('@/pages/USMexicoPorts'))
 const TexasMexicoPage = lazy(() => import('@/pages/TexasMexico'))
 const TradeByStatePage = lazy(() => import('@/pages/TradeByState'))
 const AboutPage = lazy(() => import('@/pages/About'))
@@ -76,7 +75,6 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<OverviewPage />} />
               <Route path="/us-mexico" element={<USMexicoPage />} />
-              <Route path="/us-mexico/ports" element={<USMexicoPortsPage />} />
               <Route path="/texas-mexico" element={<TexasMexicoPage />} />
               <Route path="/trade-by-state" element={<TradeByStatePage />} />
               <Route path="/about" element={<AboutPage />} />

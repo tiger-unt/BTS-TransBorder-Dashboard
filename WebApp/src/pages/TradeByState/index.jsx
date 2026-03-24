@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useTransborderStore } from '@/stores/transborderStore'
 import { formatCurrency } from '@/lib/chartColors'
 import { buildFilterOptions, applyStandardFilters } from '@/lib/transborderHelpers'
-import { usePortCoordinates, buildMapPorts } from '@/hooks/usePortMapData'
+import { useStateCoordinates, buildMapStates } from '@/hooks/usePortMapData'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import FilterMultiSelect from '@/components/filters/FilterMultiSelect'
 import FilterSelect from '@/components/filters/FilterSelect'
@@ -12,7 +12,7 @@ import StatCard from '@/components/ui/StatCard'
 import DataTable from '@/components/ui/DataTable'
 import BarChart from '@/components/charts/BarChart'
 import LineChart from '@/components/charts/LineChart'
-import PortMap from '@/components/maps/PortMap'
+import StateMap from '@/components/maps/StateMap'
 import HeroStardust from '@/components/ui/HeroStardust'
 import { DollarSign, MapPin, Award, TrendingUp } from 'lucide-react'
 import DatasetError from '@/components/ui/DatasetError'
@@ -22,7 +22,7 @@ export default function TradeByStatePage() {
   const { usStateTrade, datasetErrors, loadDataset } = useTransborderStore()
 
   /* ── lazy-load datasets on mount ────────────────────────────────── */
-  useEffect(() => { loadDataset('usStateTrade'); loadDataset('usMexicoPorts') }, [loadDataset])
+  useEffect(() => { loadDataset('usStateTrade') }, [loadDataset])
 
   /* ── loading / error ───────────────────────────────────────────── */
   if (datasetErrors.usStateTrade) {
@@ -44,10 +44,8 @@ export default function TradeByStatePage() {
 
 /* ── Inner component (renders once data is loaded) ────────────────── */
 function TradeByStateInner({ data }) {
-  const { usMexicoPorts } = useTransborderStore()
-
-  /* ── port coordinates for map ──────────────────────────────────── */
-  const { portCoords } = usePortCoordinates()
+  /* ── state coordinates for map ─────────────────────────────────── */
+  const { portCoords: stateCoords } = useStateCoordinates()
 
   /* ── local filters ──────────────────────────────────────────────── */
   const [selectedYears, setSelectedYears] = useState([])
@@ -89,15 +87,10 @@ function TradeByStateInner({ data }) {
     return filtered.filter((d) => d.Year === latestYear)
   }, [filtered, latestYear])
 
-  /* ── map: filter port data by current filters, build markers ───── */
-  const filteredPortsForMap = useMemo(() => {
-    if (!usMexicoPorts?.length) return []
-    return applyStandardFilters(usMexicoPorts, { Year: selectedYears, TradeType: tradeType, Mode: selectedModes, Country: country })
-  }, [usMexicoPorts, selectedYears, tradeType, selectedModes, country])
-
-  const mapPorts = useMemo(
-    () => buildMapPorts(filteredPortsForMap, portCoords),
-    [filteredPortsForMap, portCoords],
+  /* ── map: build state markers from filtered state-level data ───── */
+  const mapStates = useMemo(
+    () => buildMapStates(latestFiltered, stateCoords),
+    [latestFiltered, stateCoords],
   )
 
   /* ── state aggregation (latest year) ────────────────────────────── */
@@ -279,15 +272,13 @@ function TradeByStateInner({ data }) {
         </div>
       </SectionBlock>
 
-      {/* Border Ports Map */}
-      {mapPorts.length > 0 && (
+      {/* State Trade Map */}
+      {mapStates.length > 0 && (
         <SectionBlock alt>
-          <ChartCard title="Border Ports of Entry" subtitle="Ports sized by trade value across the U.S.-Mexico border">
-            <PortMap
-              ports={mapPorts}
+          <ChartCard title={`Trade by State (${latestYear || '—'})`} subtitle="States sized by total cross-border trade value">
+            <StateMap
+              states={mapStates}
               formatValue={formatCurrency}
-              center={[29.5, -104.0]}
-              zoom={5}
               height="480px"
             />
           </ChartCard>
