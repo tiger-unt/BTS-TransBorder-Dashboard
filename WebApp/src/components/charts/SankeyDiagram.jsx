@@ -24,6 +24,7 @@ export default function SankeyDiagram({
   links = [],
   formatValue = formatCompact,
   height: chartHeight = 500,
+  columnHeaders,
 }) {
   const containerRef = useRef(null)
   const svgRef = useRef(null)
@@ -32,29 +33,34 @@ export default function SankeyDiagram({
   const [hoveredNode, setHoveredNode] = useState(null)
 
   useEffect(() => {
-    if (!svgRef.current || !nodes.length || !links.length || width < 200) return
+    // Use observed width, or fall back to container's measured width
+    const effectiveWidth = width || (containerRef.current?.getBoundingClientRect().width ?? 0)
+    if (!svgRef.current || !nodes.length || !links.length || effectiveWidth < 200) return
 
     const margin = { top: 10, right: 10, bottom: 10, left: 10 }
-    const w = width - margin.left - margin.right
+    const w = effectiveWidth - margin.left - margin.right
     const h = chartHeight - margin.top - margin.bottom
 
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
-    svg.attr('width', width).attr('height', chartHeight)
+    svg.attr('width', effectiveWidth).attr('height', chartHeight)
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
+
+    // Determine column order from groups present in data
+    const defaultOrder = ['us', 'port', 'mx']
+    const presentGroups = [...new Set(nodes.map((n) => n.group))]
+    const groupOrder = defaultOrder.filter((g) => presentGroups.includes(g))
+    // Fallback: append any groups not in default order
+    presentGroups.forEach((g) => { if (!groupOrder.includes(g)) groupOrder.push(g) })
+    const groupIndex = Object.fromEntries(groupOrder.map((g, i) => [g, i]))
 
     // Build sankey
     const sankeyLayout = d3Sankey()
       .nodeId((d) => d.id)
       .nodeWidth(18)
       .nodePadding(6)
-      .nodeAlign((node, n) => {
-        // Force 3-column layout: us=0, port=1, mx=2
-        if (node.group === 'us') return 0
-        if (node.group === 'port') return 1
-        return 2
-      })
+      .nodeAlign((node) => groupIndex[node.group] ?? 0)
       .extent([[0, 0], [w, h]])
 
     // Deep copy nodes/links to avoid mutation
@@ -139,12 +145,13 @@ export default function SankeyDiagram({
         setTooltip(null)
       })
 
-    // Node labels
+    // Node labels — last column gets right-aligned labels
+    const lastGroup = groupOrder[groupOrder.length - 1]
     nodeG.append('text')
-      .attr('x', (d) => d.group === 'mx' ? d.x0 - 6 : d.x1 + 6)
+      .attr('x', (d) => d.group === lastGroup ? d.x0 - 6 : d.x1 + 6)
       .attr('y', (d) => (d.y0 + d.y1) / 2)
       .attr('dy', '0.35em')
-      .attr('text-anchor', (d) => d.group === 'mx' ? 'end' : 'start')
+      .attr('text-anchor', (d) => d.group === lastGroup ? 'end' : 'start')
       .attr('font-size', '11px')
       .attr('fill', '#333')
       .text((d) => {
@@ -154,20 +161,19 @@ export default function SankeyDiagram({
 
     // Column headers
     const headerY = -2
-    const cols = [
-      { label: 'U.S. States', x: 0 },
-      { label: 'Border Ports', x: w / 2 },
-      { label: 'Mexican States', x: w },
-    ]
-    cols.forEach((col) => {
+    const defaultHeaders = { us: 'U.S. States', port: 'Border Ports', mx: 'Mexican States' }
+    const headers = columnHeaders || groupOrder.map((g) => defaultHeaders[g] || g)
+    const colCount = headers.length
+    headers.forEach((label, i) => {
+      const x = colCount === 1 ? 0 : (i / (colCount - 1)) * w
       g.append('text')
-        .attr('x', col.x)
+        .attr('x', x)
         .attr('y', headerY)
-        .attr('text-anchor', col.x === 0 ? 'start' : col.x === w ? 'end' : 'middle')
+        .attr('text-anchor', i === 0 ? 'start' : i === colCount - 1 ? 'end' : 'middle')
         .attr('font-size', '12px')
         .attr('font-weight', 600)
         .attr('fill', '#666')
-        .text(col.label)
+        .text(label)
     })
   }, [nodes, links, width, chartHeight])
 

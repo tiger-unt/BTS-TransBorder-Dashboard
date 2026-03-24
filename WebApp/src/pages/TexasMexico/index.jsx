@@ -72,7 +72,7 @@ export default function TexasMexicoPage() {
   useEffect(() => {
     if (activeTab === 'commodities') loadDataset('texasMexicoCommodities')
     if (activeTab === 'ports') loadDataset('monthlyTrends')
-    if (activeTab === 'states') loadDataset('texasMexicanStateTrade')
+    if (activeTab === 'states') { loadDataset('texasMexicanStateTrade'); loadDataset('texasOdStateFlows') }
     if (activeTab === 'flows') loadDataset('texasOdStateFlows')
   }, [activeTab, loadDataset])
 
@@ -289,6 +289,7 @@ export default function TexasMexicoPage() {
         <div role="tabpanel" id="txmx-freight-tab-panel-states" aria-labelledby="txmx-freight-tab-states">
           <StatesTab
             texasMexicanStateTrade={texasMexicanStateTrade}
+            texasOdStateFlows={texasOdStateFlows}
             loadDataset={loadDataset}
             latestYear={latestYear}
             yearFilter={yearFilter}

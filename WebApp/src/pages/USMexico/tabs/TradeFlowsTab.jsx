@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/transborderHelpers'
 import { formatCompact } from '@/lib/chartColors'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
-import ChordDiagram from '@/components/charts/ChordDiagram'
+import BarChart from '@/components/charts/BarChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
 
@@ -33,8 +33,8 @@ export default function TradeFlowsTab({
     return data
   }, [odStateFlows, yearFilter, tradeTypeFilter, modeFilter])
 
-  /* ── Chord data: aggregate US State x MX State ────────────────────── */
-  const chordData = useMemo(() => {
+  /* ── Top trading pairs: US State ↔ MX State ─────────────────────── */
+  const topPairsData = useMemo(() => {
     if (!filtered.length) return []
     const pairMap = new Map()
     filtered.forEach((d) => {
@@ -43,8 +43,11 @@ export default function TradeFlowsTab({
     })
     return Array.from(pairMap, ([key, value]) => {
       const [source, target] = key.split('|')
-      return { source, target, value }
-    }).filter((d) => d.value > 0)
+      return { label: `${source} ↔ ${target}`, value }
+    })
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 15)
   }, [filtered])
 
   /* ── Sankey data: US State → Port → MX State ──────────────────────── */
@@ -152,10 +155,10 @@ export default function TradeFlowsTab({
       {/* Section 1: Trading Partners (Chord Diagram) */}
       <SectionBlock alt>
         <ChartCard
-          title="Trading Partners"
-          subtitle="Bilateral trade flows between U.S. and Mexican states — hover a state to highlight its connections"
+          title="Top Trading Partners"
+          subtitle="Largest bilateral trade flows between U.S. and Mexican states by total value"
         >
-          <ChordDiagram data={chordData} formatValue={formatCompact} maxGroups={12} />
+          <BarChart data={topPairsData} horizontal formatValue={formatCompact} maxBars={15} />
         </ChartCard>
       </SectionBlock>
 

@@ -5,10 +5,11 @@
  */
 import { useMemo, useEffect } from 'react'
 import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS } from '@/lib/chartColors'
+import { CHART_COLORS, formatCompact } from '@/lib/chartColors'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
 import ChoroplethMap from '@/components/maps/ChoroplethMap'
+import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import BarChart from '@/components/charts/BarChart'
 import LineChart from '@/components/charts/LineChart'
 import DataTable from '@/components/ui/DataTable'
@@ -18,6 +19,7 @@ const BASE = import.meta.env.BASE_URL
 
 export default function StatesTab({
   texasMexicanStateTrade,
+  texasOdStateFlows,
   loadDataset,
   latestYear,
   yearFilter,
@@ -25,7 +27,7 @@ export default function StatesTab({
   modeFilter,
   datasetError,
 }) {
-  useEffect(() => { loadDataset('texasMexicanStateTrade') }, [loadDataset])
+  useEffect(() => { loadDataset('texasMexicanStateTrade'); loadDataset('texasOdStateFlows') }, [loadDataset])
 
   /* ── filter data ───────────────────────────────────────────────────── */
   const filtered = useMemo(() => {
@@ -96,6 +98,46 @@ export default function StatesTab({
     return Array.from(byState.values()).sort((a, b) => b.Total - a.Total)
   }, [filtered])
 
+  /* ── Sankey: Port → Mexican State ──────────────────────────────── */
+  const sankeyData = useMemo(() => {
+    if (!texasOdStateFlows) return { nodes: [], links: [] }
+    let data = texasOdStateFlows
+    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
+    if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
+    if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+
+    const portTotals = new Map()
+    const mxTotals = new Map()
+    data.forEach((d) => {
+      portTotals.set(d.Port, (portTotals.get(d.Port) || 0) + (d.TradeValue || 0))
+      mxTotals.set(d.MexState, (mxTotals.get(d.MexState) || 0) + (d.TradeValue || 0))
+    })
+
+    const topPorts = [...portTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n]) => n)
+    const topMX = [...mxTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n]) => n)
+    const topPortSet = new Set(topPorts)
+    const topMXSet = new Set(topMX)
+
+    const nodes = [
+      ...topPorts.map((n) => ({ id: `port-${n}`, name: n, group: 'port' })),
+      ...topMX.map((n) => ({ id: `mx-${n}`, name: n, group: 'mx' })),
+    ]
+
+    const linkMap = new Map()
+    data.forEach((d) => {
+      if (!topPortSet.has(d.Port) || !topMXSet.has(d.MexState)) return
+      const key = `port-${d.Port}|mx-${d.MexState}`
+      linkMap.set(key, (linkMap.get(key) || 0) + (d.TradeValue || 0))
+    })
+
+    const links = Array.from(linkMap, ([key, value]) => {
+      const [source, target] = key.split('|')
+      return { source, target, value }
+    }).filter((l) => l.value > 0)
+
+    return { nodes, links }
+  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter])
+
   const tableColumns = [
     { key: 'State', label: 'Mexican State' },
     { key: 'Total', label: 'Total Trade', render: (v) => formatCurrency(v) },
@@ -144,6 +186,21 @@ export default function StatesTab({
               zoom={5}
               height="480px"
               title="Mexican States"
+            />
+          </ChartCard>
+        </div>
+      </SectionBlock>
+
+      {/* Port → Mexican State Sankey */}
+      <SectionBlock>
+        <div className="max-w-7xl mx-auto">
+          <ChartCard title="Port–State Trade Flows" subtitle="How trade flows from Texas border ports to Mexican states">
+            <SankeyDiagram
+              nodes={sankeyData.nodes}
+              links={sankeyData.links}
+              formatValue={formatCompact}
+              height={520}
+              columnHeaders={['Border Ports', 'Mexican States']}
             />
           </ChartCard>
         </div>
