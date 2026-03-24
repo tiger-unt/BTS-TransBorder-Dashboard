@@ -1,8 +1,9 @@
 /**
- * USMexico Trade Flows Tab — Origin-destination analysis with three visualizations:
- * 1. Chord Diagram — "Who trades with whom?"
- * 2. Sankey Diagram — "How does trade route through the border?"
- * 3. Heatmap Matrix — "Explore the full trade matrix"
+ * USMexico Trade Flows Tab — Origin-destination analysis with four visualizations:
+ * 1. Choropleth Flow Map — Interactive map with flow arcs + year animation
+ * 2. Top Trading Partners — Bar chart
+ * 3. Sankey Diagram — "How does trade route through the border?"
+ * 4. Heatmap Matrix — "Explore the full trade matrix"
  */
 import { useMemo, useEffect } from 'react'
 import { formatCurrency } from '@/lib/transborderHelpers'
@@ -12,6 +13,7 @@ import ChartCard from '@/components/ui/ChartCard'
 import BarChart from '@/components/charts/BarChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
+import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
 
 export default function TradeFlowsTab({
   odStateFlows,
@@ -23,15 +25,21 @@ export default function TradeFlowsTab({
 }) {
   useEffect(() => { loadDataset('odStateFlows') }, [loadDataset])
 
-  /* ── filter data ───────────────────────────────────────────────────── */
-  const filtered = useMemo(() => {
+  /* ── filter data (without year — for map animation) ───────────────── */
+  const filteredNoYear = useMemo(() => {
     if (!odStateFlows) return []
     let data = odStateFlows
-    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
     return data
-  }, [odStateFlows, yearFilter, tradeTypeFilter, modeFilter])
+  }, [odStateFlows, tradeTypeFilter, modeFilter])
+
+  /* ── filter data ───────────────────────────────────────────────────── */
+  const filtered = useMemo(() => {
+    if (!filteredNoYear.length) return []
+    if (yearFilter?.length) return filteredNoYear.filter((d) => yearFilter.includes(String(d.Year)))
+    return filteredNoYear
+  }, [filteredNoYear, yearFilter])
 
   /* ── Top trading pairs: US State ↔ MX State ─────────────────────── */
   const topPairsData = useMemo(() => {
@@ -152,7 +160,26 @@ export default function TradeFlowsTab({
 
   return (
     <>
-      {/* Section 1: Trading Partners (Chord Diagram) */}
+      {/* Section 0: Interactive Trade Flow Map */}
+      <SectionBlock>
+        <div className="max-w-7xl mx-auto">
+          <ChartCard
+            title="Trade Flow Map"
+            subtitle="Click a state or port to see flow arcs — use the timeline to animate through years"
+          >
+            <TradeFlowChoropleth
+              data={filteredNoYear}
+              yearFilter={yearFilter}
+              formatValue={formatCurrency}
+              center={[30, -100]}
+              zoom={4}
+              height="580px"
+            />
+          </ChartCard>
+        </div>
+      </SectionBlock>
+
+      {/* Section 1: Trading Partners */}
       <SectionBlock alt>
         <ChartCard
           title="Top Trading Partners"

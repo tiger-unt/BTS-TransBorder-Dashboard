@@ -1,0 +1,904 @@
+/**
+ * TradeFlowChoropleth.jsx
+ *
+ * Interactive dual-choropleth map (US states + Mexican states) with border port
+ * bubbles, animated flow-arc lines on click, and a year-animation timeline.
+ *
+ * Click a US state   → arc lines to its top MX trading partners
+ * Click a MX state   → arc lines to its top US trading partners
+ * Click a port       → arcs to connected US & MX states
+ * Toggle "Via Ports" → routes state→port→state instead of direct arcs
+ * Year animation     → play/scrub through years to see trade evolution
+ *
+ * Props:
+ *   data         — OD rows filtered by tradeType/mode but NOT by year
+ *                   [{ Year, State, MexState, PortCode, Port, TradeValue }]
+ *   yearFilter   — external year filter array from parent (used when not animating)
+ *   formatValue  — currency formatter
+ *   center, zoom — map positioning
+ *   height       — CSS height
+ */
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  MapContainer, TileLayer, GeoJSON, CircleMarker, Polyline,
+  useMap, useMapEvents,
+} from 'react-leaflet'
+import * as d3 from 'd3'
+import 'leaflet/dist/leaflet.css'
+
+import { usePortCoordinates, useStateCoordinates, buildMapPorts } from '@/hooks/usePortMapData'
+import {
+  ScrollWheelGuard, MapResizeHandler, ResetZoomButton, TooltipSync,
+  formatCurrencyDefault,
+} from './mapHelpers'
+
+const BASE = import.meta.env.BASE_URL
+
+/* ═══════════════════════════════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════════════════════════════ */
+
+const geoCache = {}
+
+function useGeoJSON(url) {
+  const [geojson, setGeojson] = useState(geoCache[url] || null)
+  const [loading, setLoading] = useState(!geoCache[url])
+  useEffect(() => {
+    if (!url) { setLoading(false); return }
+    if (geoCache[url]) { setGeojson(geoCache[url]); setLoading(false); return }
+    let cancelled = false
+    setLoading(true)
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => { geoCache[url] = data; if (!cancelled) { setGeojson(data); setLoading(false) } })
+      .catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [url])
+  return { geojson, loading }
+}
+
+/** Compute polygon centroids from a GeoJSON FeatureCollection */
+function computeCentroids(geojson, nameProperty = 'name') {
+  if (!geojson?.features) return {}
+  const out = {}
+  for (const f of geojson.features) {
+    const name = f.properties?.[nameProperty]
+    if (!name) continue
+    const coords = []
+    const g = f.geometry
+    if (g?.type === 'Polygon') g.coordinates[0].forEach((c) => coords.push(c))
+    else if (g?.type === 'MultiPolygon') g.coordinates.forEach((p) => p[0].forEach((c) => coords.push(c)))
+    if (coords.length) {
+      out[name] = [
+        coords.reduce((s, c) => s + c[1], 0) / coords.length,
+        coords.reduce((s, c) => s + c[0], 0) / coords.length,
+      ]
+    }
+  }
+  return out
+}
+
+/** Quadratic Bézier arc between two [lat,lng] points */
+function computeArc(start, end, curveOffset = 0.18, numPoints = 24) {
+  const dx = end[1] - start[1]
+  const dy = end[0] - start[0]
+  const dist = Math.sqrt(dx * dx + dy * dy)
+  if (dist < 0.01) return [start, end]
+  const midLat = (start[0] + end[0]) / 2 + (dx / dist) * dist * curveOffset
+  const midLng = (start[1] + end[1]) / 2 - (dy / dist) * dist * curveOffset
+  const pts = []
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints
+    const u = 1 - t
+    pts.push([
+      u * u * start[0] + 2 * u * t * midLat + t * t * end[0],
+      u * u * start[1] + 2 * u * t * midLng + t * t * end[1],
+    ])
+  }
+  return pts
+}
+
+function radiusScale(value, maxValue) {
+  if (!maxValue || !value) return 4
+  return Math.max(4, Math.min(18, 4 + 14 * Math.sqrt(value / maxValue)))
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Leaflet sub-components
+   ═══════════════════════════════════════════════════════════════════ */
+
+function PortPane() {
+  const map = useMap()
+  useEffect(() => {
+    if (!map.getPane('portMarkers')) {
+      const pane = map.createPane('portMarkers')
+      pane.style.zIndex = '650'
+    }
+  }, [map])
+  return null
+}
+
+function MapClickReset({ setSelection }) {
+  useMapEvents({ click: (e) => { if (!e.originalEvent?._stopped) setSelection(null) } })
+  return null
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Selection info panel (top-right overlay)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function SelectionPanel({ selection, stateFlows, portFlows, formatValue }) {
+  if (!selection) return null
+
+  let title, subtitle, items
+  if (selection.type === 'us-state') {
+    title = selection.name
+    subtitle = 'MX Partners'
+    const p = stateFlows.usToMx.get(selection.name)
+    items = p
+      ? [...p.entries()].map(([n, v]) => ({ name: n, value: v })).sort((a, b) => b.value - a.value).slice(0, 10)
+      : []
+  } else if (selection.type === 'mx-state') {
+    title = selection.name
+    subtitle = 'US Partners'
+    const p = stateFlows.mxToUs.get(selection.name)
+    items = p
+      ? [...p.entries()].map(([n, v]) => ({ name: n, value: v })).sort((a, b) => b.value - a.value).slice(0, 10)
+      : []
+  } else {
+    title = selection.name
+    subtitle = 'Connected'
+    const us = portFlows.portToUs.get(selection.id) || new Map()
+    const mx = portFlows.portToMx.get(selection.id) || new Map()
+    items = [
+      ...[...us.entries()].map(([n, v]) => ({ name: `${n} (US)`, value: v })),
+      ...[...mx.entries()].map(([n, v]) => ({ name: `${n} (MX)`, value: v })),
+    ].sort((a, b) => b.value - a.value).slice(0, 12)
+  }
+
+  return (
+    <div className="absolute top-3 right-3 z-[1000] bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-2 max-w-[240px] max-h-[300px] overflow-y-auto text-sm">
+      <div className="font-semibold text-text-primary mb-1 flex items-center justify-between">
+        <span>{title}</span>
+        <span className="text-xs text-text-secondary ml-2">{subtitle}</span>
+      </div>
+      {items.length === 0 && (
+        <div className="text-text-secondary text-xs italic">No connections found</div>
+      )}
+      {items.map((item) => (
+        <div key={item.name} className="flex justify-between gap-2 py-0.5">
+          <span className="truncate">{item.name}</span>
+          <span className="text-text-secondary whitespace-nowrap">{formatValue(item.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Year animation bar (below legend)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function YearAnimationBar({ years, animYear, isPlaying, onYearChange, onPlayPause, onStop }) {
+  if (!years.length) return null
+  const minY = years[0]
+  const maxY = years[years.length - 1]
+  const curY = animYear ?? maxY
+
+  return (
+    <div className="flex items-center gap-3 px-3 py-2 bg-white/95 border-t border-border-light flex-shrink-0">
+      {/* play / pause */}
+      <button
+        onClick={onPlayPause}
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-blue text-white hover:bg-brand-blue/80 transition-colors cursor-pointer flex-shrink-0"
+        title={isPlaying ? 'Pause' : 'Play year animation'}
+      >
+        {isPlaying ? (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1" width="3.5" height="12" rx="1" /><rect x="8.5" y="1" width="3.5" height="12" rx="1" /></svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><polygon points="3,1 12,7 3,13" /></svg>
+        )}
+      </button>
+
+      {/* stop */}
+      {(isPlaying || animYear != null) && (
+        <button
+          onClick={onStop}
+          className="flex items-center justify-center w-7 h-7 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors cursor-pointer flex-shrink-0"
+          title="Reset to filter view"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect x="1" y="1" width="10" height="10" rx="1" /></svg>
+        </button>
+      )}
+
+      <span className="font-bold text-brand-blue text-lg min-w-[3.5rem] text-center tabular-nums">
+        {curY}
+      </span>
+
+      <input
+        type="range"
+        min={minY}
+        max={maxY}
+        step={1}
+        value={curY}
+        onChange={(e) => onYearChange(Number(e.target.value))}
+        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
+      />
+
+      <span className="text-xs text-text-secondary flex-shrink-0 tabular-nums">
+        {minY}&ndash;{maxY}
+      </span>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Choropleth layer (reusable for US or MX)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ChoroplethLayer({
+  geojsonUrl, data, nameProperty = 'name', colorRange, emptyColor,
+  selection, highlightedStates, dynamicValues,
+  formatValue, metricLabel, selectionType,
+  setSelection, setTooltip, mapInstanceRef,
+}) {
+  const { geojson, loading } = useGeoJSON(geojsonUrl)
+  const geoJsonRef = useRef(null)
+
+  const effectiveValues = useMemo(
+    () => dynamicValues || data,
+    [data, dynamicValues],
+  )
+
+  const valueMap = useMemo(() => {
+    const m = new Map()
+    for (const d of effectiveValues) if (d.name && d.value != null) m.set(d.name, d.value)
+    return m
+  }, [effectiveValues])
+
+  const colorScale = useMemo(() => {
+    const vals = effectiveValues.map((d) => d.value).filter((v) => v != null && v > 0)
+    if (!vals.length) return () => emptyColor
+    return d3.scaleSequential().domain(d3.extent(vals)).interpolator(d3.interpolateRgb(colorRange[0], colorRange[1]))
+  }, [effectiveValues, colorRange, emptyColor])
+
+  const style = useCallback(
+    (feature) => {
+      const name = feature.properties?.[nameProperty]
+      const value = valueMap.get(name)
+      if (highlightedStates) {
+        if (!highlightedStates.has(name))
+          return { fillColor: emptyColor, weight: 0.8, opacity: 0.4, color: '#aaa', fillOpacity: 0.25 }
+        return {
+          fillColor: value != null && value > 0 ? colorScale(value) : emptyColor,
+          weight: 2.5, opacity: 1, color: '#333', fillOpacity: 0.85,
+        }
+      }
+      return {
+        fillColor: value != null && value > 0 ? colorScale(value) : emptyColor,
+        weight: 1, opacity: 0.7, color: '#888', fillOpacity: 0.6,
+      }
+    },
+    [nameProperty, valueMap, colorScale, emptyColor, highlightedStates],
+  )
+
+  const onEachFeature = useCallback(
+    (feature, layer) => {
+      const name = feature.properties?.[nameProperty]
+      layer.on({
+        mouseover: (e) => {
+          const value = valueMap.get(name)
+          if (!highlightedStates || highlightedStates.has(name)) {
+            e.target.setStyle({ weight: 2.5, color: '#333', fillOpacity: 0.85 })
+            e.target.bringToFront()
+          }
+          const map = mapInstanceRef.current
+          if (!map) return
+          const pt = map.latLngToContainerPoint(e.latlng)
+          const rect = map.getContainer().getBoundingClientRect()
+          setTooltip({
+            content: (
+              <>
+                <strong>{name || 'Unknown'}</strong><br />
+                {value != null ? `${formatValue(value)} ${metricLabel}` : 'No data'}
+                {!selection && (
+                  <><br /><span style={{ fontSize: 11, color: '#666' }}>Click to explore trade flows</span></>
+                )}
+              </>
+            ),
+            x: rect.left + pt.x, y: rect.top + pt.y - 12,
+            latLng: [e.latlng.lat, e.latlng.lng], offsetY: -12,
+          })
+        },
+        mouseout: (e) => { geoJsonRef.current?.resetStyle(e.target); setTooltip(null) },
+        mousemove: (e) => {
+          const map = mapInstanceRef.current
+          if (!map) return
+          const pt = map.latLngToContainerPoint(e.latlng)
+          const rect = map.getContainer().getBoundingClientRect()
+          setTooltip((prev) =>
+            prev ? { ...prev, x: rect.left + pt.x, y: rect.top + pt.y - 12, latLng: [e.latlng.lat, e.latlng.lng] } : null,
+          )
+        },
+        click: (e) => {
+          e.originalEvent._stopped = true
+          if (selection?.type === selectionType && selection.name === name) setSelection(null)
+          else setSelection({ type: selectionType, name, id: name })
+        },
+      })
+    },
+    [nameProperty, valueMap, formatValue, metricLabel, highlightedStates, selection, selectionType, mapInstanceRef, setSelection, setTooltip],
+  )
+
+  const geoKey = useMemo(() => {
+    const sel = selection ? `${selection.type}-${selection.id}` : 'none'
+    return `${geojsonUrl}-${data.length}-${data.reduce((s, d) => s + (d.value || 0), 0).toFixed(0)}-${sel}`
+  }, [geojsonUrl, data, selection])
+
+  if (loading || !geojson) return null
+
+  return <GeoJSON key={geoKey} ref={geoJsonRef} data={geojson} style={style} onEachFeature={onEachFeature} />
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Main component
+   ═══════════════════════════════════════════════════════════════════ */
+
+export default function TradeFlowChoropleth({
+  data = [],
+  yearFilter = [],
+  formatValue = formatCurrencyDefault,
+  center = [30, -100],
+  zoom = 4,
+  height = '580px',
+}) {
+  const mapInstanceRef = useRef(null)
+  const [tooltip, setTooltip] = useState(null)
+  const [mapActive, setMapActive] = useState(false)
+  const [showHint, setShowHint] = useState(false)
+  const hintTimer = useRef(null)
+  const [selection, setSelection] = useState(null)
+
+  /* ── flow mode toggle ──────────────────────────────────────────── */
+  const [flowMode, setFlowMode] = useState('direct') // 'direct' | 'via-ports'
+
+  /* ── animation state ───────────────────────────────────────────── */
+  const [animYear, setAnimYear] = useState(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  /* ── coordinate sources ────────────────────────────────────────── */
+  const { portCoords } = usePortCoordinates()
+  const { portCoords: stateCoords } = useStateCoordinates()
+  const { geojson: mxGeojson } = useGeoJSON(`${BASE}data/mexican_states.geojson`)
+
+  const mxCentroids = useMemo(() => (mxGeojson ? computeCentroids(mxGeojson) : {}), [mxGeojson])
+
+  const usCentroids = useMemo(() => {
+    if (!stateCoords) return {}
+    const r = {}
+    for (const [n, c] of Object.entries(stateCoords)) r[n] = [c.lat, c.lon]
+    return r
+  }, [stateCoords])
+
+  const portCentroidLookup = useMemo(() => {
+    if (!portCoords) return {}
+    const r = {}
+    for (const [code, c] of Object.entries(portCoords)) {
+      if (c.lat != null && c.lon != null) r[code] = [c.lat, c.lon]
+    }
+    return r
+  }, [portCoords])
+
+  /* ── available years ───────────────────────────────────────────── */
+  const years = useMemo(() => {
+    const s = new Set(data.map((d) => d.Year).filter(Boolean))
+    return [...s].sort((a, b) => a - b)
+  }, [data])
+
+  /* ── effective year (animation or parent filter) ───────────────── */
+  const effectiveYears = useMemo(() => {
+    if (animYear != null) return [String(animYear)]
+    if (yearFilter?.length) return yearFilter
+    return []
+  }, [animYear, yearFilter])
+
+  const filtered = useMemo(() => {
+    if (!effectiveYears.length) return data
+    return data.filter((d) => effectiveYears.includes(String(d.Year)))
+  }, [data, effectiveYears])
+
+  /* ── animation controls ────────────────────────────────────────── */
+  useEffect(() => {
+    if (!isPlaying || !years.length) return
+    const timer = setInterval(() => {
+      setAnimYear((y) => {
+        const idx = years.indexOf(y ?? years[0])
+        if (idx + 1 >= years.length) { setIsPlaying(false); return years[years.length - 1] }
+        return years[idx + 1]
+      })
+    }, 1200)
+    return () => clearInterval(timer)
+  }, [isPlaying, years])
+
+  const handlePlayPause = useCallback(() => {
+    if (isPlaying) { setIsPlaying(false); return }
+    if (animYear == null || animYear === years[years.length - 1]) setAnimYear(years[0])
+    setIsPlaying(true)
+  }, [isPlaying, animYear, years])
+
+  const handleStop = useCallback(() => { setIsPlaying(false); setAnimYear(null) }, [])
+  const handleYearChange = useCallback((y) => { setIsPlaying(false); setAnimYear(y) }, [])
+
+  /* ── aggregate: US state totals ────────────────────────────────── */
+  const usStateData = useMemo(() => {
+    const m = new Map()
+    filtered.forEach((d) => { if (d.State) m.set(d.State, (m.get(d.State) || 0) + (d.TradeValue || 0)) })
+    return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  }, [filtered])
+
+  /* ── aggregate: MX state totals ────────────────────────────────── */
+  const mxStateData = useMemo(() => {
+    const m = new Map()
+    filtered.forEach((d) => { if (d.MexState) m.set(d.MexState, (m.get(d.MexState) || 0) + (d.TradeValue || 0)) })
+    return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  }, [filtered])
+
+  /* ── port bubble data ──────────────────────────────────────────── */
+  const portData = useMemo(() => {
+    if (!portCoords) return []
+    return buildMapPorts(filtered, portCoords)
+  }, [filtered, portCoords])
+  const portMax = useMemo(() => Math.max(1, ...portData.map((p) => p.value || 0)), [portData])
+
+  /* ── state-to-state flows ──────────────────────────────────────── */
+  const stateFlows = useMemo(() => {
+    const usToMx = new Map()
+    const mxToUs = new Map()
+    filtered.forEach((d) => {
+      if (!d.State || !d.MexState) return
+      const v = d.TradeValue || 0
+      if (!usToMx.has(d.State)) usToMx.set(d.State, new Map())
+      const um = usToMx.get(d.State); um.set(d.MexState, (um.get(d.MexState) || 0) + v)
+      if (!mxToUs.has(d.MexState)) mxToUs.set(d.MexState, new Map())
+      const mu = mxToUs.get(d.MexState); mu.set(d.State, (mu.get(d.State) || 0) + v)
+    })
+    return { usToMx, mxToUs }
+  }, [filtered])
+
+  /* ── port flows ────────────────────────────────────────────────── */
+  const portFlows = useMemo(() => {
+    const portToUs = new Map()
+    const portToMx = new Map()
+    filtered.forEach((d) => {
+      if (!d.PortCode) return
+      const code = d.PortCode.replace(/\D/g, '')
+      const v = d.TradeValue || 0
+      if (d.State) { if (!portToUs.has(code)) portToUs.set(code, new Map()); const m = portToUs.get(code); m.set(d.State, (m.get(d.State) || 0) + v) }
+      if (d.MexState) { if (!portToMx.has(code)) portToMx.set(code, new Map()); const m = portToMx.get(code); m.set(d.MexState, (m.get(d.MexState) || 0) + v) }
+    })
+    return { portToUs, portToMx }
+  }, [filtered])
+
+  /* ── state-to-port-to-state flows (for "via ports" mode) ───────── */
+  const statePortFlows = useMemo(() => {
+    // US state → Map<portCode, { total, mxPartners: Map<mxState, value> }>
+    const usVia = new Map()
+    // MX state → Map<portCode, { total, usPartners: Map<usState, value> }>
+    const mxVia = new Map()
+    filtered.forEach((d) => {
+      if (!d.State || !d.MexState || !d.PortCode) return
+      const code = d.PortCode.replace(/\D/g, '')
+      const v = d.TradeValue || 0
+
+      if (!usVia.has(d.State)) usVia.set(d.State, new Map())
+      const up = usVia.get(d.State)
+      if (!up.has(code)) up.set(code, { total: 0, mxPartners: new Map() })
+      const upEntry = up.get(code)
+      upEntry.total += v
+      upEntry.mxPartners.set(d.MexState, (upEntry.mxPartners.get(d.MexState) || 0) + v)
+
+      if (!mxVia.has(d.MexState)) mxVia.set(d.MexState, new Map())
+      const mp = mxVia.get(d.MexState)
+      if (!mp.has(code)) mp.set(code, { total: 0, usPartners: new Map() })
+      const mpEntry = mp.get(code)
+      mpEntry.total += v
+      mpEntry.usPartners.set(d.State, (mpEntry.usPartners.get(d.State) || 0) + v)
+    })
+    return { usVia, mxVia }
+  }, [filtered])
+
+  /* ── selection-based highlighting ──────────────────────────────── */
+  const { highlightedUS, highlightedMX, highlightedPorts, dynamicUSValues, dynamicMXValues } = useMemo(() => {
+    const none = { highlightedUS: null, highlightedMX: null, highlightedPorts: null, dynamicUSValues: null, dynamicMXValues: null }
+    if (!selection) return none
+
+    if (selection.type === 'us-state') {
+      const mxP = stateFlows.usToMx.get(selection.name) || new Map()
+      const ports = new Set()
+      filtered.forEach((d) => { if (d.State === selection.name && d.PortCode) ports.add(d.PortCode.replace(/\D/g, '')) })
+      return {
+        highlightedUS: new Set([selection.name]),
+        highlightedMX: new Set(mxP.keys()),
+        highlightedPorts: ports,
+        dynamicUSValues: null,
+        dynamicMXValues: [...mxP.entries()].map(([name, value]) => ({ name, value })),
+      }
+    }
+    if (selection.type === 'mx-state') {
+      const usP = stateFlows.mxToUs.get(selection.name) || new Map()
+      const ports = new Set()
+      filtered.forEach((d) => { if (d.MexState === selection.name && d.PortCode) ports.add(d.PortCode.replace(/\D/g, '')) })
+      return {
+        highlightedUS: new Set(usP.keys()),
+        highlightedMX: new Set([selection.name]),
+        highlightedPorts: ports,
+        dynamicUSValues: [...usP.entries()].map(([name, value]) => ({ name, value })),
+        dynamicMXValues: null,
+      }
+    }
+    if (selection.type === 'port') {
+      const us = portFlows.portToUs.get(selection.id) || new Map()
+      const mx = portFlows.portToMx.get(selection.id) || new Map()
+      return {
+        highlightedUS: new Set(us.keys()),
+        highlightedMX: new Set(mx.keys()),
+        highlightedPorts: new Set([selection.id]),
+        dynamicUSValues: [...us.entries()].map(([name, value]) => ({ name, value })),
+        dynamicMXValues: [...mx.entries()].map(([name, value]) => ({ name, value })),
+      }
+    }
+    return none
+  }, [selection, stateFlows, portFlows, filtered])
+
+  /* ── flow arc lines ────────────────────────────────────────────── */
+  const flowArcs = useMemo(() => {
+    if (!selection) return []
+    const arcs = []
+    let maxVal = 0
+
+    if (selection.type === 'us-state') {
+      const startCoord = usCentroids[selection.name]
+      if (!startCoord) return []
+
+      if (flowMode === 'via-ports') {
+        // State → Port → MX State
+        const portMap = statePortFlows.usVia.get(selection.name)
+        if (!portMap) return []
+        const topPorts = [...portMap.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 5)
+        topPorts.forEach(([code, info]) => {
+          const portCoord = portCentroidLookup[code]
+          if (!portCoord) return
+          // State → Port arc
+          arcs.push({ start: startCoord, end: portCoord, value: info.total, label: code, color: '#08519c' })
+          if (info.total > maxVal) maxVal = info.total
+          // Port → top MX states
+          const topMx = [...info.mxPartners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+          topMx.forEach(([mxState, val]) => {
+            const mxCoord = mxCentroids[mxState]
+            if (!mxCoord) return
+            arcs.push({ start: portCoord, end: mxCoord, value: val, label: mxState, color: '#de2d26' })
+            if (val > maxVal) maxVal = val
+          })
+        })
+      } else {
+        // Direct: State → MX State
+        const partners = stateFlows.usToMx.get(selection.name) || new Map()
+        const sorted = [...partners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)
+        sorted.forEach(([mxState, value]) => {
+          const endCoord = mxCentroids[mxState]
+          if (!endCoord) return
+          arcs.push({ start: startCoord, end: endCoord, value, label: mxState, color: '#6b46c1' })
+          if (value > maxVal) maxVal = value
+        })
+      }
+    } else if (selection.type === 'mx-state') {
+      const startCoord = mxCentroids[selection.name]
+      if (!startCoord) return []
+
+      if (flowMode === 'via-ports') {
+        const portMap = statePortFlows.mxVia.get(selection.name)
+        if (!portMap) return []
+        const topPorts = [...portMap.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 5)
+        topPorts.forEach(([code, info]) => {
+          const portCoord = portCentroidLookup[code]
+          if (!portCoord) return
+          arcs.push({ start: startCoord, end: portCoord, value: info.total, label: code, color: '#de2d26' })
+          if (info.total > maxVal) maxVal = info.total
+          const topUs = [...info.usPartners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+          topUs.forEach(([usState, val]) => {
+            const usCoord = usCentroids[usState]
+            if (!usCoord) return
+            arcs.push({ start: portCoord, end: usCoord, value: val, label: usState, color: '#08519c' })
+            if (val > maxVal) maxVal = val
+          })
+        })
+      } else {
+        const partners = stateFlows.mxToUs.get(selection.name) || new Map()
+        const sorted = [...partners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)
+        sorted.forEach(([usState, value]) => {
+          const endCoord = usCentroids[usState]
+          if (!endCoord) return
+          arcs.push({ start: startCoord, end: endCoord, value, label: usState, color: '#6b46c1' })
+          if (value > maxVal) maxVal = value
+        })
+      }
+    } else if (selection.type === 'port') {
+      const pCoord = portCentroidLookup[selection.id]
+      if (!pCoord) return []
+      const us = portFlows.portToUs.get(selection.id) || new Map()
+      const mx = portFlows.portToMx.get(selection.id) || new Map()
+      ;[...us.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([state, value]) => {
+        const c = usCentroids[state]
+        if (!c) return
+        arcs.push({ start: pCoord, end: c, value, label: state, color: '#08519c' })
+        if (value > maxVal) maxVal = value
+      })
+      ;[...mx.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([state, value]) => {
+        const c = mxCentroids[state]
+        if (!c) return
+        arcs.push({ start: pCoord, end: c, value, label: state, color: '#de2d26' })
+        if (value > maxVal) maxVal = value
+      })
+    }
+
+    return arcs.map((arc, i) => ({
+      ...arc,
+      points: computeArc(arc.start, arc.end, 0.15 + i * 0.015),
+      weight: Math.max(1.5, Math.min(6, 1.5 + 4.5 * Math.sqrt(arc.value / (maxVal || 1)))),
+      opacity: Math.max(0.45, Math.min(0.9, 0.45 + 0.45 * (arc.value / (maxVal || 1)))),
+    }))
+  }, [selection, flowMode, stateFlows, statePortFlows, portFlows, usCentroids, mxCentroids, portCentroidLookup])
+
+  /* ── scroll hint ───────────────────────────────────────────────── */
+  const handleWheel = useCallback(() => {
+    if (!mapActive) {
+      setShowHint(true)
+      clearTimeout(hintTimer.current)
+      hintTimer.current = setTimeout(() => setShowHint(false), 1500)
+    }
+  }, [mapActive])
+  useEffect(() => () => clearTimeout(hintTimer.current), [])
+
+  /* ── legend data ───────────────────────────────────────────────── */
+  const usLegend = useMemo(() => {
+    const v = usStateData.map((d) => d.value).filter((x) => x > 0)
+    return v.length ? d3.extent(v) : null
+  }, [usStateData])
+  const mxLegend = useMemo(() => {
+    const v = mxStateData.map((d) => d.value).filter((x) => x > 0)
+    return v.length ? d3.extent(v) : null
+  }, [mxStateData])
+
+  /* ── empty state ───────────────────────────────────────────────── */
+  if (!data.length) {
+    return (
+      <div style={{ minHeight: height }} className="flex items-center justify-center text-text-secondary">
+        No trade flow data available.
+      </div>
+    )
+  }
+
+  /* ── render ────────────────────────────────────────────────────── */
+  return (
+    <>
+      <div
+        style={{ minHeight: height, width: '100%' }}
+        className="port-map-container h-full flex flex-col rounded-lg overflow-hidden border border-border-light isolate"
+        role="region"
+        aria-label="Interactive trade flow map with year animation"
+      >
+        <div className="flex-1 relative" style={{ minHeight: 0 }} onWheel={handleWheel}>
+          {/* Scroll hint overlay */}
+          {showHint && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)', pointerEvents: 'none' }}>
+              <span style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '8px 16px', borderRadius: 6, fontSize: 16 }}>
+                Click the map to enable zooming
+              </span>
+            </div>
+          )}
+
+          {/* Year badge (during animation) */}
+          {animYear != null && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[999] bg-brand-blue text-white px-5 py-1.5 rounded-full text-xl font-bold shadow-lg tabular-nums pointer-events-none">
+              {animYear}
+            </div>
+          )}
+
+          {/* Selection panel */}
+          <SelectionPanel selection={selection} stateFlows={stateFlows} portFlows={portFlows} formatValue={formatValue} />
+
+          {/* Clear selection + flow-mode toggle — positioned below zoom controls */}
+          {selection && (
+            <div className="absolute left-2.5 z-[1000] flex flex-col gap-1.5" style={{ top: 130 }}>
+              <button
+                onClick={() => setSelection(null)}
+                className="bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Clear selection
+              </button>
+              {(selection.type === 'us-state' || selection.type === 'mx-state') && (
+                <button
+                  onClick={() => setFlowMode((m) => (m === 'direct' ? 'via-ports' : 'direct'))}
+                  className="bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  {flowMode === 'direct' ? 'Show via ports' : 'Show direct flows'}
+                </button>
+              )}
+            </div>
+          )}
+
+          <MapContainer center={center} zoom={zoom} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} scrollWheelZoom={false} zoomControl>
+            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <ScrollWheelGuard onActiveChange={setMapActive} />
+            <ResetZoomButton center={center} zoom={zoom} />
+            <MapResizeHandler />
+            <TooltipSync mapRef={mapInstanceRef} tooltip={tooltip} setTooltip={setTooltip} />
+            <PortPane />
+            <MapClickReset setSelection={setSelection} />
+
+            {/* US states choropleth */}
+            <ChoroplethLayer
+              geojsonUrl={`${BASE}data/us_states.geojson`}
+              data={usStateData}
+              colorRange={['#deebf7', '#08519c']}
+              emptyColor="#f0f0f0"
+              selection={selection}
+              highlightedStates={highlightedUS}
+              dynamicValues={dynamicUSValues}
+              formatValue={formatValue}
+              metricLabel="Trade Value"
+              selectionType="us-state"
+              setSelection={setSelection}
+              setTooltip={setTooltip}
+              mapInstanceRef={mapInstanceRef}
+            />
+
+            {/* Mexican states choropleth */}
+            <ChoroplethLayer
+              geojsonUrl={`${BASE}data/mexican_states.geojson`}
+              data={mxStateData}
+              colorRange={['#fee0d2', '#de2d26']}
+              emptyColor="#f0f0f0"
+              selection={selection}
+              highlightedStates={highlightedMX}
+              dynamicValues={dynamicMXValues}
+              formatValue={formatValue}
+              metricLabel="Trade Value"
+              selectionType="mx-state"
+              setSelection={setSelection}
+              setTooltip={setTooltip}
+              mapInstanceRef={mapInstanceRef}
+            />
+
+            {/* Flow arc polylines */}
+            {flowArcs.map((arc, i) => (
+              <Polyline
+                key={`arc-${i}-${arc.label}`}
+                positions={arc.points}
+                pathOptions={{
+                  color: arc.color,
+                  weight: arc.weight,
+                  opacity: arc.opacity,
+                  lineCap: 'round',
+                }}
+                bubblingMouseEvents={false}
+              />
+            ))}
+
+            {/* Port bubbles */}
+            {portData.filter((p) => p.lat != null && p.lng != null).map((p) => {
+              const code = p.portCode?.replace(/\D/g, '')
+              const isDimmed = highlightedPorts && !highlightedPorts.has(code)
+              const isSelected = selection?.type === 'port' && selection.id === code
+              const r = radiusScale(p.value, portMax)
+
+              return (
+                <CircleMarker
+                  key={`port-${code}`}
+                  center={[p.lat, p.lng]}
+                  radius={isDimmed ? r * 0.7 : r}
+                  bubblingMouseEvents={false}
+                  pane="portMarkers"
+                  pathOptions={{
+                    fillColor: isDimmed ? '#ccc' : isSelected ? '#ff6600' : '#0056a9',
+                    color: isSelected ? '#cc5200' : isDimmed ? '#aaa' : '#003d75',
+                    weight: isSelected ? 3 : 1.5,
+                    opacity: isDimmed ? 0.4 : 0.9,
+                    fillOpacity: isDimmed ? 0.3 : 0.85,
+                  }}
+                  eventHandlers={{
+                    mouseover: () => {
+                      const map = mapInstanceRef.current
+                      if (!map) return
+                      const pt = map.latLngToContainerPoint([p.lat, p.lng])
+                      const rect = map.getContainer().getBoundingClientRect()
+                      setTooltip({
+                        content: (
+                          <>
+                            <strong>{p.name}</strong> ({code})<br />
+                            {formatValue(p.value)} Trade Value
+                            {!selection && <><br /><span style={{ fontSize: 11, color: '#666' }}>Click to see port connections</span></>}
+                          </>
+                        ),
+                        x: rect.left + pt.x, y: rect.top + pt.y - r - 8,
+                        latLng: [p.lat, p.lng], offsetY: -r - 8,
+                      })
+                    },
+                    mouseout: () => setTooltip(null),
+                    click: (e) => {
+                      e.originalEvent._stopped = true
+                      if (selection?.type === 'port' && selection.id === code) setSelection(null)
+                      else setSelection({ type: 'port', name: p.name, id: code })
+                    },
+                  }}
+                />
+              )
+            })}
+          </MapContainer>
+        </div>
+
+        {/* Legend bar */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 bg-white/90 text-base text-text-secondary border-t border-border-light flex-shrink-0" style={{ height: 'auto' }}>
+          {usLegend && (
+            <span className="flex items-center gap-2">
+              <span className="font-medium text-text-primary text-xs">U.S. States</span>
+              <span className="text-xs">{formatValue(usLegend[0])}</span>
+              <span style={{ display: 'inline-block', width: 60, height: 10, borderRadius: 3, background: 'linear-gradient(to right, #deebf7, #08519c)', border: '1px solid #ccc' }} />
+              <span className="text-xs">{formatValue(usLegend[1])}</span>
+            </span>
+          )}
+          {mxLegend && (
+            <span className="flex items-center gap-2">
+              <span className="font-medium text-text-primary text-xs">Mexican States</span>
+              <span className="text-xs">{formatValue(mxLegend[0])}</span>
+              <span style={{ display: 'inline-block', width: 60, height: 10, borderRadius: 3, background: 'linear-gradient(to right, #fee0d2, #de2d26)', border: '1px solid #ccc' }} />
+              <span className="text-xs">{formatValue(mxLegend[1])}</span>
+            </span>
+          )}
+          <span className="border-l border-border-light pl-3 flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ background: '#0056a9' }} />
+            <span className="text-xs">Border Port</span>
+          </span>
+          {selection && (
+            <span className="border-l border-border-light pl-3 flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 rounded" style={{ background: '#6b46c1' }} />
+              <span className="text-xs">Trade Flow</span>
+            </span>
+          )}
+          <span className="ml-auto text-xs text-text-secondary italic">
+            Click a state or port to explore flows
+          </span>
+        </div>
+
+        {/* Year animation timeline */}
+        <YearAnimationBar
+          years={years}
+          animYear={animYear}
+          isPlaying={isPlaying}
+          onYearChange={handleYearChange}
+          onPlayPause={handlePlayPause}
+          onStop={handleStop}
+        />
+      </div>
+
+      {/* Portal tooltip */}
+      {tooltip &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed', left: tooltip.x, top: tooltip.y,
+              transform: 'translate(-50%, -100%)', zIndex: 10000, pointerEvents: 'none',
+              background: 'white', border: '1px solid #d1d5db', borderRadius: 6,
+              padding: '6px 10px', fontSize: 13, lineHeight: 1.4,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)', whiteSpace: 'nowrap',
+              fontFamily: 'var(--font-sans), system-ui, sans-serif',
+            }}
+          >
+            {tooltip.content}
+          </div>,
+          document.body,
+        )}
+    </>
+  )
+}
