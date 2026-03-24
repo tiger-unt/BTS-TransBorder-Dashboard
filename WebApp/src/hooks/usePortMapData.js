@@ -55,6 +55,41 @@ export function useCanadianPortCoordinates() {
  * @param {string} [group] — optional group label (e.g. 'mexico', 'canada', 'texas')
  * @returns {Array}
  */
+/**
+ * Fetch US state centroid coordinates (us_state_coordinates.json).
+ */
+export function useStateCoordinates() {
+  return useCoordFile('us_state_coordinates.json')
+}
+
+/**
+ * Aggregate filtered state-trade rows into the shape StateMap expects:
+ *   [{ name, lat, lng, value }]
+ *
+ * @param {Array} filteredRows — rows from usStateTrade (already filtered)
+ * @param {Object|null} stateCoords — { stateName: { lat, lon } }
+ * @returns {Array}
+ */
+export function buildMapStates(filteredRows, stateCoords) {
+  if (!stateCoords || !filteredRows?.length) return []
+  const byState = new Map()
+  for (const d of filteredRows) {
+    const state = d.State
+    if (!state || state === 'Unknown') continue
+    if (!byState.has(state)) {
+      const coords = stateCoords[state]
+      byState.set(state, {
+        name: state,
+        lat: coords?.lat ?? null,
+        lng: coords?.lon ?? null,
+        value: 0,
+      })
+    }
+    byState.get(state).value += d.TradeValue || 0
+  }
+  return Array.from(byState.values()).filter((s) => s.lat != null)
+}
+
 export function buildMapPorts(filteredPorts, portCoords, group) {
   if (!portCoords || !filteredPorts?.length) return []
   const byPort = new Map()

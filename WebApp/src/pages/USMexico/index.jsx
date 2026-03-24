@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { DollarSign, ArrowUpRight, ArrowDownLeft, MapPin, Truck, TrendingUp } from 'lucide-react'
+import { DollarSign, ArrowUpRight, ArrowDownLeft, MapPin, Truck, TrendingUp, Award } from 'lucide-react'
 import { useTransborderStore } from '@/stores/transborderStore'
 import { formatCurrency, buildFilterOptions, applyStandardFilters, getAxisFormatter } from '@/lib/transborderHelpers'
 import { CHART_COLORS } from '@/lib/chartColors'
@@ -36,6 +35,7 @@ export default function USMexicoPage() {
   const [yearFilter, setYearFilter] = useState([])
   const [tradeTypeFilter, setTradeTypeFilter] = useState('')
   const [modeFilter, setModeFilter] = useState([])
+  const [stateFilter, setStateFilter] = useState([])
 
   /* ── base datasets: Mexico only ──────────────────────────────────── */
   const usMexicoData = useMemo(() => {
@@ -50,18 +50,25 @@ export default function USMexicoPage() {
 
   /* ── filter options (computed from data) ─────────────────────────── */
   const filterOptions = useMemo(() => {
-    const opts = buildFilterOptions(portsData, ['Year', 'TradeType', 'Mode'])
+    const opts = buildFilterOptions(portsData, ['Year', 'TradeType', 'Mode', 'State'])
     return {
       year: (opts.Year || []).map(String),
       tradeType: opts.TradeType || [],
       mode: opts.Mode || [],
+      state: opts.State || [],
     }
   }, [portsData])
 
   /* ── apply filters to port data ──────────────────────────────────── */
   const filteredPorts = useMemo(
-    () => applyStandardFilters(portsData, { Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter }),
-    [portsData, yearFilter, tradeTypeFilter, modeFilter],
+    () => applyStandardFilters(portsData, { Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter, State: stateFilter }),
+    [portsData, yearFilter, tradeTypeFilter, modeFilter, stateFilter],
+  )
+
+  /* ── filteredPortsNoYear (for port trend charts) ─────────────────── */
+  const filteredPortsNoYear = useMemo(
+    () => applyStandardFilters(portsData, { TradeType: tradeTypeFilter, Mode: modeFilter, State: stateFilter }),
+    [portsData, tradeTypeFilter, modeFilter, stateFilter],
   )
 
   /* ── map markers ────────────────────────────────────────────────── */
@@ -103,14 +110,21 @@ export default function USMexicoPage() {
     const exports = latest.filter((d) => d.TradeType === 'Export').reduce((s, d) => s + (d.TradeValue || 0), 0)
     const imports = latest.filter((d) => d.TradeType === 'Import').reduce((s, d) => s + (d.TradeValue || 0), 0)
 
-    // Active port count from port-level data
+    // Active port count and top port from port-level data
     const latestPorts = filteredPorts.filter((d) => d.Year === latestYear)
     const portCount = new Set(latestPorts.map((d) => d.Port).filter(Boolean)).size
 
-    return { totalTrade, tradeChange, exports, imports, portCount }
+    const byPort = new Map()
+    latestPorts.forEach((d) => {
+      const port = d.Port || 'Unknown'
+      byPort.set(port, (byPort.get(port) || 0) + (d.TradeValue || 0))
+    })
+    const topPortName = byPort.size ? [...byPort.entries()].sort((a, b) => b[1] - a[1])[0][0] : '---'
+
+    return { totalTrade, tradeChange, exports, imports, portCount, topPortName }
   }, [filteredSummary, filteredPorts, latestYear, prevYear])
 
-  /* ── Section 3: Trade trends by Year+TradeType (line chart) ─────── */
+  /* ── Section: Trade trends by Year+TradeType (line chart) ───────── */
   const tradeTrendData = useMemo(() => {
     const byYearType = new Map()
     filteredSummaryNoYear.forEach((d) => {
@@ -121,7 +135,7 @@ export default function USMexicoPage() {
     return Array.from(byYearType.values()).sort((a, b) => a.year - b.year)
   }, [filteredSummaryNoYear])
 
-  /* ── Section 4: Donut — Trade by Mode (latest year) ─────────────── */
+  /* ── Section: Donut — Trade by Mode (latest year) ───────────────── */
   const modeDonutData = useMemo(() => {
     if (!latestYear) return []
     const latestData = filteredSummary.filter((d) => d.Year === latestYear)
@@ -135,7 +149,7 @@ export default function USMexicoPage() {
       .sort((a, b) => b.value - a.value)
   }, [filteredSummary, latestYear])
 
-  /* ── Section 5: Top 15 Ports (horizontal bar) ───────────────────── */
+  /* ── Section: Top 20 Ports (horizontal bar) ─────────────────────── */
   const topPortsData = useMemo(() => {
     const byPort = new Map()
     filteredPorts.forEach((d) => {
@@ -144,10 +158,36 @@ export default function USMexicoPage() {
     })
     return Array.from(byPort, ([label, value]) => ({ label, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 15)
+      .slice(0, 20)
   }, [filteredPorts])
 
-  /* ── Section 6: Mode composition by year (stacked bar) ──────────── */
+  /* ── Section: Top 5 port trends (multi-series line) ─────────────── */
+  const topPortTrendData = useMemo(() => {
+    const byPort = new Map()
+    filteredPortsNoYear.forEach((d) => {
+      const port = d.Port || 'Unknown'
+      byPort.set(port, (byPort.get(port) || 0) + (d.TradeValue || 0))
+    })
+    const top5 = [...byPort.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => name)
+
+    const top5Set = new Set(top5)
+
+    const byYearPort = new Map()
+    filteredPortsNoYear.forEach((d) => {
+      const port = d.Port || 'Unknown'
+      if (!top5Set.has(port)) return
+      const key = `${d.Year}|${port}`
+      if (!byYearPort.has(key)) byYearPort.set(key, { year: d.Year, value: 0, Port: port })
+      byYearPort.get(key).value += (d.TradeValue || 0)
+    })
+
+    return Array.from(byYearPort.values()).sort((a, b) => a.year - b.year || a.Port.localeCompare(b.Port))
+  }, [filteredPortsNoYear])
+
+  /* ── Section: Mode composition by year (stacked bar) ────────────── */
   const modeByYearData = useMemo(() => {
     const byYearMode = new Map()
     const allModes = new Set()
@@ -159,7 +199,6 @@ export default function USMexicoPage() {
       const row = byYearMode.get(key)
       row[mode] = (row[mode] || 0) + (d.TradeValue || 0)
     })
-    // Ensure all modes exist on every row
     const modes = [...allModes].sort()
     const rows = Array.from(byYearMode.values()).sort((a, b) => a.year - b.year)
     rows.forEach((row) => {
@@ -170,7 +209,7 @@ export default function USMexicoPage() {
     return { data: rows, stackKeys: modes }
   }, [filteredSummaryNoYear])
 
-  /* ── Section 7: Port detail table ───────────────────────────────── */
+  /* ── Section: Port detail table ─────────────────────────────────── */
   const portTableData = useMemo(() => {
     const byPort = new Map()
     filteredPorts.forEach((d) => {
@@ -185,7 +224,7 @@ export default function USMexicoPage() {
   }, [filteredPorts])
 
   const portTableColumns = [
-    { key: 'Port', label: 'Port', wrap: true },
+    { key: 'Port', label: 'Port' },
     { key: 'State', label: 'State' },
     { key: 'Total', label: 'Total Trade', render: (v) => formatCurrency(v) },
     { key: 'Exports', label: 'Exports', render: (v) => formatCurrency(v) },
@@ -193,7 +232,7 @@ export default function USMexicoPage() {
   ]
 
   /* ── active filter count & tags ──────────────────────────────────── */
-  const activeCount = yearFilter.length + (tradeTypeFilter ? 1 : 0) + modeFilter.length
+  const activeCount = yearFilter.length + (tradeTypeFilter ? 1 : 0) + modeFilter.length + stateFilter.length
 
   const activeTags = useMemo(() => {
     const tags = []
@@ -209,13 +248,18 @@ export default function USMexicoPage() {
       group: 'Mode', label: v,
       onRemove: () => setModeFilter((prev) => prev.filter((x) => x !== v)),
     }))
+    stateFilter.forEach((v) => tags.push({
+      group: 'State', label: v,
+      onRemove: () => setStateFilter((prev) => prev.filter((x) => x !== v)),
+    }))
     return tags
-  }, [yearFilter, tradeTypeFilter, modeFilter])
+  }, [yearFilter, tradeTypeFilter, modeFilter, stateFilter])
 
   const resetFilters = () => {
     setYearFilter([])
     setTradeTypeFilter('')
     setModeFilter([])
+    setStateFilter([])
   }
 
   /* ── render: loading ─────────────────────────────────────────────── */
@@ -254,6 +298,13 @@ export default function USMexicoPage() {
         options={filterOptions.mode}
         onChange={setModeFilter}
       />
+      <FilterMultiSelect
+        label="State"
+        value={stateFilter}
+        options={filterOptions.state}
+        onChange={setStateFilter}
+        searchable
+      />
     </>
   )
 
@@ -276,6 +327,7 @@ export default function USMexicoPage() {
   /* ── axis formatters ─────────────────────────────────────────────── */
   const tradeMax = Math.max(...tradeTrendData.map((d) => d.value), 0)
   const portMax = Math.max(...topPortsData.map((d) => d.value), 0)
+  const portTrendMax = Math.max(...topPortTrendData.map((d) => d.value), 0)
 
   return (
     <DashboardLayout
@@ -288,21 +340,12 @@ export default function USMexicoPage() {
     >
       {/* Intro */}
       <SectionBlock>
-        <div className="space-y-4">
-          <p className="text-base text-text-secondary leading-relaxed">
-            The U.S.&ndash;Mexico trade corridor is the largest bilateral surface freight relationship
-            in North America. This page aggregates TransBorder data across all modes of surface
-            transportation&mdash;truck, rail, pipeline, and vessel&mdash;to provide a national perspective
-            on the cross-border freight market.
-          </p>
-          <p className="text-base text-text-secondary/70 leading-relaxed italic">
-            For a detailed view of individual ports of entry, see the{' '}
-            <Link to="/us-mexico/ports" className="text-brand-blue underline hover:text-brand-blue/80">
-              U.S.&ndash;Mexico Ports
-            </Link>{' '}
-            page.
-          </p>
-        </div>
+        <p className="text-base text-text-secondary leading-relaxed">
+          The U.S.&ndash;Mexico trade corridor is the largest bilateral surface freight relationship
+          in North America. This page aggregates TransBorder data across all modes of surface
+          transportation&mdash;truck, rail, pipeline, and vessel&mdash;to provide a national perspective
+          on the cross-border freight market, including port-level breakdowns.
+        </p>
       </SectionBlock>
 
       {/* Port Map */}
@@ -325,9 +368,9 @@ export default function USMexicoPage() {
 
       {/* KPI StatCards */}
       <SectionBlock>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
           <StatCard
-            label={`Total U.S.-Mexico Trade (${latestYear || '---'})`}
+            label={`Total Trade (${latestYear || '---'})`}
             value={stats ? formatCurrency(stats.totalTrade) : '---'}
             trend={stats?.tradeChange > 0 ? 'up' : stats?.tradeChange < 0 ? 'down' : undefined}
             trendLabel={stats ? `${(stats.tradeChange * 100).toFixed(1)}% vs ${prevYear}` : ''}
@@ -347,6 +390,11 @@ export default function USMexicoPage() {
             label={`Active Ports (${latestYear || '---'})`}
             value={stats ? String(stats.portCount) : '---'}
             highlight icon={MapPin} delay={300}
+          />
+          <StatCard
+            label={`Top Port (${latestYear || '---'})`}
+            value={stats?.topPortName || '---'}
+            highlight icon={Award} delay={400}
           />
         </div>
       </SectionBlock>
@@ -390,11 +438,11 @@ export default function USMexicoPage() {
         </ChartCard>
       </SectionBlock>
 
-      {/* Top 15 Ports (Horizontal Bar) */}
+      {/* Top 20 Ports (Horizontal Bar) */}
       <SectionBlock alt>
         <ChartCard
-          title="Top 15 Ports by Trade Value"
-          subtitle="Ports of entry ranked by total trade"
+          title="Top 20 Ports by Trade Value"
+          subtitle="Ports of entry ranked by total freight value"
           downloadData={{
             summary: { data: topPortsData, filename: 'us-mexico-top-ports', columns: DL.portRank },
           }}
@@ -410,8 +458,29 @@ export default function USMexicoPage() {
         </ChartCard>
       </SectionBlock>
 
-      {/* Mode Composition by Year (Stacked Bar) */}
+      {/* Top 5 Port Trends (Line Chart) */}
       <SectionBlock>
+        <ChartCard
+          title="Top 5 Port Trends"
+          subtitle="Annual trade value for the five largest ports"
+          downloadData={{
+            summary: { data: topPortTrendData, filename: 'us-mexico-top5-port-trends', columns: { year: 'Year', value: 'Trade Value ($)', Port: 'Port' } },
+            detail:  { data: filteredPortsNoYear, filename: 'us-mexico-ports-detail', columns: PAGE_PORT_COLS },
+          }}
+        >
+          <LineChart
+            data={topPortTrendData}
+            xKey="year"
+            yKey="value"
+            seriesKey="Port"
+            formatY={getAxisFormatter(portTrendMax, '$')}
+            annotations={COVID_ANNOTATION}
+          />
+        </ChartCard>
+      </SectionBlock>
+
+      {/* Mode Composition by Year (Stacked Bar) */}
+      <SectionBlock alt>
         <ChartCard
           title="Mode Composition by Year"
           subtitle="How trade value is distributed across modes over time"
@@ -429,10 +498,10 @@ export default function USMexicoPage() {
       </SectionBlock>
 
       {/* Port Detail Table */}
-      <SectionBlock alt>
+      <SectionBlock>
         <ChartCard
-          title="Port Detail"
-          subtitle="Trade values by port of entry"
+          title="All Ports"
+          subtitle="Port-level trade summary with exports and imports"
           downloadData={{
             summary: { data: portTableData, filename: 'us-mexico-port-detail', columns: DL.portDetail },
             detail:  { data: filteredPorts, filename: 'us-mexico-ports-raw', columns: PAGE_PORT_COLS },
