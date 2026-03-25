@@ -49,14 +49,14 @@ export default function AboutPage() {
         {/* ── Data Source ──────────────────────────────────────────────── */}
         <section id="source" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">Data Source</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             The TransBorder freight data measures the value and quantity of goods flowing
             between the United States and its North American trade partners (Canada and
             Mexico) since April 1993. It is published monthly by the Bureau of
             Transportation Statistics (BTS) based on data from U.S. Customs and Border
             Protection.
           </p>
-          <p className="text-base text-text-secondary leading-relaxed">
+          <p className="text-lg text-text-secondary leading-relaxed">
             This dashboard focuses on the <strong>Texas&ndash;Mexico border</strong>,
             covering all surface ports of entry along the Texas border with Mexico. The
             underlying data is sourced from BTS TransBorder raw data files, which are
@@ -76,7 +76,7 @@ export default function AboutPage() {
         {/* ── Data Coverage ───────────────────────────────────────────── */}
         <section id="coverage" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">Data Coverage</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             The dataset spans <strong>April 1993 through 2025</strong>, comprising
             approximately <strong>39.5 million records</strong> across three BTS tables:
           </p>
@@ -90,7 +90,7 @@ export default function AboutPage() {
                 <h5 className="text-base font-semibold text-text-primary mb-1">
                   {t.code} &mdash; {t.desc}
                 </h5>
-                <p className="text-base text-text-secondary leading-relaxed">{t.detail}</p>
+                <p className="text-lg text-text-secondary leading-relaxed">{t.detail}</p>
               </div>
             ))}
           </div>
@@ -99,12 +99,12 @@ export default function AboutPage() {
         {/* ── Year Range Strategy ─────────────────────────────────────── */}
         <section id="year-range" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">Year Range Strategy</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             The <strong>Overview page</strong> shows the full range from{' '}
             <strong>1993 to 2025</strong>, providing a long-term view of trade trends
             across all available years.
           </p>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             <strong>Detail pages</strong> (Port, Commodity, and Mode breakdowns) are
             limited to <strong>2007 and later</strong>. This is because a major data
             consolidation occurred in <strong>January 2007</strong>: BTS restructured
@@ -113,7 +113,7 @@ export default function AboutPage() {
             field definitions, and commodity groupings that are not directly comparable
             with the modern format.
           </p>
-          <p className="text-base text-text-secondary leading-relaxed">
+          <p className="text-lg text-text-secondary leading-relaxed">
             By restricting detail pages to the post-consolidation period, the dashboard
             ensures consistent definitions across all breakdowns and avoids misleading
             comparisons that could arise from schema differences.
@@ -123,7 +123,7 @@ export default function AboutPage() {
         {/* ── BTS Terminology ─────────────────────────────────────────── */}
         <section id="terminology" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">BTS Terminology</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             The following terms appear throughout the dashboard and the underlying BTS
             data. Understanding them is important for interpreting the numbers correctly.
           </p>
@@ -131,7 +131,7 @@ export default function AboutPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-border-light shadow-sm p-5">
               <h4 className="text-base font-bold text-text-primary mb-2">Port State</h4>
-              <p className="text-base text-text-secondary leading-relaxed">
+              <p className="text-lg text-text-secondary leading-relaxed">
                 The U.S. state where the port of entry is located. For this dashboard,
                 the focus is on Texas ports along the Mexico border (e.g., Laredo, El Paso,
                 Hidalgo, Brownsville).
@@ -140,7 +140,7 @@ export default function AboutPage() {
 
             <div className="bg-white rounded-xl border border-border-light shadow-sm p-5">
               <h4 className="text-base font-bold text-text-primary mb-2">HS Codes (Harmonized Schedule)</h4>
-              <p className="text-base text-text-secondary leading-relaxed">
+              <p className="text-lg text-text-secondary leading-relaxed">
                 TransBorder uses <strong>Harmonized Schedule (HS) 2-digit codes</strong> to
                 classify commodities. These are <em>not</em> SCTG codes (Standard Classification
                 of Transported Goods), which are used by the Commodity Flow Survey. HS codes
@@ -150,7 +150,7 @@ export default function AboutPage() {
 
             <div className="bg-white rounded-xl border border-border-light shadow-sm p-5">
               <h4 className="text-base font-bold text-text-primary mb-2">Trade Type</h4>
-              <p className="text-base text-text-secondary leading-relaxed">
+              <p className="text-lg text-text-secondary leading-relaxed">
                 Whether goods are being <strong>exported</strong> from the United States or{' '}
                 <strong>imported</strong> into the United States. The DF indicator further
                 distinguishes domestic exports (DF=1) from re-exports (DF=2), though this
@@ -160,7 +160,7 @@ export default function AboutPage() {
 
             <div className="bg-white rounded-xl border border-border-light shadow-sm p-5">
               <h4 className="text-base font-bold text-text-primary mb-2">Transportation Modes</h4>
-              <p className="text-base text-text-secondary leading-relaxed">
+              <p className="text-lg text-text-secondary leading-relaxed">
                 BTS tracks goods movement by mode of transportation. The primary modes are:{' '}
                 <strong>Truck</strong>, <strong>Rail</strong>, <strong>Pipeline</strong>,{' '}
                 <strong>Air</strong>, <strong>Vessel</strong>, <strong>Mail</strong>,{' '}
@@ -175,7 +175,7 @@ export default function AboutPage() {
         {/* ── Known Data Limitations ──────────────────────────────────── */}
         <section id="limitations" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">Known Data Limitations</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             Like any large federal dataset, TransBorder has structural limitations that
             affect certain analyses. These are not errors but reflect the design of the
             reporting system.
@@ -191,7 +191,7 @@ export default function AboutPage() {
             ].map((item, i) => (
               <li key={i} className="flex gap-3">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-brand-yellow flex-shrink-0" />
-                <p className="text-base text-text-secondary leading-relaxed">{item}</p>
+                <p className="text-lg text-text-secondary leading-relaxed">{item}</p>
               </li>
             ))}
           </ul>
@@ -200,12 +200,12 @@ export default function AboutPage() {
         {/* ── Port History ────────────────────────────────────────────── */}
         <section id="port-history" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">Port History</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             Port definitions can change over time as CBP reorganizes its districts and
             ports of entry. The most significant recent change affecting Texas data:
           </p>
           <div className="bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-5">
-            <p className="text-base text-text-secondary leading-relaxed">
+            <p className="text-lg text-text-secondary leading-relaxed">
               <strong className="text-text-primary">El Paso / Ysleta split (March 2020):</strong>{' '}
               Prior to March 2020, all El Paso&ndash;area crossings were reported under a single
               &ldquo;El Paso&rdquo; port code. Beginning in March 2020, CBP split this into two
@@ -220,7 +220,7 @@ export default function AboutPage() {
         {/* ── Downloads ───────────────────────────────────────────────── */}
         <section id="downloads" className="mb-10 scroll-mt-16">
           <h2 className="text-xl font-bold text-text-primary mb-3">Download the Data</h2>
-          <p className="text-base text-text-secondary leading-relaxed mb-4">
+          <p className="text-lg text-text-secondary leading-relaxed mb-4">
             The processed datasets used by this dashboard are available for download as
             CSV files. These files have been filtered to Texas&ndash;Mexico trade,
             cleaned, and enriched with decoded field labels.

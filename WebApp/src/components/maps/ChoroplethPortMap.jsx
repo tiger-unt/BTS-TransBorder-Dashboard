@@ -23,7 +23,7 @@
  */
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Polyline, useMap, useMapEvents } from 'react-leaflet'
 import * as d3 from 'd3'
 import 'leaflet/dist/leaflet.css'
 
@@ -70,6 +70,47 @@ function radiusScale(value, maxValue) {
   return Math.max(4, Math.min(20, 4 + 16 * Math.sqrt(value / maxValue)))
 }
 
+/* ── Quadratic Bézier arc between two [lat,lng] points ────────────────── */
+function computeArc(start, end, curveOffset = 0.18, numPoints = 24) {
+  const dx = end[1] - start[1]
+  const dy = end[0] - start[0]
+  const dist = Math.sqrt(dx * dx + dy * dy)
+  if (dist < 0.01) return [start, end]
+  const midLat = (start[0] + end[0]) / 2 + (dx / dist) * dist * curveOffset
+  const midLng = (start[1] + end[1]) / 2 - (dy / dist) * dist * curveOffset
+  const pts = []
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints
+    const u = 1 - t
+    pts.push([
+      u * u * start[0] + 2 * u * t * midLat + t * t * end[0],
+      u * u * start[1] + 2 * u * t * midLng + t * t * end[1],
+    ])
+  }
+  return pts
+}
+
+/* ── Compute polygon centroids from a GeoJSON FeatureCollection ──────── */
+function computeCentroids(geojson, nameProperty = 'name') {
+  if (!geojson?.features) return {}
+  const out = {}
+  for (const f of geojson.features) {
+    const name = f.properties?.[nameProperty]
+    if (!name) continue
+    const coords = []
+    const g = f.geometry
+    if (g?.type === 'Polygon') g.coordinates[0].forEach((c) => coords.push(c))
+    else if (g?.type === 'MultiPolygon') g.coordinates.forEach((p) => p[0].forEach((c) => coords.push(c)))
+    if (coords.length) {
+      out[name] = [
+        coords.reduce((s, c) => s + c[1], 0) / coords.length,
+        coords.reduce((s, c) => s + c[0], 0) / coords.length,
+      ]
+    }
+  }
+  return out
+}
+
 /* ── Custom pane for ports above choropleth ───────────────────────────── */
 function PortPane() {
   const map = useMap()
@@ -95,42 +136,111 @@ function MapClickReset({ setSelection }) {
 
 const DEFAULT_PORT_COLOR = { fill: '#0056a9', stroke: '#003d75' }
 
+/* ── Border group config for selection panel ─────────────────────────── */
+const BORDER_GROUPS = {
+  texas:  { label: 'Mexico Border (Texas)', color: '#d97706', icon: '●' },
+  mexico: { label: 'Mexico Border (Other)', color: '#0056a9', icon: '●' },
+  canada: { label: 'Canada Border',         color: '#16a34a', icon: '●' },
+}
+
 /* ── Selection info panel ────────────────────────────────────────────── */
 function SelectionPanel({ selection, connections, ports, formatValue }) {
   if (!selection) return null
 
-  let title, subtitle, items
+  let title, subtitle, items, grouped
   if (selection.type === 'state') {
     const connectedPorts = connections.stateToPort.get(selection.name) || new Map()
     title = selection.name
     subtitle = 'Ports'
     items = ports
       .filter((p) => connectedPorts.has(p.portCode))
-      .map((p) => ({ name: p.name, value: connectedPorts.get(p.portCode) || 0 }))
+      .map((p) => ({ name: p.name, value: connectedPorts.get(p.portCode) || 0, group: p.group }))
       .sort((a, b) => b.value - a.value)
+
+    // Group by border
+    grouped = {}
+    for (const item of items) {
+      const g = item.group || 'mexico'
+      if (!grouped[g]) grouped[g] = []
+      grouped[g].push(item)
+    }
   } else {
     const connectedStates = connections.portToState.get(selection.id) || new Map()
     title = selection.name
-    subtitle = 'States'
+    subtitle = 'Connected States/Provinces'
     items = Array.from(connectedStates, ([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
+    grouped = null // flat list for port selection
   }
 
-  return (
-    <div className="absolute top-3 right-3 z-[1000] bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-2 max-w-[220px] max-h-[280px] overflow-y-auto text-sm">
-      <div className="font-semibold text-text-primary mb-1 flex items-center justify-between">
-        <span>{title}</span>
-        <span className="text-xs text-text-secondary ml-2">{subtitle}</span>
-      </div>
-      {items.length === 0 && (
-        <div className="text-text-secondary text-xs italic">No connections found</div>
-      )}
-      {items.map((item) => (
-        <div key={item.name} className="flex justify-between gap-2 py-0.5">
-          <span className="truncate">{item.name}</span>
-          <span className="text-text-secondary whitespace-nowrap">{formatValue(item.value)}</span>
+  // Total across all connections
+  const total = items.reduce((s, d) => s + d.value, 0)
+
+  // Render grouped items (when a state is selected → show ports by border)
+  const renderGrouped = () => {
+    const groupOrder = ['texas', 'mexico', 'canada']
+    return groupOrder
+      .filter((g) => grouped[g]?.length)
+      .map((g) => {
+        const cfg = BORDER_GROUPS[g]
+        const groupItems = grouped[g]
+        const groupTotal = groupItems.reduce((s, d) => s + d.value, 0)
+        return (
+          <div key={g} className="mt-1.5 first:mt-0">
+            <div className="flex items-center gap-1.5 mb-0.5 pb-0.5 border-b border-border-light">
+              <span style={{ color: cfg.color, fontSize: 10 }}>{cfg.icon}</span>
+              <span className="text-xs font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
+              <span className="ml-auto text-xs text-text-secondary">{formatValue(groupTotal)}</span>
+            </div>
+            {groupItems.map((item) => (
+              <div key={item.name} className="flex justify-between gap-3 py-px pl-3">
+                <span className="truncate text-text-primary text-[13px]">{item.name}</span>
+                <span className="text-text-secondary whitespace-nowrap flex-shrink-0 text-[13px]">{formatValue(item.value)}</span>
+              </div>
+            ))}
+          </div>
+        )
+      })
+  }
+
+  // Render flat list (when a port is selected → show states/provinces)
+  const renderFlat = () => (
+    <>
+      {items.slice(0, 20).map((item) => (
+        <div key={item.name} className="flex justify-between gap-3 py-px">
+          <span className="truncate text-text-primary text-[13px]">{item.name}</span>
+          <span className="text-text-secondary whitespace-nowrap flex-shrink-0 text-[13px]">{formatValue(item.value)}</span>
         </div>
       ))}
+      {items.length > 20 && (
+        <div className="text-xs text-text-secondary italic mt-1">
+          +{items.length - 20} more
+        </div>
+      )}
+    </>
+  )
+
+  return (
+    <div className="absolute top-0 right-0 bottom-0 z-[1000] w-[260px] bg-white/95 border-l border-border-light flex flex-col text-sm">
+      {/* Header — fixed */}
+      <div className="px-3 pt-2.5 pb-1.5 border-b border-border-light flex-shrink-0">
+        <div className="font-semibold text-text-primary flex items-center justify-between">
+          <span className="truncate">{title}</span>
+          <span className="text-xs text-text-secondary ml-2 flex-shrink-0">{subtitle}</span>
+        </div>
+        {total > 0 && (
+          <div className="text-xs text-text-secondary mt-0.5">
+            Total: <span className="font-semibold text-text-primary">{formatValue(total)}</span>
+          </div>
+        )}
+      </div>
+      {/* Body — scrollable */}
+      <div className="flex-1 overflow-y-auto px-3 py-1.5 min-h-0">
+        {items.length === 0 && (
+          <div className="text-text-secondary text-xs italic">No connections found</div>
+        )}
+        {grouped ? renderGrouped() : renderFlat()}
+      </div>
     </div>
   )
 }
@@ -193,11 +303,11 @@ function ChoroplethLayer({
     const name = feature.properties?.[nameProperty]
     layer.on({
       mouseover: (e) => {
+        // Skip tooltip and hover highlight for dimmed (non-highlighted) states
+        if (highlightedStates && !highlightedStates.has(name)) return
         const value = valueMap.get(name)
-        if (!highlightedStates || highlightedStates.has(name)) {
-          e.target.setStyle({ weight: 2.5, color: '#333', fillOpacity: 0.85 })
-          e.target.bringToFront()
-        }
+        e.target.setStyle({ weight: 2.5, color: '#333', fillOpacity: 0.85 })
+        e.target.bringToFront()
         const map = mapInstanceRef.current
         if (!map) return
         const pt = map.latLngToContainerPoint(e.latlng)
@@ -282,6 +392,8 @@ export default function ChoroplethPortMap({
     if (!selection) return { highlightedStates: null, highlightedPorts: null }
     if (selection.type === 'state') {
       const connPorts = connections.stateToPort.get(selection.name) || new Map()
+      // Only highlight the selected state itself — don't pull in every state
+      // that shares a port. The flow arcs already show the connections.
       return {
         highlightedStates: new Set([selection.name]),
         highlightedPorts: new Set(connPorts.keys()),
@@ -328,6 +440,142 @@ export default function ChoroplethPortMap({
     }).filter(Boolean)
   }, [layers])
 
+  /* ── Centroids from cached GeoJSON layers (for arc endpoints) ────────
+       GeoJSON data is already fetched by ChoroplethLayer components and
+       stored in geoCache. We read from the cache directly to avoid
+       calling hooks in a dynamic loop.                                    */
+  const [centroidVersion, setCentroidVersion] = useState(0)
+  // Bump version when layers finish loading so centroids recompute
+  useEffect(() => {
+    const urls = layers.map((l) => l.url).filter(Boolean)
+    const allCached = urls.every((u) => geoCache[u])
+    if (allCached && urls.length) setCentroidVersion((v) => v + 1)
+    else {
+      // Poll briefly until ChoroplethLayer components populate the cache
+      const timer = setInterval(() => {
+        if (urls.every((u) => geoCache[u])) {
+          setCentroidVersion((v) => v + 1)
+          clearInterval(timer)
+        }
+      }, 500)
+      return () => clearInterval(timer)
+    }
+  }, [layers])
+
+  const allCentroids = useMemo(() => {
+    void centroidVersion // dependency trigger
+    const merged = {}
+    for (const layer of layers) {
+      const geo = layer.url ? geoCache[layer.url] : null
+      if (geo) Object.assign(merged, computeCentroids(geo, layer.nameProperty || 'name'))
+    }
+    return merged
+  }, [layers, centroidVersion])
+
+  /* ── Port coordinate lookup ────────────────────────────────────────── */
+  const portCoordLookup = useMemo(() => {
+    const m = {}
+    for (const p of ports) {
+      if (p.lat != null && p.lng != null) m[p.portCode] = [p.lat, p.lng]
+    }
+    return m
+  }, [ports])
+
+  /* ── Flow mode toggle ─────────────────────────────────────────────── */
+  const [flowMode, setFlowMode] = useState('via-ports') // 'direct' | 'via-ports'
+
+  /* ── Flow arcs ─────────────────────────────────────────────────────── */
+  const flowArcs = useMemo(() => {
+    if (!selection) return []
+    const arcs = []
+
+    if (selection.type === 'state') {
+      const startCoord = allCentroids[selection.name]
+      if (!startCoord) return []
+      const connPorts = connections.stateToPort.get(selection.name) || new Map()
+
+      // Step 1: Aggregate ALL destination states through all ports (single source of truth)
+      const foreignStates = new Map()          // destName → total value
+      const destViaPort = new Map()            // destName → Map<portCode, value>
+      for (const portCode of connPorts.keys()) {
+        const portStates = connections.portToState.get(portCode) || new Map()
+        for (const [stateName, value] of portStates) {
+          if (stateName === selection.name) continue
+          foreignStates.set(stateName, (foreignStates.get(stateName) || 0) + value)
+          if (!destViaPort.has(stateName)) destViaPort.set(stateName, new Map())
+          destViaPort.get(stateName).set(portCode, (destViaPort.get(stateName).get(portCode) || 0) + value)
+        }
+      }
+      const topDests = [...foreignStates.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)
+
+      // Step 2: Present arcs based on flow mode
+      if (flowMode === 'via-ports') {
+        // State → Port → Destination (two-hop arcs through ports)
+        const usedPorts = new Set()
+        for (const [destName, totalVal] of topDests) {
+          const destCoord = allCentroids[destName]
+          if (!destCoord) continue
+          const portBreakdown = destViaPort.get(destName) || new Map()
+          // Show the top port for this destination
+          const topPort = [...portBreakdown.entries()].sort((a, b) => b[1] - a[1])[0]
+          if (!topPort) continue
+          const [portCode, portVal] = topPort
+          const portCoord = portCoordLookup[portCode]
+          if (!portCoord) continue
+          const port = ports.find((p) => p.portCode === portCode)
+          const portName = port?.name || portCode
+          // State → Port arc (only add once per port)
+          if (!usedPorts.has(portCode)) {
+            usedPorts.add(portCode)
+            const portTotal = connPorts.get(portCode) || 0
+            arcs.push({ start: startCoord, end: portCoord, value: portTotal, group: port?.group, originName: selection.name, destName: portName })
+          }
+          // Port → Destination arc
+          arcs.push({ start: portCoord, end: destCoord, value: portVal, group: null, originName: portName, destName })
+        }
+      } else {
+        // Direct: State → Destination (single arc, aggregated)
+        for (const [stateName, value] of topDests) {
+          const endCoord = allCentroids[stateName]
+          if (!endCoord) continue
+          arcs.push({ start: startCoord, end: endCoord, value, group: null, originName: selection.name, destName: stateName })
+        }
+      }
+    } else if (selection.type === 'port') {
+      // Port selected → draw arcs from port to each connected state/province
+      const startCoord = portCoordLookup[selection.id]
+      if (!startCoord) return []
+      const connStates = connections.portToState.get(selection.id) || new Map()
+      const sorted = [...connStates.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)
+      for (const [stateName, value] of sorted) {
+        const endCoord = allCentroids[stateName]
+        if (!endCoord) continue
+        arcs.push({ start: startCoord, end: endCoord, value, group: null, originName: selection.name, destName: stateName })
+      }
+    }
+
+    if (!arcs.length) return []
+
+    // Sort by value ascending so thicker arcs render on top
+    arcs.sort((a, b) => a.value - b.value)
+    const maxVal = Math.max(1, ...arcs.map((a) => a.value))
+
+    return arcs.map((arc, i) => ({
+      ...arc,
+      points: computeArc(arc.start, arc.end, 0.12 + i * 0.008),
+      weight: Math.max(2.5, Math.min(7, 2.5 + 4.5 * Math.sqrt(arc.value / maxVal))),
+      opacity: 0.8,
+    }))
+  }, [selection, flowMode, connections, allCentroids, portCoordLookup, ports])
+
+  /* ── Arc colors by group ───────────────────────────────────────────── */
+  const ARC_COLORS = {
+    texas:  '#d97706',  // amber-500
+    mexico: '#2563eb',  // blue-600
+    canada: '#16a34a',  // green-600
+    default: '#7c3aed', // violet-600 for direct/port arcs
+  }
+
   return (
     <>
       <div
@@ -345,20 +593,33 @@ export default function ChoroplethPortMap({
             </div>
           )}
 
-          <SelectionPanel
-            selection={selection}
-            connections={connections}
-            ports={ports}
-            formatValue={formatValue}
-          />
+          {/* Side panel — overlaid on right side of map */}
+          {selection && (
+            <SelectionPanel
+              selection={selection}
+              connections={connections}
+              ports={ports}
+              formatValue={formatValue}
+            />
+          )}
 
           {selection && (
-            <button
-              onClick={() => setSelection(null)}
-              className="absolute top-3 left-3 z-[1000] bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              Clear selection
-            </button>
+            <div className="absolute top-[130px] left-[10px] z-[1000] flex flex-col gap-1.5">
+              <button
+                onClick={() => setSelection(null)}
+                className="bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Clear selection
+              </button>
+              {selection.type === 'state' && (
+                <button
+                  onClick={() => setFlowMode((m) => (m === 'direct' ? 'via-ports' : 'direct'))}
+                  className="bg-white/95 border border-border-light rounded-lg shadow-lg px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  {flowMode === 'via-ports' ? 'Show direct flows' : 'Show via ports'}
+                </button>
+              )}
+            </div>
           )}
 
           <MapContainer
@@ -465,6 +726,52 @@ export default function ChoroplethPortMap({
                   />
                 )
               })}
+
+            {/* Flow arcs */}
+            {flowArcs.map((arc, i) => (
+              <Polyline
+                key={`arc-${i}`}
+                positions={arc.points}
+                pathOptions={{
+                  color: ARC_COLORS[arc.group] || ARC_COLORS.default,
+                  weight: arc.weight,
+                  opacity: arc.opacity,
+                  lineCap: 'round',
+                  dashArray: selection?.type === 'port' ? '6 4' : null,
+                }}
+                bubblingMouseEvents={false}
+                eventHandlers={{
+                  mouseover: (e) => {
+                    e.target.setStyle({ weight: arc.weight + 2, opacity: 1 })
+                    const map = mapInstanceRef.current
+                    if (!map) return
+                    const pt = map.latLngToContainerPoint(e.latlng)
+                    const rect = map.getContainer().getBoundingClientRect()
+                    setTooltip({
+                      content: (
+                        <>
+                          <strong>{arc.originName}</strong> &rarr; <strong>{arc.destName}</strong><br />
+                          {formatValue(arc.value)} {metricLabel}
+                        </>
+                      ),
+                      x: rect.left + pt.x, y: rect.top + pt.y - 12,
+                      latLng: [e.latlng.lat, e.latlng.lng], offsetY: -12,
+                    })
+                  },
+                  mousemove: (e) => {
+                    const map = mapInstanceRef.current
+                    if (!map) return
+                    const pt = map.latLngToContainerPoint(e.latlng)
+                    const rect = map.getContainer().getBoundingClientRect()
+                    setTooltip((prev) => prev ? { ...prev, x: rect.left + pt.x, y: rect.top + pt.y - 12, latLng: [e.latlng.lat, e.latlng.lng] } : null)
+                  },
+                  mouseout: (e) => {
+                    e.target.setStyle({ weight: arc.weight, opacity: arc.opacity })
+                    setTooltip(null)
+                  },
+                }}
+              />
+            ))}
           </MapContainer>
         </div>
 
@@ -513,6 +820,26 @@ export default function ChoroplethPortMap({
             </svg>
             <span className="text-xs">Size = {metricLabel}</span>
           </span>
+
+          {/* Flow arc legend — only when arcs are visible */}
+          {flowArcs.length > 0 && (
+            <span className="border-l border-border-light pl-3 flex items-center gap-3">
+              {(() => {
+                const groups = new Set(flowArcs.map((a) => a.group))
+                const items = []
+                if (groups.has('texas')) items.push({ color: ARC_COLORS.texas, label: 'Via TX Port' })
+                if (groups.has('mexico')) items.push({ color: ARC_COLORS.mexico, label: 'Via Other MX Port' })
+                if (groups.has('canada')) items.push({ color: ARC_COLORS.canada, label: 'Via CA Port' })
+                if (groups.has(null) || groups.has(undefined)) items.push({ color: ARC_COLORS.default, label: 'Trade Flow' })
+                return items.map((item) => (
+                  <span key={item.label} className="flex items-center gap-1">
+                    <span style={{ display: 'inline-block', width: 16, height: 3, borderRadius: 2, background: item.color }} />
+                    <span className="text-xs">{item.label}</span>
+                  </span>
+                ))
+              })()}
+            </span>
+          )}
 
           <span className="ml-auto text-xs text-text-secondary italic">
             Click a state or port to explore connections

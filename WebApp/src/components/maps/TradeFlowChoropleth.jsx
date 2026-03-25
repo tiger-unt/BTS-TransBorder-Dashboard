@@ -288,11 +288,11 @@ function ChoroplethLayer({
       const name = feature.properties?.[nameProperty]
       layer.on({
         mouseover: (e) => {
+          // Skip tooltip and hover highlight for dimmed (non-highlighted) states
+          if (highlightedStates && !highlightedStates.has(name)) return
           const value = valueMap.get(name)
-          if (!highlightedStates || highlightedStates.has(name)) {
-            e.target.setStyle({ weight: 2.5, color: '#333', fillOpacity: 0.85 })
-            e.target.bringToFront()
-          }
+          e.target.setStyle({ weight: 2.5, color: '#333', fillOpacity: 0.85 })
+          e.target.bringToFront()
           const map = mapInstanceRef.current
           if (!map) return
           const pt = map.latLngToContainerPoint(e.latlng)
@@ -367,6 +367,11 @@ export default function TradeFlowChoropleth({
   const [animYear, setAnimYear] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
 
+  /* ── year pop overlay state ─────────────────────────────────────── */
+  const [popYear, setPopYear] = useState(null)
+  const popTimerRef = useRef(null)
+  const prevAnimYearRef = useRef(animYear)
+
   /* ── coordinate sources ────────────────────────────────────────── */
   const { portCoords } = usePortCoordinates()
   const { portCoords: stateCoords } = useStateCoordinates()
@@ -429,6 +434,17 @@ export default function TradeFlowChoropleth({
 
   const handleStop = useCallback(() => { setIsPlaying(false); setAnimYear(null) }, [])
   const handleYearChange = useCallback((y) => { setIsPlaying(false); setAnimYear(y) }, [])
+
+  // Year pop overlay effect
+  useEffect(() => {
+    if (animYear != null && animYear !== prevAnimYearRef.current) {
+      prevAnimYearRef.current = animYear
+      setPopYear(animYear)
+      clearTimeout(popTimerRef.current)
+      popTimerRef.current = setTimeout(() => setPopYear(null), 800)
+    }
+    return () => clearTimeout(popTimerRef.current)
+  }, [animYear])
 
   /* ── aggregate: US state totals ────────────────────────────────── */
   const usStateData = useMemo(() => {
@@ -570,14 +586,14 @@ export default function TradeFlowChoropleth({
           const portCoord = portCentroidLookup[code]
           if (!portCoord) return
           // State → Port arc
-          arcs.push({ start: startCoord, end: portCoord, value: info.total, label: code, color: '#08519c' })
+          arcs.push({ start: startCoord, end: portCoord, value: info.total, label: code, color: '#08519c', originName: selection.name, destName: code })
           if (info.total > maxVal) maxVal = info.total
           // Port → top MX states
           const topMx = [...info.mxPartners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
           topMx.forEach(([mxState, val]) => {
             const mxCoord = mxCentroids[mxState]
             if (!mxCoord) return
-            arcs.push({ start: portCoord, end: mxCoord, value: val, label: mxState, color: '#de2d26' })
+            arcs.push({ start: portCoord, end: mxCoord, value: val, label: mxState, color: '#de2d26', originName: code, destName: mxState })
             if (val > maxVal) maxVal = val
           })
         })
@@ -588,7 +604,7 @@ export default function TradeFlowChoropleth({
         sorted.forEach(([mxState, value]) => {
           const endCoord = mxCentroids[mxState]
           if (!endCoord) return
-          arcs.push({ start: startCoord, end: endCoord, value, label: mxState, color: '#6b46c1' })
+          arcs.push({ start: startCoord, end: endCoord, value, label: mxState, color: '#6b46c1', originName: selection.name, destName: mxState })
           if (value > maxVal) maxVal = value
         })
       }
@@ -603,13 +619,13 @@ export default function TradeFlowChoropleth({
         topPorts.forEach(([code, info]) => {
           const portCoord = portCentroidLookup[code]
           if (!portCoord) return
-          arcs.push({ start: startCoord, end: portCoord, value: info.total, label: code, color: '#de2d26' })
+          arcs.push({ start: startCoord, end: portCoord, value: info.total, label: code, color: '#de2d26', originName: selection.name, destName: code })
           if (info.total > maxVal) maxVal = info.total
           const topUs = [...info.usPartners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
           topUs.forEach(([usState, val]) => {
             const usCoord = usCentroids[usState]
             if (!usCoord) return
-            arcs.push({ start: portCoord, end: usCoord, value: val, label: usState, color: '#08519c' })
+            arcs.push({ start: portCoord, end: usCoord, value: val, label: usState, color: '#08519c', originName: code, destName: usState })
             if (val > maxVal) maxVal = val
           })
         })
@@ -619,7 +635,7 @@ export default function TradeFlowChoropleth({
         sorted.forEach(([usState, value]) => {
           const endCoord = usCentroids[usState]
           if (!endCoord) return
-          arcs.push({ start: startCoord, end: endCoord, value, label: usState, color: '#6b46c1' })
+          arcs.push({ start: startCoord, end: endCoord, value, label: usState, color: '#6b46c1', originName: selection.name, destName: usState })
           if (value > maxVal) maxVal = value
         })
       }
@@ -631,13 +647,13 @@ export default function TradeFlowChoropleth({
       ;[...us.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([state, value]) => {
         const c = usCentroids[state]
         if (!c) return
-        arcs.push({ start: pCoord, end: c, value, label: state, color: '#08519c' })
+        arcs.push({ start: pCoord, end: c, value, label: state, color: '#08519c', originName: selection.name, destName: state })
         if (value > maxVal) maxVal = value
       })
       ;[...mx.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([state, value]) => {
         const c = mxCentroids[state]
         if (!c) return
-        arcs.push({ start: pCoord, end: c, value, label: state, color: '#de2d26' })
+        arcs.push({ start: pCoord, end: c, value, label: state, color: '#de2d26', originName: selection.name, destName: state })
         if (value > maxVal) maxVal = value
       })
     }
@@ -646,7 +662,7 @@ export default function TradeFlowChoropleth({
       ...arc,
       points: computeArc(arc.start, arc.end, 0.15 + i * 0.015),
       weight: Math.max(1.5, Math.min(6, 1.5 + 4.5 * Math.sqrt(arc.value / (maxVal || 1)))),
-      opacity: Math.max(0.45, Math.min(0.9, 0.45 + 0.45 * (arc.value / (maxVal || 1)))),
+      opacity: 0.8,
     }))
   }, [selection, flowMode, stateFlows, statePortFlows, portFlows, usCentroids, mxCentroids, portCentroidLookup])
 
@@ -702,6 +718,25 @@ export default function TradeFlowChoropleth({
           {animYear != null && (
             <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[999] bg-brand-blue text-white px-5 py-1.5 rounded-full text-xl font-bold shadow-lg tabular-nums pointer-events-none">
               {animYear}
+            </div>
+          )}
+
+          {/* Year pop overlay */}
+          {popYear != null && (
+            <div
+              key={popYear}
+              className="pointer-events-none absolute inset-0 z-[998] flex items-center justify-center"
+            >
+              <span
+                className="text-brand-blue font-extrabold tabular-nums select-none"
+                style={{
+                  fontSize: 'clamp(60px, 10vw, 120px)',
+                  opacity: 0,
+                  animation: 'yearPop 0.8s ease-out forwards',
+                }}
+              >
+                {popYear}
+              </span>
             </div>
           )}
 
@@ -783,6 +818,36 @@ export default function TradeFlowChoropleth({
                   lineCap: 'round',
                 }}
                 bubblingMouseEvents={false}
+                eventHandlers={{
+                  mouseover: (e) => {
+                    e.target.setStyle({ weight: arc.weight + 2, opacity: 1 })
+                    const map = mapInstanceRef.current
+                    if (!map) return
+                    const pt = map.latLngToContainerPoint(e.latlng)
+                    const rect = map.getContainer().getBoundingClientRect()
+                    setTooltip({
+                      content: (
+                        <>
+                          <strong>{arc.originName}</strong> &rarr; <strong>{arc.destName}</strong><br />
+                          {formatValue(arc.value)} Trade Value
+                        </>
+                      ),
+                      x: rect.left + pt.x, y: rect.top + pt.y - 12,
+                      latLng: [e.latlng.lat, e.latlng.lng], offsetY: -12,
+                    })
+                  },
+                  mousemove: (e) => {
+                    const map = mapInstanceRef.current
+                    if (!map) return
+                    const pt = map.latLngToContainerPoint(e.latlng)
+                    const rect = map.getContainer().getBoundingClientRect()
+                    setTooltip((prev) => prev ? { ...prev, x: rect.left + pt.x, y: rect.top + pt.y - 12, latLng: [e.latlng.lat, e.latlng.lng] } : null)
+                  },
+                  mouseout: (e) => {
+                    e.target.setStyle({ weight: arc.weight, opacity: arc.opacity })
+                    setTooltip(null)
+                  },
+                }}
               />
             ))}
 
@@ -860,10 +925,21 @@ export default function TradeFlowChoropleth({
             <span className="inline-block w-3 h-3 rounded-full" style={{ background: '#0056a9' }} />
             <span className="text-xs">Border Port</span>
           </span>
-          {selection && (
-            <span className="border-l border-border-light pl-3 flex items-center gap-1">
-              <span className="inline-block w-4 h-0.5 rounded" style={{ background: '#6b46c1' }} />
-              <span className="text-xs">Trade Flow</span>
+          {flowArcs.length > 0 && (
+            <span className="border-l border-border-light pl-3 flex items-center gap-3">
+              {(() => {
+                const colors = new Set(flowArcs.map((a) => a.color))
+                const items = []
+                if (colors.has('#08519c')) items.push({ color: '#08519c', label: 'U.S. State Flow' })
+                if (colors.has('#de2d26')) items.push({ color: '#de2d26', label: 'MX State Flow' })
+                if (colors.has('#6b46c1')) items.push({ color: '#6b46c1', label: 'Direct Flow' })
+                return items.map((item) => (
+                  <span key={item.label} className="flex items-center gap-1">
+                    <span style={{ display: 'inline-block', width: 16, height: 3, borderRadius: 2, background: item.color }} />
+                    <span className="text-xs">{item.label}</span>
+                  </span>
+                ))
+              })()}
             </span>
           )}
           <span className="ml-auto text-xs text-text-secondary italic">

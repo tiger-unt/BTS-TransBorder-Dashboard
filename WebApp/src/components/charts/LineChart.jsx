@@ -102,14 +102,15 @@ function LineChart({
     const FS = getResponsiveFontSize(width, isFullscreen)
 
     // Dynamic left margin: measure the longest Y-axis label to prevent clipping
+    const yMinEst = d3.min(data, (d) => d[yKey]) || 0
     const yMaxEst = d3.max(data, (d) => d[yKey]) || 1
-    const yTicksEst = d3.scaleLinear().domain([0, yMaxEst]).nice().ticks(5)
+    const yTicksEst = d3.scaleLinear().domain([Math.min(0, yMinEst), yMaxEst]).nice().ticks(5)
     const maxYLabelLen = d3.max(yTicksEst, (v) => (v === 0 ? '' : formatValue(v)).length) || 4
     const dynamicLeft = Math.max(48, maxYLabelLen * (FS * 0.6) + 16)
 
     const margin = isFullscreen
       ? { top: 20, right: 28, bottom: 72, left: Math.max(100, dynamicLeft) }
-      : { top: 16, right: 16, bottom: 60, left: dynamicLeft }
+      : { top: 16, right: 32, bottom: 60, left: dynamicLeft }
 
     // ── Pre-calculate legend dimensions ──────────────────────────
     const LEGEND_FONT = FS
@@ -177,9 +178,10 @@ function LineChart({
     // immutable reference to recompute the zoomed domain on every zoom event.
     const x0 = x.copy()
 
+    const yMin = d3.min(allValues) || 0
     const yMax = d3.max(allValues) || 1
     const y = d3.scaleLinear()
-      .domain([0, yMax])
+      .domain([Math.min(0, yMin), yMax])
       .nice()
       .range([innerH, 0])
 
@@ -232,6 +234,17 @@ function LineChart({
       .attr('y2', innerH)
       .attr('stroke', '#9ca3af')
       .attr('stroke-width', 1)
+
+    // ── Zero line (when data has negative values) ──────────────
+    if (yMin < 0) {
+      g.append('line')
+        .attr('x1', 0)
+        .attr('x2', innerW)
+        .attr('y1', y(0))
+        .attr('y2', y(0))
+        .attr('stroke', '#9ca3af')
+        .attr('stroke-width', 1.5)
+    }
 
     // ── Y-Axis line (solid left edge) ────────────────────────────
     g.append('line')
