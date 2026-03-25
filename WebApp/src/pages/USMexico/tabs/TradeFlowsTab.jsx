@@ -15,7 +15,6 @@ import BarChart from '@/components/charts/BarChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
 import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
-import LinkedStateMaps from '@/components/maps/LinkedStateMaps'
 import InsightCallout from '@/components/ui/InsightCallout'
 
 export default function TradeFlowsTab({
@@ -25,6 +24,7 @@ export default function TradeFlowsTab({
   tradeTypeFilter,
   modeFilter,
   stateFilter,
+  portFilter,
   mexStateFilter,
   datasetError,
   metric = 'value',
@@ -43,9 +43,10 @@ export default function TradeFlowsTab({
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
     if (stateFilter?.length) data = data.filter((d) => stateFilter.includes(d.State))
+    if (portFilter?.length) data = data.filter((d) => portFilter.includes(d.Port))
     if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
     return data
-  }, [odStateFlows, tradeTypeFilter, modeFilter, stateFilter, mexStateFilter])
+  }, [odStateFlows, tradeTypeFilter, modeFilter, stateFilter, portFilter, mexStateFilter])
 
   /* ── filter data ───────────────────────────────────────────────────── */
   const filtered = useMemo(() => {
@@ -186,22 +187,7 @@ export default function TradeFlowsTab({
         </div>
       </SectionBlock>
 
-      {/* Section 0: Linked State Choropleths */}
-      <SectionBlock>
-        <div className="max-w-7xl mx-auto">
-          <ChartCard
-            title="State-to-State Trade"
-            subtitle="Click a state on either map to see its trading partners highlighted on the other"
-          >
-            <LinkedStateMaps
-              odFlows={filtered}
-              formatValue={fmtValue}
-            />
-          </ChartCard>
-        </div>
-      </SectionBlock>
-
-      {/* Section 1: Interactive Trade Flow Map */}
+      {/* Interactive Trade Flow Map */}
       <SectionBlock alt>
         <div className="max-w-7xl mx-auto">
           <ChartCard
