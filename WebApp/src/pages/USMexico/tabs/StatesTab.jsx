@@ -4,7 +4,8 @@
  */
 import { useMemo, useEffect, useState } from 'react'
 import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import SectionBlock from '@/components/ui/SectionBlock'
@@ -43,6 +44,7 @@ export default function StatesTab({
   const fmtValue = getMetricFormatter(metric)
   const metricLabel = getMetricLabel(metric)
 
+  // Weight caveat flags — computed after filtered data (below)
   const [usTopN, setUsTopN] = useState(15)
   const [mxTopN, setMxTopN] = useState(15)
   const [usTrendTopN, setUsTrendTopN] = useState(5)
@@ -88,6 +90,9 @@ export default function StatesTab({
     if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
     return data
   }, [mexicanStateTrade, tradeTypeFilter, modeFilter, mexStateFilter])
+
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filteredUS)
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredUS)
 
   /* ── year ranges for trend charts ───────────────────────────────── */
   const allUSYears = useMemo(() => {
@@ -325,6 +330,15 @@ export default function StatesTab({
           </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Choropleth Maps — side by side */}
       <SectionBlock alt>

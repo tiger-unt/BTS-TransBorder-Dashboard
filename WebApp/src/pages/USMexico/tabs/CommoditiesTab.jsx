@@ -4,7 +4,8 @@
  */
 import { useMemo, useState, useEffect } from 'react'
 import { formatCurrency, formatNumber } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
 import TreemapChart from '@/components/charts/TreemapChart'
@@ -32,6 +33,8 @@ export default function CommoditiesTab({
   const valueField = getMetricField(metric)
   const fmtValue = getMetricFormatter(metric)
   const metricLabel = getMetricLabel(metric)
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filteredCommodities || [])
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredCommodities || [])
 
   const [drillGroup, setDrillGroup] = useState(null)
   const [topCommodityN, setTopCommodityN] = useState(10)
@@ -130,12 +133,12 @@ export default function CommoditiesTab({
           CommodityGroup: d.CommodityGroup || '—',
           TradeType: d.TradeType || '—',
           TradeValue: 0,
-          WeightLb: 0,
+          WeightLb: null,
         })
       }
       const row = byKey.get(key)
       row.TradeValue += (d[valueField] || 0)
-      row.WeightLb += (d.WeightLb || 0)
+      if (d.WeightLb != null) row.WeightLb = (row.WeightLb || 0) + d.WeightLb
     })
     return Array.from(byKey.values()).sort((a, b) => b.TradeValue - a.TradeValue)
   }, [filteredCommodities, valueField])
@@ -165,7 +168,7 @@ export default function CommoditiesTab({
     { key: 'CommodityGroup', label: 'Group', wrap: true, width: '18%' },
     { key: 'TradeType', label: 'Trade Type', width: '7%' },
     { key: 'TradeValue', label: 'Trade Value ($)', render: (v) => formatCurrency(v), width: '16%' },
-    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => v ? formatWeight(v) : '—', width: '16%' },
+    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => formatWeight(v), width: '16%' },
   ]
 
   if (datasetError) {
@@ -202,6 +205,15 @@ export default function CommoditiesTab({
           </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Treemap */}
       <SectionBlock alt>

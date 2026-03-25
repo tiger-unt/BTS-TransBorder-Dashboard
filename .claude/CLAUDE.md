@@ -43,7 +43,7 @@ This project works with BTS (Bureau of Transportation Statistics) TransBorder fr
 - **Filter visibility by tab**: Only show a filter if the active tab's dataset actually has that column. Don't show a CommodityGroup filter on a tab whose dataset lacks commodity data.
 - **Metric toggle**: The value/weight toggle applies to absolute-value charts. Exception charts that always show dollars: Trade Balance (deficit is a monetary concept), Laredo's Share (%), Fastest-Growing States (%), YoY % change on stat cards. Count-based stat cards (Active Ports, Top Mode) are never metric-dependent.
 - **Weight unit**: All weight is displayed in pounds (lb). The data pipeline stores both `Weight` (kg, original) and `WeightLb` (lb, derived) columns. Frontend always uses `WeightLb` — never convert on the client side.
-- **Weight caveat**: Weight data is unavailable for surface exports across all years. When the weight metric is selected, display an info note about this limitation.
+- **Weight data availability**: BTS does not report weight for most export modes (Truck, Rail, Pipeline, Mail, Other/Unknown). Only Air, Vessel, and FTZ exports have weight. The data pipeline stores `NULL` (not 0) for unreported weight — this is enforced in `03_normalize.py` and `05_build_outputs.py`. On the frontend: `formatWeight(null)` returns `'N/A'`, the Trade Type filter disables "Export" when metric=weight (auto-clears if already selected), and a `WeightCaveatBanner` warns users when filtered data includes exports with unavailable weight.
 
 ## Workflow Rules
 

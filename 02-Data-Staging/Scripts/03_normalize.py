@@ -894,10 +894,26 @@ def decode_dataframe(df, table_type, configs):
     # Weight (convert kg -> short tons; NULL if missing)
     if "SHIPWT" in df.columns:
         shipwt = pd.to_numeric(df["SHIPWT"], errors="coerce")
-        # Treat 0 as actual 0 (not as missing)
         out["Weight"] = shipwt / KG_PER_SHORT_TON
-        # But preserve true NaN
+        # Preserve true NaN
         out.loc[shipwt.isna(), "Weight"] = pd.NA
+        # Certain export modes report Weight=0 meaning "not reported",
+        # not "zero kg".  BTS does not collect weight for these modes on
+        # export declarations.  Nullify so downstream consumers can
+        # distinguish unavailable from actual zero.
+        # Affected: Truck, Rail, Pipeline, Mail, Other/Unknown (100% zero).
+        # NOT affected: Air, Vessel, FTZs (have real weight data).
+        no_weight_export_modes = {
+            "Truck", "Rail", "Pipeline",
+            "Mail (U.S. Postal Service)", "Other/Unknown",
+        }
+        if "TradeType" in out.columns and "Mode" in out.columns:
+            is_unreported = (
+                (out["TradeType"] == "Export")
+                & (out["Mode"].isin(no_weight_export_modes))
+                & (shipwt == 0)
+            )
+            out.loc[is_unreported, "Weight"] = pd.NA
     else:
         out["Weight"] = pd.NA
 

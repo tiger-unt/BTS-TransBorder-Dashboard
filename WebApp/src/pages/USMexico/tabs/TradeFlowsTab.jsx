@@ -7,7 +7,8 @@
  */
 import { useState, useMemo, useEffect } from 'react'
 import { formatCurrency } from '@/lib/transborderHelpers'
-import { formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
@@ -54,6 +55,9 @@ export default function TradeFlowsTab({
     if (yearFilter?.length) return filteredNoYear.filter((d) => yearFilter.includes(String(d.Year)))
     return filteredNoYear
   }, [filteredNoYear, yearFilter])
+
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filtered)
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filtered)
 
   /* ── Top trading pairs: US State ↔ MX State ─────────────────────── */
   const topPairsData = useMemo(() => {
@@ -184,8 +188,20 @@ export default function TradeFlowsTab({
             cross-border integration. Click on the maps below to explore how states connect through
             border ports.
           </p>
+          <p className="text-sm text-text-tertiary mt-2 italic">
+            Note: Origin-destination data is available for exports only — BTS does not record the Mexican state of origin for imports.
+          </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Interactive Trade Flow Map */}
       <SectionBlock alt>

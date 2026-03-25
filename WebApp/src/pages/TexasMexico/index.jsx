@@ -292,7 +292,16 @@ export default function TexasMexicoPage() {
     <>
       <MetricToggle value={metric} onChange={setMetric} />
       <FilterMultiSelect label="Year" value={yearFilter} options={yearOptions} onChange={setYearFilter} />
-      <FilterSelect label="Trade Type" value={tradeTypeFilter} options={tradeTypeOptions} onChange={setTradeTypeFilter} disabledValues={metric === 'weight' ? ['Export'] : []} />
+      {tradeTypeOptions.length > 1 ? (
+        <FilterSelect label="Trade Type" value={tradeTypeFilter} options={tradeTypeOptions} onChange={setTradeTypeFilter} disabledValues={metric === 'weight' ? ['Export'] : []} />
+      ) : tradeTypeOptions.length === 1 ? (
+        <div className="flex flex-col gap-1 min-w-0 w-full">
+          <span className="text-base font-medium text-text-secondary uppercase tracking-wider">Trade Type</span>
+          <span className="px-3 py-2 rounded-lg border border-border bg-surface-alt text-base text-text-secondary">
+            {tradeTypeOptions[0]}s Only
+          </span>
+        </div>
+      ) : null}
       <FilterMultiSelect label="Mode" value={modeFilter} options={modeOptions} onChange={setModeFilter} />
       {activeTab === 'ports' && (
         <>

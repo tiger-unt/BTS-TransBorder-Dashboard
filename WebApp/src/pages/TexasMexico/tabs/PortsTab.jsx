@@ -13,7 +13,8 @@ import DonutChart from '@/components/charts/DonutChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
 import DataTable from '@/components/ui/DataTable'
 import PortMap from '@/components/maps/PortMap'
-import { formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel } from '@/lib/chartColors'
+import { formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
 import InsightCallout from '@/components/ui/InsightCallout'
@@ -46,6 +47,8 @@ export default function PortsTab({
   const valueField = getMetricField(metric)
   const fmtValue = getMetricFormatter(metric)
   const metricLabel = getMetricLabel(metric)
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filteredPorts)
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredPorts)
   const filters = { tradeTypeFilter, modeFilter }
   const subsetLabel = getDataSubsetLabel(filteredPorts, filters)
   const subsetLabelNoYear = getDataSubsetLabel(filteredPortsNoYear, filters)
@@ -239,12 +242,12 @@ export default function PortsTab({
         byKey.set(key, {
           Year: d.Year, Port: d.Port || '—', Region: d.Region || '—',
           Mode: d.Mode || '—', TradeType: d.TradeType || '—',
-          TradeValue: 0, WeightLb: 0,
+          TradeValue: 0, WeightLb: null,
         })
       }
       const row = byKey.get(key)
       row.TradeValue += d.TradeValue || 0
-      row.WeightLb += d.WeightLb || 0
+      if (d.WeightLb != null) row.WeightLb = (row.WeightLb || 0) + d.WeightLb
     })
     return Array.from(byKey.values()).sort((a, b) => b.TradeValue - a.TradeValue)
   }, [filteredPorts])
@@ -289,7 +292,7 @@ export default function PortsTab({
     { key: 'Mode', label: 'Mode' },
     { key: 'TradeType', label: 'Trade Type' },
     { key: 'TradeValue', label: 'Trade Value ($)', render: (v) => formatCurrency(v) },
-    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => v ? formatWeight(v) : '—' },
+    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => formatWeight(v) },
   ]
 
   return (
@@ -306,6 +309,15 @@ export default function PortsTab({
           </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Port Map */}
       <SectionBlock>

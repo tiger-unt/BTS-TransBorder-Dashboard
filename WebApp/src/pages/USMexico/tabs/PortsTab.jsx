@@ -4,7 +4,8 @@
  */
 import { useMemo, useState, useEffect } from 'react'
 import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import { usePortCoordinates, buildMapPorts } from '@/hooks/usePortMapData'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
@@ -39,6 +40,8 @@ export default function PortsTab({
   const valueField = getMetricField(metric)
   const fmtValue = getMetricFormatter(metric)
   const metricLabel = getMetricLabel(metric)
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filteredPorts)
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredPorts)
 
   /* ── chart-level state ─────────────────────────────────────────────── */
   const allYears = useMemo(() => {
@@ -153,12 +156,12 @@ export default function PortsTab({
     const byPort = new Map()
     filteredPorts.forEach((d) => {
       const port = d.Port || 'Unknown'
-      if (!byPort.has(port)) byPort.set(port, { Port: port, State: d.State || '—', Total: 0, Exports: 0, Imports: 0, WeightLb: 0 })
+      if (!byPort.has(port)) byPort.set(port, { Port: port, State: d.State || '—', Total: 0, Exports: 0, Imports: 0, WeightLb: null })
       const row = byPort.get(port)
       row.Total += (d.TradeValue || 0)
       if (d.TradeType === 'Export') row.Exports += (d.TradeValue || 0)
       if (d.TradeType === 'Import') row.Imports += (d.TradeValue || 0)
-      row.WeightLb += (d.WeightLb || 0)
+      if (d.WeightLb != null) row.WeightLb = (row.WeightLb || 0) + d.WeightLb
     })
     return Array.from(byPort.values()).sort((a, b) => b.Total - a.Total)
   }, [filteredPorts])
@@ -169,7 +172,7 @@ export default function PortsTab({
     { key: 'Total', label: 'Total Trade ($)', render: (v) => formatCurrency(v) },
     { key: 'Exports', label: 'Exports ($)', render: (v) => formatCurrency(v) },
     { key: 'Imports', label: 'Imports ($)', render: (v) => formatCurrency(v) },
-    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => v ? formatWeight(v) : '—' },
+    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => formatWeight(v) },
   ]
 
   /* ── Trade balance by year (exports minus imports) ─────────────── */
@@ -204,6 +207,15 @@ export default function PortsTab({
           </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Port Map */}
       <SectionBlock alt>

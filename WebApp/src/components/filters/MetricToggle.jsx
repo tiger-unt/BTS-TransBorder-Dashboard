@@ -38,7 +38,7 @@ export default function MetricToggle({ value = 'value', onChange }) {
       {value === 'weight' && (
         <div className="flex items-start gap-1.5 mt-1 text-xs text-amber-600 bg-amber-50 rounded-md px-2 py-1.5">
           <Info size={12} className="flex-shrink-0 mt-0.5" />
-          <span>Weight is unavailable for surface exports (shown as zero).</span>
+          <span>Weight data is not reported for most export modes (Truck, Rail, Pipeline, Mail, Other). Export is disabled below.</span>
         </div>
       )}
     </div>

@@ -4,7 +4,8 @@
  */
 import { useState, useMemo, useEffect } from 'react'
 import { formatCurrency } from '@/lib/transborderHelpers'
-import { formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
@@ -20,6 +21,7 @@ export default function TradeFlowsTab({
   yearFilter,
   tradeTypeFilter,
   modeFilter,
+  portFilter,
   mexStateFilter,
   datasetError,
   metric = 'value',
@@ -31,21 +33,39 @@ export default function TradeFlowsTab({
   const metricLabel = getMetricLabel(metric)
   const [topPairsN, setTopPairsN] = useState(15)
 
+  /* ── map-local year selector (independent of page filters) ─────── */
+  const mapYears = useMemo(() => {
+    if (!texasOdStateFlows) return []
+    return [...new Set(texasOdStateFlows.map((d) => d.Year).filter(Boolean))].sort((a, b) => a - b)
+  }, [texasOdStateFlows])
+  const [mapYear, setMapYear] = useState('')
+  // default to latest year once data loads
+  useEffect(() => {
+    if (mapYears.length && !mapYear) setMapYear(String(mapYears[mapYears.length - 1]))
+  }, [mapYears])
+
   /* ── filter without year (for map animation) ──────────────────────── */
   const filteredNoYear = useMemo(() => {
     if (!texasOdStateFlows) return []
     let data = texasOdStateFlows
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    if (portFilter?.length) data = data.filter((d) => portFilter.includes(d.Port))
     if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
     return data
-  }, [texasOdStateFlows, tradeTypeFilter, modeFilter, mexStateFilter])
+  }, [texasOdStateFlows, tradeTypeFilter, modeFilter, portFilter, mexStateFilter])
 
   const filtered = useMemo(() => {
     if (!filteredNoYear.length) return []
     if (yearFilter?.length) return filteredNoYear.filter((d) => yearFilter.includes(String(d.Year)))
     return filteredNoYear
   }, [filteredNoYear, yearFilter])
+
+  const filters = { tradeTypeFilter, modeFilter }
+  const subsetLabel = getDataSubsetLabel(filteredNoYear, filters)
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filtered)
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filtered)
+  const subsetLabelWithYear = getDataSubsetLabel(filtered, filters)
 
   /* ── Top trading pairs ────────────────────────────────────────────── */
   const topPairsData = useMemo(() => {
@@ -163,8 +183,20 @@ export default function TradeFlowsTab({
             a supply chain built over decades — use the interactive maps below to explore how trade
             flows through the border.
           </p>
+          <p className="text-sm text-text-tertiary mt-2 italic">
+            Note: Origin-destination data is available for exports only — BTS does not record the Mexican state of origin for imports.
+          </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Interactive Trade Flow Map */}
       <SectionBlock>
@@ -172,11 +204,24 @@ export default function TradeFlowsTab({
           <ChartCard
             title="Trade Flow Map"
             subtitle="Click a state or port to see flow arcs — use the timeline to animate through years"
+            headerRight={
+              <div className="flex items-center gap-2 text-sm">
+                <label className="text-text-secondary font-medium">Year</label>
+                <select
+                  value={mapYear}
+                  onChange={(e) => setMapYear(e.target.value)}
+                  className="appearance-none px-2 py-1 pr-6 rounded border border-border bg-white text-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-brand-blue/30 cursor-pointer"
+                >
+                  {mapYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            }
           >
             <TradeFlowChoropleth
-              data={filteredNoYear}
-              yearFilter={yearFilter}
-              formatValue={fmtValue}
+              data={texasOdStateFlows || []}
+              yearFilter={mapYear ? [mapYear] : []}
               center={[28, -100]}
               zoom={5}
               height="580px"
@@ -186,7 +231,7 @@ export default function TradeFlowsTab({
       </SectionBlock>
 
       <SectionBlock alt>
-        <ChartCard title="Top Trading Partners" subtitle={`Largest bilateral ${metricLabel.toLowerCase()} flows between U.S. and Mexican states through Texas ports`} headerRight={<TopNSelector value={topPairsN} onChange={setTopPairsN} />}>
+        <ChartCard title={`Top Trading Partners${subsetLabelWithYear}`} subtitle={`Largest bilateral ${metricLabel.toLowerCase()} flows between U.S. and Mexican states through Texas ports`} headerRight={<TopNSelector value={topPairsN} onChange={setTopPairsN} />}>
           <BarChart data={topPairsData} horizontal formatValue={fmtValue} maxBars={topPairsN} />
         </ChartCard>
         <div className="max-w-4xl mx-auto mt-6">
@@ -199,13 +244,13 @@ export default function TradeFlowsTab({
       </SectionBlock>
 
       <SectionBlock>
-        <ChartCard title="Trade Routes" subtitle="How trade flows from U.S. states through Texas border ports to Mexican states">
+        <ChartCard title={`Trade Routes${subsetLabelWithYear}`} subtitle="How trade flows from U.S. states through Texas border ports to Mexican states">
           <SankeyDiagram nodes={sankeyData.nodes} links={sankeyData.links} formatValue={fmtValue} height={550} />
         </ChartCard>
       </SectionBlock>
 
       <SectionBlock alt>
-        <ChartCard title="Trade Matrix" subtitle="U.S. states (rows) vs. Mexican states (columns) through Texas ports">
+        <ChartCard title={`Trade Matrix${subsetLabelWithYear}`} subtitle="U.S. states (rows) vs. Mexican states (columns) through Texas ports">
           {heatmapData ? (
             <HeatmapTable data={heatmapData} formatValue={fmtValue} />
           ) : (
