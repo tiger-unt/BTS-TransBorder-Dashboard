@@ -91,10 +91,28 @@ def run_query(conn, sql):
     return [dict(zip(cols, row)) for row in rows]
 
 
+NO_WEIGHT_EXPORT_MODES = {
+    "Truck", "Rail", "Pipeline",
+    "Mail (U.S. Postal Service)", "Other/Unknown",
+}
+
+
 def add_weight_lb(records):
-    """Add WeightLb (pounds) column to records that have a non-null Weight (kg)."""
+    """Add WeightLb (pounds) column to records that have a non-null Weight (kg).
+
+    Also nullifies Weight/WeightLb for export modes that don't report weight
+    (Truck, Rail, Pipeline, Mail, Other/Unknown) where the source data has 0
+    meaning 'not reported' rather than 'zero kg'.
+    """
     for r in records:
         w = r.get("Weight")
+        # Safety net: nullify unreported export weights that slipped through
+        # as 0 from the database (should already be NULL from 03_normalize).
+        if (w is not None and w == 0
+                and r.get("TradeType") == "Export"
+                and r.get("Mode") in NO_WEIGHT_EXPORT_MODES):
+            r["Weight"] = None
+            w = None
         r["WeightLb"] = round(w * KG_TO_LB, 2) if w is not None else None
     return records
 

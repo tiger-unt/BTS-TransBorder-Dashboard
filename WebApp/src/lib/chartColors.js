@@ -131,14 +131,48 @@ export const formatPercent = (value) => {
   return `${(value * 100).toFixed(1)}%`
 }
 
+/* ── Export weight availability ─────────────────────────────────────── */
+
+/**
+ * Export modes that do NOT report weight data (100% zero in BTS source).
+ * Only Air, Vessel, and FTZs have weight data for exports.
+ */
+export const NO_WEIGHT_EXPORT_MODES = new Set([
+  'Truck', 'Rail', 'Pipeline',
+  'Mail (U.S. Postal Service)', 'Other/Unknown',
+])
+
+/** True when the row is an export mode that doesn't report weight. */
+export const isWeightUnavailable = (row) =>
+  row?.TradeType === 'Export' && NO_WEIGHT_EXPORT_MODES.has(row?.Mode)
+
+// Legacy aliases (used in existing code)
+export const SURFACE_MODES = NO_WEIGHT_EXPORT_MODES
+export const isSurfaceExport = isWeightUnavailable
+
+/**
+ * True when *any* row in `data` has unavailable weight.
+ * Useful for deciding whether to show weight-caveat banners.
+ */
+export const hasSurfaceExports = (data) =>
+  Array.isArray(data) && data.some(isWeightUnavailable)
+
+/**
+ * True when the data contains ONLY rows with unavailable weight.
+ * In this case weight data is completely unavailable.
+ */
+export const isAllSurfaceExports = (data) =>
+  Array.isArray(data) && data.length > 0 && data.every(isWeightUnavailable)
+
 /* ── Metric toggle helpers ──────────────────────────────────────────── */
 
 /**
  * Format a numeric value as compact weight in pounds (lb).
- * Examples: 1500000000 → "1.5B lb", -250000 → "-250.0K lb", 0 → "0 lb"
+ * Returns 'N/A' for null/undefined (weight not reported in source data).
+ * Examples: 1500000000 → "1.5B lb", -250000 → "-250.0K lb", null → "N/A"
  */
 export const formatWeight = (value) => {
-  if (value == null || isNaN(value)) return '0 lb'
+  if (value == null || isNaN(value)) return 'N/A'
   const abs = Math.abs(value)
   const sign = value < 0 ? '-' : ''
   if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(1)}T lb`
@@ -162,3 +196,40 @@ export const getMetricAxisPrefix = (metric) => metric === 'weight' ? '' : '$'
 
 /** Returns axis suffix for the selected metric. */
 export const getMetricAxisSuffix = (metric) => metric === 'weight' ? ' lb' : ''
+
+/**
+ * Returns a parenthetical annotation when a chart's actual data is narrower
+ * than what the sidebar filters imply.  For example, if the Trade Type filter
+ * is "All" but the data only contains Export rows, returns " (Exports Only)".
+ *
+ * @param {Array}  data   – the filtered dataset powering the chart
+ * @param {Object} filters – current sidebar filter values
+ * @param {string} [filters.tradeTypeFilter] – '' means "All"
+ * @param {Array}  [filters.modeFilter]      – [] means "All"
+ * @returns {string} e.g. " (Exports Only)" or " (Truck Only)" or ""
+ */
+export function getDataSubsetLabel(data, { tradeTypeFilter, modeFilter } = {}) {
+  if (!data?.length) return ''
+  const parts = []
+
+  // Trade type: check only when filter says "All"
+  if (!tradeTypeFilter) {
+    const types = new Set()
+    for (const d of data) { if (d.TradeType) types.add(d.TradeType) }
+    if (types.size === 1) {
+      const only = [...types][0]
+      parts.push(only === 'Export' ? 'Exports' : only === 'Import' ? 'Imports' : only)
+    }
+  }
+
+  // Mode: check only when filter says "All"
+  if (!modeFilter?.length) {
+    const modes = new Set()
+    for (const d of data) { if (d.Mode) modes.add(d.Mode) }
+    if (modes.size === 1) {
+      parts.push([...modes][0])
+    }
+  }
+
+  return parts.length ? ` (${parts.join(', ')} Only)` : ''
+}

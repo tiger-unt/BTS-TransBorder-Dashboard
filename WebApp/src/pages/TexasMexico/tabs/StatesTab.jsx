@@ -5,7 +5,8 @@
  */
 import { useMemo, useEffect, useState } from 'react'
 import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel } from '@/lib/chartColors'
+import { CHART_COLORS, formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'
@@ -74,6 +75,8 @@ export default function StatesTab({
 
   const subsetLabel = getDataSubsetLabel(filtered, filters)
   const subsetLabelNoYear = getDataSubsetLabel(filteredNoYear, filters)
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filtered)
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filtered)
 
   const allStateYears = useMemo(() => {
     const ys = new Set()
@@ -292,8 +295,20 @@ export default function StatesTab({
             border partners, Mexico's emerging <strong>Baj&iacute;o corridor</strong> (Quer&eacute;taro, San Luis Potos&iacute;,
             Guanajuato) is growing rapidly — and Texas ports remain the gateway.
           </p>
+          <p className="text-sm text-text-tertiary mt-2 italic">
+            Note: Mexican state data is available for exports only — BTS does not record the Mexican state of origin for imports.
+          </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Interactive Mexican States + Port Bubbles Map */}
       <SectionBlock alt>

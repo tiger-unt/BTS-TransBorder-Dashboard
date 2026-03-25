@@ -15,7 +15,8 @@ import DivergingBarChart from '@/components/charts/DivergingBarChart'
 import BarChartRace from '@/components/charts/BarChartRace'
 import InsightCallout from '@/components/ui/InsightCallout'
 import { Factory, Play, Pause, SkipBack, SkipForward, ArrowRight } from 'lucide-react'
-import { formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel } from '@/lib/chartColors'
+import { formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
 import DatasetError from '@/components/ui/DatasetError'
@@ -36,6 +37,8 @@ export default function CommoditiesTab({ filteredCommodities, loadDataset, _late
   const fmtValue = getMetricFormatter(metric)
   const metricLabel = getMetricLabel(metric)
   const subsetLabel = getDataSubsetLabel(filteredCommodities, { tradeTypeFilter, modeFilter })
+  const weightAllNA = metric === 'weight' && isAllSurfaceExports(filteredCommodities || [])
+  const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredCommodities || [])
 
   if (datasetError) {
     return <DatasetError datasetName="Commodity Data" error={datasetError} onRetry={() => loadDataset('texasMexicoCommodities')} />
@@ -245,12 +248,12 @@ export default function CommoditiesTab({ filteredCommodities, loadDataset, _late
           Port: d.Port || '—',
           TradeType: d.TradeType || '—',
           TradeValue: 0,
-          WeightLb: 0,
+          WeightLb: null,
         })
       }
       const row = byKey.get(key)
       row.TradeValue += d.TradeValue || 0
-      row.WeightLb += d.WeightLb || 0
+      if (d.WeightLb != null) row.WeightLb = (row.WeightLb || 0) + d.WeightLb
     })
     return Array.from(byKey.values()).sort((a, b) => b.TradeValue - a.TradeValue)
   }, [filteredCommodities])
@@ -312,7 +315,7 @@ export default function CommoditiesTab({ filteredCommodities, loadDataset, _late
     { key: 'Port', label: 'Port', wrap: true, width: '12%' },
     { key: 'TradeType', label: 'Trade Type', width: '7%' },
     { key: 'TradeValue', label: 'Trade Value ($)', render: (v) => formatCurrency(v), width: '12%' },
-    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => v ? formatWeight(v) : '—', width: '10%' },
+    { key: 'WeightLb', label: 'Weight (lb)', render: (v) => formatWeight(v), width: '10%' },
   ]
 
   return (
@@ -330,6 +333,15 @@ export default function CommoditiesTab({ filteredCommodities, loadDataset, _late
           </p>
         </div>
       </SectionBlock>
+
+      {/* Weight caveat banner */}
+      {(weightAllNA || weightPartial) && (
+        <SectionBlock>
+          <div className="max-w-4xl mx-auto">
+            <WeightCaveatBanner allNA={weightAllNA} />
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Treemap of commodity groups with drilldown */}
       <SectionBlock>

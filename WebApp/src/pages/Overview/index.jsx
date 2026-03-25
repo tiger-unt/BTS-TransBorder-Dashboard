@@ -6,7 +6,7 @@ import {
   Globe, Map as MapIcon, Scale, ArrowUpDown, Lightbulb,
 } from 'lucide-react'
 import { useTransborderStore } from '@/stores/transborderStore'
-import { formatCurrency, formatWeight, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { formatCurrency, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import { generateInsights } from '@/lib/insightEngine'
 import MetricToggle from '@/components/filters/MetricToggle'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
@@ -91,6 +91,16 @@ export default function OverviewPage() {
   const [trendYearRange, setTrendYearRange] = useState(null)   // { startYear, endYear }
   const [stackYearRange, setStackYearRange] = useState(null)   // { startYear, endYear }
 
+  /* ── map-local year selector (independent of page filters) ──── */
+  const [mapYear, setMapYear] = useState('')
+  const mapYears = useMemo(() => {
+    if (!usStateTrade?.length) return []
+    return [...new Set(usStateTrade.map((d) => d.Year).filter(Number.isFinite))].sort((a, b) => a - b)
+  }, [usStateTrade])
+  useEffect(() => {
+    if (mapYears.length && !mapYear) setMapYear(String(mapYears[mapYears.length - 1]))
+  }, [mapYears])
+
   /* ── lazy-load port + state data for map ───────────────────────── */
   useEffect(() => {
     loadDataset('usMexicoPorts')
@@ -118,41 +128,47 @@ export default function OverviewPage() {
     return [...mx, ...ca]
   }, [usMexicoPorts, usCanadaPorts, mxCoords, caCoords])
 
-  /* ── Choropleth: US states by total trade value ───────────────── */
+  /* ── Choropleth: US states by trade value (map-year only, always $) */
   const stateMapData = useMemo(() => {
     if (!usStateTrade?.length) return []
+    const yr = Number(mapYear)
     const byState = new Map()
     for (const d of usStateTrade) {
+      if (yr && d.Year !== yr) continue
       const st = d.State
       if (!st || st === 'Unknown') continue
-      byState.set(st, (byState.get(st) || 0) + (d[valueField] || 0))
+      byState.set(st, (byState.get(st) || 0) + (d.TradeValue || 0))
     }
     return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-  }, [usStateTrade, valueField])
+  }, [usStateTrade, mapYear])
 
-  /* ── Choropleth: Mexican states by total trade value ─────────── */
+  /* ── Choropleth: Mexican states by trade value (map-year only, always $) */
   const mexStateMapData = useMemo(() => {
     if (!odStateFlows?.length) return []
+    const yr = Number(mapYear)
     const byState = new Map()
     for (const d of odStateFlows) {
+      if (yr && d.Year !== yr) continue
       const st = d.MexState
       if (!st || st === 'Unknown') continue
-      byState.set(st, (byState.get(st) || 0) + (d[valueField] || 0))
+      byState.set(st, (byState.get(st) || 0) + (d.TradeValue || 0))
     }
     return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-  }, [odStateFlows, valueField])
+  }, [odStateFlows, mapYear])
 
-  /* ── Choropleth: Canadian provinces by total trade value ──────── */
+  /* ── Choropleth: Canadian provinces by trade value (map-year only, always $) */
   const canProvMapData = useMemo(() => {
     if (!odCanadaProvFlows?.length) return []
+    const yr = Number(mapYear)
     const byProv = new Map()
     for (const d of odCanadaProvFlows) {
+      if (yr && d.Year !== yr) continue
       const prov = d.CanProv
       if (!prov || prov === 'Unknown') continue
-      byProv.set(prov, (byProv.get(prov) || 0) + (d[valueField] || 0))
+      byProv.set(prov, (byProv.get(prov) || 0) + (d.TradeValue || 0))
     }
     return Array.from(byProv, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-  }, [odCanadaProvFlows, valueField])
+  }, [odCanadaProvFlows, mapYear])
 
   /* ── Map layers config ─────────────────────────────────────────── */
   const mapLayers = useMemo(() => {
@@ -168,12 +184,12 @@ export default function OverviewPage() {
     return result
   }, [stateMapData, mexStateMapData, canProvMapData])
 
-  /* ── Connections: US state ↔ port, MX/CA state ↔ port ────────── */
+  /* ── Connections: US state ↔ port, MX/CA state ↔ port (map-year, always $) */
   const mapConnections = useMemo(() => {
+    const yr = Number(mapYear)
     const stateToPort = new Map()   // stateName → Map<portCode, value>
     const portToState = new Map()   // portCode → Map<stateName, value>
 
-    // Helper to add bidirectional connection
     const addConnection = (name, code, val) => {
       if (!stateToPort.has(name)) stateToPort.set(name, new Map())
       const sp = stateToPort.get(name)
@@ -183,30 +199,30 @@ export default function OverviewPage() {
       ps.set(name, (ps.get(name) || 0) + val)
     }
 
-    // Mexico: US State ↔ Port, Mexican State ↔ Port
     if (odStateFlows?.length) {
       for (const d of odStateFlows) {
+        if (yr && d.Year !== yr) continue
         if (!d.PortCode) continue
         const code = d.PortCode.replace(/\D/g, '')
-        const val = d[valueField] || 0
+        const val = d.TradeValue || 0
         if (d.State && d.State !== 'Unknown') addConnection(d.State, code, val)
         if (d.MexState && d.MexState !== 'Unknown') addConnection(d.MexState, code, val)
       }
     }
 
-    // Canada: US State ↔ Port, Canadian Province ↔ Port
     if (odCanadaProvFlows?.length) {
       for (const d of odCanadaProvFlows) {
+        if (yr && d.Year !== yr) continue
         if (!d.PortCode) continue
         const code = d.PortCode.replace(/\D/g, '')
-        const val = d[valueField] || 0
+        const val = d.TradeValue || 0
         if (d.State && d.State !== 'Unknown') addConnection(d.State, code, val)
         if (d.CanProv && d.CanProv !== 'Unknown') addConnection(d.CanProv, code, val)
       }
     }
 
     return { stateToPort, portToState }
-  }, [odStateFlows, odCanadaProvFlows, valueField])
+  }, [odStateFlows, odCanadaProvFlows, mapYear])
 
   /* ── filtered data based on country selection ──────────────────── */
   const filteredData = useMemo(() => {
@@ -244,11 +260,14 @@ export default function OverviewPage() {
     const sum = (rows) => rows.reduce((s, d) => s + (d[valueField] || 0), 0)
 
     const totalLatest = sum(latestRows)
-    const exports = sum(latestRows.filter((d) => /export/i.test(d.TradeType)))
+    const exportRows = latestRows.filter((d) => /export/i.test(d.TradeType))
+    const exports = sum(exportRows)
     const imports = sum(latestRows.filter((d) => /import/i.test(d.TradeType)))
     const tradeBalance = exports - imports
+    const exportWeightNA = metric === 'weight' && hasSurfaceExports(exportRows)
+    const totalWeightNA = metric === 'weight' && isAllSurfaceExports(latestRows)
 
-    return { totalLatest, exports, imports, tradeBalance }
+    return { totalLatest, exports, imports, tradeBalance, exportWeightNA, totalWeightNA }
   }, [filteredData, latestYear, valueField])
 
   /* ── Per-chart filtered data ─────────────────────────────────────── */
@@ -373,13 +392,31 @@ export default function OverviewPage() {
           </div>
           {/* Map — large, full-width within hero */}
           <div className="pb-4 md:pb-5">
+            {/* Year selector for map */}
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-white/70 text-sm font-medium">Year</label>
+              <div className="relative">
+                <select
+                  value={mapYear}
+                  onChange={(e) => setMapYear(e.target.value)}
+                  className="appearance-none px-2 py-1 pr-7 rounded border border-white/20 bg-white/10 text-white text-sm
+                             focus:outline-none focus:ring-1 focus:ring-white/30 cursor-pointer backdrop-blur-sm"
+                >
+                  {mapYears.map((y) => (
+                    <option key={y} value={y} className="text-gray-900">{y}</option>
+                  ))}
+                </select>
+                <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/70" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
             <div className="rounded-xl overflow-hidden shadow-lg ring-1 ring-white/10" style={{ height: 572 }}>
               {mapPorts.length > 0 ? (
                 <ChoroplethPortMap
                   layers={mapLayers}
                   ports={mapPorts}
                   connections={mapConnections}
-                  formatValue={fmtValue}
                   center={[33.5, -82.0]}
                   zoom={4}
                   height="572px"
@@ -423,20 +460,20 @@ export default function OverviewPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 label={`Total Trade (${latestYear})`}
-                value={fmtValue(stats.totalLatest)}
+                value={stats.totalWeightNA ? 'N/A' : fmtValue(stats.totalLatest)}
                 icon={DollarSign}
                 highlight
                 variant="primary"
                 delay={0}
               />
               <StatCard
-                label="Exports"
-                value={fmtValue(stats.exports)}
+                label={`Exports (${latestYear})`}
+                value={stats.exportWeightNA ? 'N/A' : fmtValue(stats.exports)}
                 icon={ArrowRight}
                 delay={100}
               />
               <StatCard
-                label="Imports"
+                label={`Imports (${latestYear})`}
                 value={fmtValue(stats.imports)}
                 icon={ArrowRight}
                 delay={200}
