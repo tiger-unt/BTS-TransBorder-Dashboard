@@ -37,7 +37,7 @@ export default function SankeyDiagram({
     const effectiveWidth = width || (containerRef.current?.getBoundingClientRect().width ?? 0)
     if (!svgRef.current || !nodes.length || !links.length || effectiveWidth < 200) return
 
-    const margin = { top: 10, right: 10, bottom: 10, left: 10 }
+    const margin = { top: 10, right: 120, bottom: 10, left: 120 }
     const w = effectiveWidth - margin.left - margin.right
     const h = chartHeight - margin.top - margin.bottom
 
@@ -145,18 +145,23 @@ export default function SankeyDiagram({
         setTooltip(null)
       })
 
-    // Node labels — last column gets right-aligned labels
+    // Node labels — first column labels go left, last column labels go right
+    const firstGroup = groupOrder[0]
     const lastGroup = groupOrder[groupOrder.length - 1]
     nodeG.append('text')
-      .attr('x', (d) => d.group === lastGroup ? d.x0 - 6 : d.x1 + 6)
+      .attr('x', (d) => {
+        if (d.group === firstGroup) return d.x0 - 6   // left of bar
+        if (d.group === lastGroup) return d.x1 + 6    // right of bar
+        return d.x1 + 6                               // middle columns: right of bar
+      })
       .attr('y', (d) => (d.y0 + d.y1) / 2)
       .attr('dy', '0.35em')
-      .attr('text-anchor', (d) => d.group === lastGroup ? 'end' : 'start')
+      .attr('text-anchor', (d) => d.group === firstGroup ? 'end' : 'start')
       .attr('font-size', '11px')
       .attr('fill', '#333')
       .text((d) => {
         const name = d.name
-        return name.length > 18 ? name.slice(0, 16) + '...' : name
+        return name.length > 22 ? name.slice(0, 20) + '...' : name
       })
 
     // Column headers
@@ -200,7 +205,7 @@ export default function SankeyDiagram({
 
   return (
     <div ref={containerRef} className="relative w-full" style={{ minHeight: chartHeight }}>
-      <svg ref={svgRef} />
+      <svg ref={svgRef} style={{ overflow: 'visible' }} />
       {tooltip && (
         <div
           style={{

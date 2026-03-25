@@ -21,8 +21,8 @@ function TreemapChart({
     const FS = getResponsiveFontSize(width, isFullscreen)
     // Use fixed height in normal mode to prevent feedback loops in CSS grid layouts.
     const height = isFullscreen
-      ? Math.max(320, containerHeight > 100 ? containerHeight : 320)
-      : 320
+      ? Math.max(640, containerHeight > 100 ? containerHeight : 640)
+      : 640
     const safeWidth = Math.max(1, width)
     const safeHeight = Math.max(1, height)
 
@@ -159,7 +159,7 @@ function TreemapChart({
   }, [data, width, containerHeight, isFullscreen, nameKey, valueKey, animate, onCellClick, formatValue])
 
   return (
-    <div ref={containerRef} className="w-full relative" style={{ minHeight: 320 }}>
+    <div ref={containerRef} className="w-full relative" style={{ minHeight: 640 }}>
       <svg ref={svgRef} className="w-full" role="img" aria-label="Treemap chart visualization" />
     </div>
   )

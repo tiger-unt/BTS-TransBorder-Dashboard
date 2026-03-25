@@ -97,9 +97,14 @@ function StackedBarChart({
     const maxYLabelLen = d3.max(yTicksEst, (v) => (v === 0 ? '' : yLabelFmt(v)).length) || 4
     const dynamicLeft = Math.max(48, maxYLabelLen * (FS * 0.6) + 16)
 
+    // Estimate bottom margin based on longest x-label (longer labels need more room when rotated)
+    const maxXLabelLen = d3.max(chartData, (d) => String(d[xKey]).length) || 4
+    const dynamicBottom = maxXLabelLen > 6
+      ? Math.max(56, maxXLabelLen * (FS * 0.45) + 30)
+      : 56
     const margin = isFullscreen
-      ? { top: 16, right: 20, bottom: 68, left: Math.max(100, dynamicLeft) }
-      : { top: 12, right: 12, bottom: 56, left: dynamicLeft }
+      ? { top: 16, right: 20, bottom: Math.max(68, dynamicBottom + 12), left: Math.max(100, dynamicLeft) }
+      : { top: 12, right: 12, bottom: dynamicBottom, left: dynamicLeft }
 
     // Pre-calculate legend rows
     const LEGEND_FONT = FS
@@ -301,9 +306,12 @@ function StackedBarChart({
     // X Axis (centered tick marks, thinned labels when crowded)
     const nBars = chartData.length
     const barSlotW = innerW / nBars
-    const minLabelSlot = FS * 2.2          // minimum px per label before thinning
-    const every = barSlotW < minLabelSlot ? Math.ceil(minLabelSlot / barSlotW) : 1
     const domainVals = chartData.map((d) => d[xKey])
+    const maxLabelLen = d3.max(domainVals, (v) => String(v).length) || 4
+    // Use steeper rotation for longer labels (e.g. port names vs years)
+    const rotAngle = maxLabelLen > 6 ? -50 : -35
+    const minLabelSlot = maxLabelLen > 6 ? FS * 1.4 : FS * 2.2
+    const every = barSlotW < minLabelSlot ? Math.ceil(minLabelSlot / barSlotW) : 1
 
     const xAxisG = g.append('g')
       .attr('transform', `translate(0,${innerH})`)
@@ -316,7 +324,7 @@ function StackedBarChart({
       .attr('font-size', `${FS}px`)
       .attr('fill', 'var(--color-text-secondary)')
       .attr('dy', '1.2em')
-      .attr('transform', 'rotate(-35)')
+      .attr('transform', `rotate(${rotAngle})`)
       .attr('text-anchor', 'end')
 
     // Y Axis — dynamic unit (centered tick marks, skip zero)
@@ -335,6 +343,23 @@ function StackedBarChart({
     // Legend (centered, wraps to multiple rows if needed)
     const legendG = svg.append('g')
 
+    // Shared legend-hover handlers: highlight one stack layer across all columns
+    const bindLegendHover = (ig, item) => {
+      ig.style('cursor', 'pointer')
+        .on('mouseenter', function () {
+          const ki = stackKeys.indexOf(item.key)
+          svg.selectAll('.bar-layer').attr('opacity', function () {
+            return d3.select(this).classed(`bar-layer-${ki}`) ? 1 : 0.15
+          })
+          legendG.selectAll('.legend-item').attr('opacity', 0.4)
+          d3.select(this).attr('opacity', 1)
+        })
+        .on('mouseleave', function () {
+          svg.selectAll('.bar-layer').attr('opacity', 1)
+          legendG.selectAll('.legend-item').attr('opacity', 1)
+        })
+    }
+
     // Measure total width for centering
     const legendItems = []
     let totalLegendW = 0
@@ -351,10 +376,11 @@ function StackedBarChart({
       const startX = margin.left + (availLegendW - totalLegendW) / 2
       let xOff = 0
       legendItems.forEach((item) => {
-        const ig = legendG.append('g').attr('transform', `translate(${startX + xOff}, ${legendY})`)
+        const ig = legendG.append('g').attr('class', 'legend-item').attr('transform', `translate(${startX + xOff}, ${legendY})`)
         ig.append('circle').attr('cx', LEGEND_DOT_R).attr('cy', -1).attr('r', LEGEND_DOT_R).attr('fill', item.color)
         ig.append('text').attr('x', LEGEND_DOT_R * 2 + 10).attr('y', 5)
           .attr('font-size', `${FS}px`).attr('fill', 'var(--color-text-primary)').text(item.key)
+        bindLegendHover(ig, item)
         xOff += item.itemW + LEGEND_GAP
       })
     } else {
@@ -365,10 +391,11 @@ function StackedBarChart({
       legendItems.forEach((item) => {
         const fullW = item.itemW + LEGEND_GAP
         if (xOff + item.itemW > availLegendW && xOff > 0) { xOff = 0; yOff += rowH }
-        const ig = legendG.append('g').attr('transform', `translate(${margin.left + xOff}, ${legendY + yOff})`)
+        const ig = legendG.append('g').attr('class', 'legend-item').attr('transform', `translate(${margin.left + xOff}, ${legendY + yOff})`)
         ig.append('circle').attr('cx', LEGEND_DOT_R).attr('cy', -1).attr('r', LEGEND_DOT_R).attr('fill', item.color)
         ig.append('text').attr('x', LEGEND_DOT_R * 2 + 10).attr('y', 5)
           .attr('font-size', `${FS}px`).attr('fill', 'var(--color-text-primary)').text(item.key)
+        bindLegendHover(ig, item)
         xOff += fullW
       })
     }

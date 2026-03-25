@@ -48,7 +48,7 @@ const HEADER_HEIGHT = 45   // thead row height (px)
 const ROW_HEIGHT = 41      // tbody row height (px)
 const FOOTER_HEIGHT = 49   // pagination bar height (px)
 
-export default function DataTable({ columns, data, pageSize: fixedPageSize }) {
+export default function DataTable({ columns, data, pageSize: fixedPageSize, fullWidth }) {
   const [sortKey, setSortKey] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
   const [page, setPage] = useState(0)
@@ -159,9 +159,9 @@ export default function DataTable({ columns, data, pageSize: fixedPageSize }) {
   }
 
   return (
-    <div ref={rootRef} className="data-table-root bg-white rounded-xl border border-border-light shadow-xs overflow-hidden flex flex-col mx-auto max-w-full w-fit">
+    <div ref={rootRef} className={`data-table-root bg-white rounded-xl border border-border-light shadow-xs overflow-hidden flex flex-col mx-auto max-w-full ${fullWidth ? 'w-full' : 'w-fit'}`}>
       {/* Off-screen table for measuring max column widths across all data */}
-      {isPaginated && colWidths === null && (
+      {isPaginated && colWidths === null && !fullWidth && (
         <div
           ref={measureRef}
           aria-hidden="true"
@@ -201,13 +201,22 @@ export default function DataTable({ columns, data, pageSize: fixedPageSize }) {
         <table
           className="text-base"
           style={
-            colWidths && isPaginated
-              ? { tableLayout: 'fixed', width: colWidths.reduce((s, w) => s + w, 0) }
-              : undefined
+            fullWidth
+              ? { tableLayout: 'fixed', width: '100%' }
+              : colWidths && isPaginated
+                ? { tableLayout: 'fixed', width: colWidths.reduce((s, w) => s + w, 0) }
+                : undefined
           }
         >
-          {/* All cols get measured content width for consistent sizing across pages */}
-          {colWidths && isPaginated && (
+          {/* Column sizing: fullWidth mode uses explicit widths per column; otherwise measure-based */}
+          {fullWidth && (
+            <colgroup>
+              {columns.map((col, i) => (
+                <col key={i} style={col.width ? { width: col.width } : undefined} />
+              ))}
+            </colgroup>
+          )}
+          {!fullWidth && colWidths && isPaginated && (
             <colgroup>
               {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
             </colgroup>
@@ -238,7 +247,13 @@ export default function DataTable({ columns, data, pageSize: fixedPageSize }) {
             </tr>
           </thead>
           <tbody>
-            {paged.map((row, i) => (
+            {paged.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-12 text-center text-text-secondary italic">
+                  No data available for the selected filters.
+                </td>
+              </tr>
+            ) : paged.map((row, i) => (
               <tr
                 key={i}
                 className={`border-b border-border-light/60 transition-colors duration-100
@@ -248,7 +263,7 @@ export default function DataTable({ columns, data, pageSize: fixedPageSize }) {
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className="px-4 py-2.5 whitespace-nowrap text-text-primary"
+                    className={`px-4 py-2.5 text-text-primary ${fullWidth && col.wrap ? 'break-words' : 'whitespace-nowrap'}`}
                   >
                     {col.render ? col.render(row[col.key], row) : row[col.key]}
                   </td>
