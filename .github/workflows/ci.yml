@@ -1,4 +1,5 @@
 name: CI
+# Validates WebApp build on PRs and merge queue
 
 on:
   pull_request:
