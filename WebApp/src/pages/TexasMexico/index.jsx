@@ -20,6 +20,15 @@ import MetricToggle from '@/components/filters/MetricToggle'
 import StatCard from '@/components/ui/StatCard'
 import SectionBlock from '@/components/ui/SectionBlock'
 import TabBar from '@/components/ui/TabBar'
+import { PORT_REGION_MAP } from '@/lib/portUtils'
+
+/* ── Region convenience: derive region options from PORT_REGION_MAP ── */
+const REGIONS = [...new Set(Object.values(PORT_REGION_MAP))].sort()
+const REGION_TO_PORTS = {}
+for (const [port, region] of Object.entries(PORT_REGION_MAP)) {
+  if (!REGION_TO_PORTS[region]) REGION_TO_PORTS[region] = []
+  REGION_TO_PORTS[region].push(port)
+}
 
 import PortsTab from './tabs/PortsTab'
 import CommoditiesTab from './tabs/CommoditiesTab'
@@ -339,11 +348,23 @@ export default function TexasMexicoPage() {
           {commodityOptions.length > 0 && (
             <FilterMultiSelect label="Commodity" value={commodityFilter} options={commodityOptions} onChange={setCommodityFilter} searchable />
           )}
+          <FilterSelect label="Region" value={regionFilter.length === 1 ? regionFilter[0] : ''} options={REGIONS} onChange={(v) => {
+            setRegionFilter(v ? [v] : [])
+            setPortFilter(v ? REGION_TO_PORTS[v]?.filter(p => portOptions.includes(p)) || [] : [])
+          }} />
           <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
         </>
       )}
-      {activeTab === 'states' && portOptions.length > 0 && (
-        <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
+      {activeTab === 'states' && (
+        <>
+          <FilterSelect label="Region" value={regionFilter.length === 1 ? regionFilter[0] : ''} options={REGIONS} onChange={(v) => {
+            setRegionFilter(v ? [v] : [])
+            setPortFilter(v ? REGION_TO_PORTS[v]?.filter(p => portOptions.includes(p)) || [] : [])
+          }} />
+          {portOptions.length > 0 && (
+            <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
+          )}
+        </>
       )}
       {activeTab === 'flows' && (
         <>

@@ -15,16 +15,13 @@ import InteractiveFlowMap from '@/components/maps/InteractiveFlowMap'
 import { usePortCoordinates, buildMapPorts } from '@/hooks/usePortMapData'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import BarChart from '@/components/charts/BarChart'
+import LollipopChart from '@/components/charts/LollipopChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
 import LineChart from '@/components/charts/LineChart'
 import DataTable from '@/components/ui/DataTable'
 import InsightCallout from '@/components/ui/InsightCallout'
 import { TrendingUp, Globe } from 'lucide-react'
-
-const ANNOTATIONS = [
-  { x: 2008, x2: 2009, label: '2008 Financial Crisis', color: 'rgba(217,13,13,0.06)', labelColor: '#b91c1c' },
-  { x: 2019.5, x2: 2020.5, label: 'COVID-19', color: 'rgba(217,13,13,0.08)', labelColor: '#d90d0d' },
-]
+import { ANNOTATIONS_MODERN as ANNOTATIONS } from '@/lib/annotations'
 const BASE = import.meta.env.BASE_URL
 
 export default function StatesTab({
@@ -422,7 +419,7 @@ export default function StatesTab({
         <SectionBlock alt>
           <div className="max-w-7xl mx-auto">
             <ChartCard title={`Fastest-Growing Mexican States${subsetLabelNoYear}`} subtitle="Growth in average annual trade value (earliest 3 years vs. latest 3 years)" headerRight={<TopNSelector value={growthTopN} onChange={setGrowthTopN} />}>
-              <BarChart data={stateGrowth} xKey="label" yKey="value" horizontal formatValue={(v) => `${v.toFixed(0)}%`} color="#10b981" />
+              <LollipopChart data={stateGrowth} xKey="label" yKey="value" formatValue={(v) => `${v.toFixed(0)}%`} color="#10b981" />
             </ChartCard>
             <div className="mt-4">
               <InsightCallout

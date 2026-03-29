@@ -24,11 +24,7 @@ import StackedBarChart from '@/components/charts/StackedBarChart'
 import ChoroplethPortMap from '@/components/maps/ChoroplethPortMap'
 import { DL, PAGE_TRANSBORDER_COLS } from '@/lib/downloadColumns'
 
-const HISTORICAL_ANNOTATIONS = [
-  { x: 1993.5, x2: 1994.5, label: 'NAFTA Begins', color: 'rgba(16,185,129,0.08)', labelColor: '#047857' },
-  { x: 2008.5, x2: 2009.5, label: '2008 Financial Crisis', color: 'rgba(245,158,11,0.08)', labelColor: '#b45309' },
-  { x: 2019.5, x2: 2020.5, label: 'COVID-19', color: 'rgba(217,13,13,0.08)', labelColor: '#d90d0d' },
-]
+import { ANNOTATIONS_FULL as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 
 /* ── Icon lookup for insightEngine string → component ────────────────── */
 const ICON_MAP = {

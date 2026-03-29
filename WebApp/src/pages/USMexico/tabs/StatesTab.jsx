@@ -12,15 +12,12 @@ import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
 import ChoroplethMap from '@/components/maps/ChoroplethMap'
 import BarChart from '@/components/charts/BarChart'
+import LollipopChart from '@/components/charts/LollipopChart'
 import LineChart from '@/components/charts/LineChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
 import DataTable from '@/components/ui/DataTable'
 import InsightCallout from '@/components/ui/InsightCallout'
-
-const HISTORICAL_ANNOTATIONS = [
-  { x: 2008.5, x2: 2009.5, label: '2008 Financial Crisis', color: 'rgba(245,158,11,0.08)', labelColor: '#b45309' },
-  { x: 2019.5, x2: 2020.5, label: 'COVID-19', color: 'rgba(217,13,13,0.08)', labelColor: '#d90d0d' },
-]
+import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 const BASE = import.meta.env.BASE_URL
 
 export default function StatesTab({
@@ -458,12 +455,12 @@ export default function StatesTab({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {usStateGrowth.length > 0 && (
               <ChartCard title="Fastest-Growing U.S. States" subtitle="Growth in avg annual trade value (earliest 3 yrs vs. latest 3 yrs)" headerRight={<TopNSelector value={growthTopN} onChange={setGrowthTopN} />}>
-                <BarChart data={usStateGrowth} xKey="label" yKey="value" horizontal formatValue={(v) => `${v.toFixed(0)}%`} color="#10b981" />
+                <LollipopChart data={usStateGrowth} xKey="label" yKey="value" formatValue={(v) => `${v.toFixed(0)}%`} color="#10b981" />
               </ChartCard>
             )}
             {mxStateGrowth.length > 0 && (
               <ChartCard title="Fastest-Growing Mexican States" subtitle="Growth in avg annual trade value (earliest 3 yrs vs. latest 3 yrs)" headerRight={<TopNSelector value={growthTopN} onChange={setGrowthTopN} />}>
-                <BarChart data={mxStateGrowth} xKey="label" yKey="value" horizontal formatValue={(v) => `${v.toFixed(0)}%`} color="#10b981" />
+                <LollipopChart data={mxStateGrowth} xKey="label" yKey="value" formatValue={(v) => `${v.toFixed(0)}%`} color="#10b981" />
               </ChartCard>
             )}
           </div>

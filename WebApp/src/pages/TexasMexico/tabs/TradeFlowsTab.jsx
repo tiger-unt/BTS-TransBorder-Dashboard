@@ -10,6 +10,7 @@ import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
 import BarChart from '@/components/charts/BarChart'
+import LollipopChart from '@/components/charts/LollipopChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
 import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
@@ -308,7 +309,7 @@ export default function TradeFlowsTab({
               title="Fastest-Growing Trade Corridors"
               subtitle="Growth in average annual trade value (earliest 3 years vs. latest 3 years through Texas ports)"
             >
-              <BarChart data={fastestCorridors} horizontal formatValue={(v) => `${v}%`} color="#10b981" />
+              <LollipopChart data={fastestCorridors} formatValue={(v) => `${v}%`} color="#10b981" />
             </ChartCard>
             <div className="mt-4">
               <InsightCallout

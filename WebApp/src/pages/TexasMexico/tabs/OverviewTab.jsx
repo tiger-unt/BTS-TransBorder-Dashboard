@@ -9,11 +9,7 @@ import LineChart from '@/components/charts/LineChart'
 import BarChart from '@/components/charts/BarChart'
 import { CHART_COLORS, formatCurrency } from '@/lib/chartColors'
 import { DL } from '@/lib/downloadColumns'
-
-const HISTORICAL_ANNOTATIONS = [
-  { x: 2008.5, x2: 2009.5, label: '2008 Financial Crisis', color: 'rgba(245,158,11,0.08)', labelColor: '#b45309' },
-  { x: 2019.5, x2: 2020.5, label: 'COVID-19', color: 'rgba(217,13,13,0.08)', labelColor: '#d90d0d' },
-]
+import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 
 export default function OverviewTab({ filteredPorts, filteredPortsNoYear, latestYear }) {
   /* ── Trade trend by Year + TradeType (year-agnostic for trend) ────── */
