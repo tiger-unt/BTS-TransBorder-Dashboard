@@ -2,7 +2,7 @@
 
 > What this document is: a current-state narrative of the live web app, checked against `WebApp/src/`, the extraction pipeline in `02-Data-Staging/Scripts/05_build_outputs.py`, and the full SQLite database in `02-Data-Staging/transborder.db`.
 >
-> Last updated: March 28, 2026
+> Last updated: March 29, 2026
 
 ---
 
@@ -10,303 +10,172 @@
 
 ### Overview Page
 
-The app opens with a large hero section built around a North American border-trade map. A blind user would experience it as a map-first explanation of scale and geography: the United States, Mexico, and Canada are shaded by trade intensity, while ports of entry appear as sized circles. Texas-Mexico ports are visually separated from other Mexico-border ports and from Canada-border ports so the eye is immediately drawn to Texas as the main gateway.
+The app opens with a large hero section built around a North American border-trade map. The hero subtitle sets the frame: "U.S. border trade has grown 5x since NAFTA began -- and Texas handles two-thirds of the Mexico side." The United States, Mexico, and Canada are shaded by trade intensity, while ports of entry appear as sized circles. Texas-Mexico ports glow amber, other Mexico-border ports appear blue, and Canada-border ports green.
 
-Below the map are high-level controls for Trading Partner, Trade Type, Mode, and Metric, followed by headline cards for total trade, exports, imports, and trade balance. The next layer is interpretation: automatically generated insight cards summarize the biggest patterns in plain language. Then the page moves into trend and composition: a long-run annual trend chart with historical markers, a donut for mode share, and a stacked comparison of Mexico versus Canada.
+Below the map are controls for Trading Partner, Trade Type, Mode, and Metric, followed by headline cards for total trade, exports, imports, and trade balance. A contextual comparison callout puts the numbers in human terms: "Texas-Mexico trade alone exceeded $600 billion in 2025 -- larger than the GDP of Sweden, Poland, or Thailand."
 
-The message is clear: North American border trade is large, long-running, and concentrated, and Texas matters most on the Mexico side.
+The trend chart includes three historical annotations: NAFTA Begins (1994), 2008 Financial Crisis, and COVID-19. A donut shows mode share, and a stacked bar shows Mexico versus Canada share over time.
+
+The message: North American border trade is large, long-running, and concentrated, and Texas matters most on the Mexico side.
 
 ### U.S.-Mexico Page
 
-This page turns the big-picture story into a national U.S.-Mexico story with a right-side filter panel and four tabs: Ports, Commodities, States, and Trade Flows. The page hero and KPI cards already state the main finding directly: Texas handles roughly two-thirds of U.S.-Mexico trade.
+This page turns the big-picture story into a national U.S.-Mexico story. The hero subtitle states: "The U.S. and Mexico trade over $840 billion annually -- more than most countries' entire GDP." A right-side filter panel includes Metric, Year, Trade Type, and Mode, with additional tab-specific filters.
+
+Four tabs: Ports, Commodities, States, and Trade Flows.
 
 #### Ports tab
 
-This tab tells a concentration story. It shows where trade crosses, how dominant Laredo is, how stable truck's lead remains, and how the bilateral deficit has widened over time. The visual sequence moves from map to trends to rankings to tables, so the user can first see the geography, then the time pattern, then the ordered port hierarchy.
+Tells a concentration story. Shows where trade crosses, how dominant Laredo is, how stable truck's lead remains, and how the bilateral deficit has widened. Visual sequence: map, trends, rankings, tables. Three insight callouts cover Texas's 66% share, truck's 80% dominance, and the widening deficit.
 
 #### Commodities tab
 
-This tab tells a manufacturing-integration story. The treemap and top-commodity charts show what moves, the diverging chart shows which groups skew south as inputs versus north as finished goods, and the trend lines show how those groups rise or fall over time.
+Tells a manufacturing-integration story. Treemap and top-commodity charts show what moves, the diverging bar shows which groups skew south (inputs) versus north (finished goods), and trend lines track groups over time. Insight callouts explain the cross-border assembly line pattern and energy export dominance.
 
 #### States tab
 
-This tab broadens the story beyond the border. On the U.S. side, it shows that Mexico trade reaches far into the interior. On the Mexican side, it highlights industrial geography, including the traditional northern manufacturing belt and the growing Bajio corridor.
+Broadens the story beyond the border. Choropleths show U.S. and Mexican states by trade intensity. Growth-rate charts use lollipop style (stem + dot) to visually distinguish them from ranking bars. A **state commodity specialization** stacked bar chart shows what each U.S. state trades with Mexico -- revealing Texas as broad-based, Michigan as auto-focused, California as electronics-plus-agriculture. Port filter is available so users can ask "which states trade through Laredo?"
 
 #### Trade Flows tab
 
-This tab tells the corridor story. It shows that trade does not move randomly; it moves through persistent state-port-state relationships. Sankey and matrix views reinforce that specific U.S. states, Mexican states, and border ports are linked in repeatable supply-chain corridors.
+Tells the corridor story through an interactive flow map, Sankey diagram, and heatmap matrix. Two insight callouts now explain corridor significance: the Texas-to-Nuevo Leon relationship and the non-interchangeability of port corridors.
 
 ### Texas-Mexico Page
 
-This is the app's strongest storytelling page. It keeps the same four-tab structure, but narrows the story to Texas as the central land bridge between the U.S. and Mexico.
+The app's strongest storytelling page. Hero subtitle: "Texas handles two-thirds of all U.S.-Mexico trade -- over $600 billion in 2025 -- making it the single most important trade gateway on the continent."
+
+Four tabs: Ports, Commodities, States, and Trade Flows.
 
 #### Ports tab
 
-This tab is the gateway story in its strongest form. It shows that Texas border trade is concentrated in a few clusters, that Laredo dominates the system, that truck carries most value, and that shocks such as COVID caused sharp short-term drops but not lasting structural collapse. It also already includes a freight charges trend and an FTZ growth callout, which means the page now goes beyond simple value rankings and begins to say something about logistics structure.
-
-Using the live database, the current underlying story is real and strong: in 2025 Texas ports handled about 68.9% of all U.S.-Mexico trade by value, and the top Texas ports were led by Laredo at about $344.6B, followed by Ysleta at about $112.4B, then Eagle Pass and Hidalgo/Pharr at roughly $43B each.
+The gateway story in its strongest form. Shows cluster concentration (Laredo, El Paso, Pharr), truck dominance, trade balance trend, Laredo's growing share (52% to 60%), COVID V-shaped recovery, freight charges trend, and FTZ growth callout. Monthly patterns show seasonality.
 
 #### Commodities tab
 
-This tab is no longer just a treemap-and-table page. It already tells several layered stories:
+The densest and richest tab, now organized into labeled sections to reduce scroll fatigue:
 
-- Manufacturing integration through the diverging import/export view
-- Commodity rankings over time through the animated bar chart race
-- Port specialization through port-by-commodity comparison
-- Trade balance by commodity group
-- Mode of transport by commodity group
-- Weight versus value through the scatter plot
-
-The live data behind this tab is also rich. In 2025, Texas-Mexico trade showed its largest deficits in Machinery and Electrical Equipment and Transportation Equipment, while the strongest surpluses were in Mineral Products, Plastics and Rubber, Base Metals, and Chemical Products. Pipeline trade through Texas in 2025 was essentially a Mineral Products export story, at about $7.7B.
+- **What Moves** -- Treemap of commodity groups with drill-down, top-N commodity ranking, energy export callout
+- **Supply Chain Direction** -- Diverging bar (maquiladora pattern), callouts on Transportation Equipment import ratio and chemical/plastic export flows
+- **How Rankings Change** -- Animated bar chart race (2007-present), top commodity group trend lines
+- **Which Ports Specialize** -- Stacked bar showing top commodity groups per port (Laredo = manufacturing, Pharr = agriculture, Presidio = cattle)
+- **Trade Structure** -- Trade balance by commodity group (which groups drive the deficit), mode of transport by commodity group (truck vs rail vs pipeline per group), callouts on deficit concentration and hidden mode shifts
+- **How Value Differs from Weight** -- Scatter plot (imports only, where weight is reliable) showing the "two economies" at the border, from Precious Metals at ~$1M/lb to Mineral Products at ~$0.14/lb
+- **Seasonal Patterns** -- Stacked bar of average monthly trade by commodity group, showing winter produce peaks and year-round manufacturing stability
 
 #### States tab
 
-This tab tells the Mexican-partner geography story through a Texas lens. It shows that Texas ports connect to specific Mexican states rather than to "Mexico" in the abstract, and that growth is not evenly distributed. The narrative emphasis on Nuevo Leon, Chihuahua, Tamaulipas, and the Bajio is appropriate for what the app currently visualizes.
+Mexican-partner geography story through a Texas lens. Interactive flow map, Sankey, rankings, growth rates (lollipop style), trend lines. A **Mexican state commodity specialization** stacked bar shows what each Mexican state trades through Texas -- Nuevo Leon and Chihuahua are machinery-and-auto, Queretaro and San Luis Potosi are auto-concentrated newcomers. Region convenience filter lets users quickly narrow to El Paso, Laredo, or Pharr port clusters.
 
 #### Trade Flows tab
 
-This tab tells the corridor story for Texas specifically. The strongest message is that Texas ports are not interchangeable. Different ports serve different state-to-state corridors and different industrial networks. One copy issue remains: some text implies a timeline-style interaction, but the map control is a year selector rather than a true animation timeline.
+Corridor story for Texas. Flow map, top trading pairs, Sankey, heatmap matrix. Now includes two narrative callouts (Laredo's wide connectivity vs El Paso's auto-sector depth) and a **fastest-growing corridors** lollipop chart showing which state-to-state trade pairs are surging. U.S. State filter lets users isolate corridors like Michigan-through-Laredo.
 
 ### About Page
 
-The About page works as a methodology page. It explains the data source, coverage period, the 2007+ detail strategy, terminology, limitations, and port-history caveats. This is important because the rest of the app is narrative and visual; the About page anchors that story in data reality.
+Methodology page with sticky navigation: Data Source, Data Coverage, Year Range Strategy, BTS Terminology, Known Limitations, Port History, Downloads.
 
 ---
 
-## Part 2: Stories Already Implemented
+## Part 2: Stories Now Implemented
 
-Several items that were previously described as missing are now live in the app and should no longer be listed as gaps:
+All of the following are live in the app:
 
-- Freight charges are shown on the Texas-Mexico Ports tab.
-- FTZ growth is already surfaced as a Texas-Mexico Ports callout.
-- Trade balance by commodity group is already shown on the Texas-Mexico Commodities tab.
-- Mode of transport by commodity group is already shown on the Texas-Mexico Commodities tab.
-- Weight versus value is already shown through the scatter plot on the Texas-Mexico Commodities tab.
-- Port specialization is already shown on the Texas-Mexico Commodities tab.
-- The monthly commodity dataset already exists in the pipeline as `monthly_commodity_trends`; it is just not yet used by the UI.
-
-This matters because the current app is stronger than the earlier documentation suggested. The remaining work is less about inventing the story and more about making the strongest available stories more consistent, more explicit, and easier to navigate.
-
----
-
-## Part 3: Additional Stories the App Is Not Yet Telling
-
-These are the most valuable stories that are supported by the full database but are not fully communicated in the current UI.
-
-### 3.1 Texas versus other U.S. states by commodity
-
-The current app can show U.S. states and it can show commodities, but it cannot yet show which commodities define Texas relative to Michigan, California, Illinois, or other major U.S.-Mexico states. That means one important argument is still missing: not just that Texas is biggest, but what Texas is biggest in.
-
-Why it matters: this would sharpen the difference between Texas as an energy-plus-manufacturing gateway and other states as more specialized manufacturing nodes.
-
-Data status: supported in the full database through `dot2_state_commodity`, not available in current processed outputs.
-
-### 3.2 Commodity relationships by Mexican state
-
-The app currently shows Mexican states as trade partners, but not which commodities tie each Mexican state to the U.S. or to Texas. Nuevo Leon, Chihuahua, Tamaulipas, Guanajuato, and Queretaro do not trade the same baskets of goods, and that is a story worth showing.
-
-Why it matters: this would turn the "industrial corridor" story from a geographic statement into an economic one.
-
-Data status: supported in `dot2_state_commodity` via `MexState`, not available in current processed outputs.
-
-### 3.3 Fastest-growing corridors over time
-
-The Trade Flows tabs show corridor structure, but they do not yet show which corridors are rising fastest and which are losing relative importance. The extracted OD datasets already contain the ingredients for that analysis.
-
-Why it matters: this would add time and change to a section that currently emphasizes structure more than momentum.
-
-Data status: can be built from existing `od_state_flows` and `texas_od_state_flows` with no pipeline change.
-
-### 3.4 Seasonal commodity patterns
-
-The app has monthly trade patterns, but not monthly commodity patterns. That leaves out one of the clearest stories in the data: produce and other seasonal goods have strong calendar effects. Using the live database, average Mexico vegetable-product imports in 2021-2025 were roughly $2.1B in January and about $1.1B in August, a near 2:1 swing.
-
-Why it matters: this connects commodity story, seasonality, and specific port pressure in a way the current app does not.
-
-Data status: the required dataset already exists as `monthly_commodity_trends`. This is now a UI gap, not a pipeline gap.
-
-### 3.5 Containerization and domestic/foreign status
-
-Two fields remain almost completely untapped: `ContCode` and `DF`. These could support niche but valuable logistics stories such as containerized versus non-containerized trade, or domestic-origin versus foreign-origin composition where BTS definitions support it.
-
-Why it matters: these fields are not central to the main public-facing story, but they could support an infrastructure, logistics, or policy appendix.
-
-Data status: present in the full database, not extracted today.
-
-### 3.6 Pre-2007 detailed history
-
-The app correctly uses 2007+ as the clean detail boundary, but that means detailed port, state, and commodity stories before 2007 are not visualized. The long-run overview exists, but the long-run detailed story does not.
-
-Why it matters: if the project eventually wants a true NAFTA-to-USMCA detailed story, the current processed outputs are not enough.
-
-Data status: present in the database with caveats; excluded by current pipeline design on purpose.
+- Trade deficit trend (both US-MX and TX-MX Ports tabs)
+- Maquiladora / cross-border manufacturing pattern (both Commodities tabs)
+- Laredo concentration risk (TX-MX Ports tab)
+- COVID resilience / V-shaped recovery (TX-MX Ports tab, monthly zoom)
+- Mexican industrial corridor shift / Bajio growth (both States tabs)
+- Narrative voice on every tab (intro paragraphs + insight callouts)
+- Animated commodity rankings / bar chart race (TX-MX Commodities)
+- Port specialization by commodity (TX-MX Commodities)
+- Freight charges trend (TX-MX Ports)
+- FTZ growth callout (TX-MX Ports)
+- Trade balance by commodity group (TX-MX Commodities)
+- Mode of transport by commodity group (TX-MX Commodities)
+- Weight versus value scatter plot (TX-MX Commodities, imports only)
+- Seasonal commodity patterns (TX-MX Commodities)
+- Texas vs other states by commodity (US-MX States)
+- Commodity by Mexican state (TX-MX States)
+- Fastest-growing trade corridors (TX-MX Trade Flows)
+- Contextual dollar comparisons (Overview)
+- Section headers on TX-MX Commodities tab
+- Narrative callouts on both Trade Flows tabs
+- Historical annotations standardized via shared annotations.js (NAFTA on Overview, 2008+COVID on detail pages)
+- Growth-rate charts use lollipop style (visually distinct from ranking bars)
 
 ---
 
-## Part 4: Data Pipeline Changes Required
+## Part 3: Data Pipeline Status
 
-### Bottom line
+The pipeline (`05_build_outputs.py`) produces 16 datasets:
 
-No change is required in `05_build_outputs.py` for seasonal commodity analysis. The file already builds `monthly_commodity_trends`, and the store already knows about `monthly_commodity_trends.json`. That story is blocked in the UI, not in the pipeline.
+| # | Dataset | Source | Rows | Purpose |
+|---|---------|--------|------|---------|
+| 1 | us_transborder | DOT2 | ~900 | Overview stats and trends (1993-2025) |
+| 2 | us_mexico_ports | DOT1 | ~17K | US-MX port rankings, map, trends |
+| 3 | us_canada_ports | DOT1 | ~223K | Canada ports on Overview map |
+| 4 | texas_mexico_ports | DOT1 | ~1.4K | TX port analysis with coordinates |
+| 5 | texas_mexico_commodities | DOT3 | ~42K | TX commodity breakdown by port |
+| 6 | us_state_trade | DOT1 | ~5K | State-level trade |
+| 7 | commodity_detail | DOT2 | ~34K | Commodity by country/mode |
+| 8 | monthly_trends | DOT1 | ~6.5K | Monthly time series |
+| 9 | mexican_state_trade | DOT1 | ~2.1K | Mexican state trade (US-MX) |
+| 10 | texas_mexican_state_trade | DOT1 | ~1.8K | Mexican states via TX ports |
+| 11 | od_state_flows | DOT1 | ~174K | US-MX origin-destination flows |
+| 12 | od_canada_prov_flows | DOT1 | ~43K | Canada province flows |
+| 13 | texas_od_state_flows | DOT1 | ~117K | TX-specific OD flows |
+| 14 | monthly_commodity_trends | DOT2 | ~47K | Monthly commodity patterns (Mexico) |
+| 15 | state_commodity_trade | DOT2 | ~112K | State-level commodity trade (Mexico) |
+| 16 | commodity_mexstate_trade | DOT2 | ~23K | Commodity by Mexican state |
 
-### Pipeline changes that would be required for the missing stories above
-
-#### Required if we want state-by-commodity storytelling
-
-Add a new builder from `dot2_state_commodity` that groups by:
-
-- `Year`
-- `StateCode`
-- `State`
-- `Country`
-- `HSCode`
-- `Commodity`
-- `CommodityGroup`
-- `Mode`
-- `TradeType`
-
-Recommended output name: `state_commodity_trade`
-
-This would enable Texas-versus-other-states commodity comparisons and state-specific commodity filtering.
-
-#### Required if we want commodity-by-Mexican-state storytelling
-
-Add a new builder from `dot2_state_commodity` that groups by:
-
-- `Year`
-- `MexState`
-- optionally `State` or `StateCode`
-- `HSCode`
-- `Commodity`
-- `CommodityGroup`
-- `Mode`
-- `TradeType`
-
-Recommended output name: `commodity_mexstate_trade`
-
-This would enable pages or callouts such as "Nuevo Leon is machinery-heavy while Tamaulipas is more mixed."
-
-#### Required if we want containerization or DF analysis
-
-Add one or more focused extracts exposing:
-
-- `ContCode`
-- `DF`
-
-These should probably be narrow datasets rather than very large all-purpose files.
-
-#### Optional if we want monthly port-by-commodity seasonality
-
-If the project wants seasonality at the Texas-port-plus-commodity level, add a targeted monthly extract from `dot3_port_commodity` grouped by:
-
-- `Year`
-- `Month`
-- `PortCode`
-- `Port`
-- `CommodityGroup`
-- `Mode`
-- `TradeType`
-
-That is not required for a first seasonal commodity story, but it would support a stronger Pharr/Hidalgo produce narrative.
+All datasets use 2007+ except us_transborder (full 1993-2025).
 
 ---
 
-## Part 5: Storytelling Recommendations
+## Part 4: Filter Architecture
 
-### 5.1 Align the written story with the live app
+### Overview Page
+- Trading Partner (All / Mexico / Canada)
+- Trade Type (Export / Import)
+- Mode (single-select dropdown)
+- Metric Toggle (Value $ / Weight lb)
+- Per-chart: Country dropdown, Year Range sliders
 
-The first improvement is documentation accuracy. Any statement that FreightCharges, FTZ growth, trade-balance-by-commodity, mode-by-commodity, or the scatter plot are "not currently shown" should be removed.
+### US-Mexico Page (sidebar)
+- Metric Toggle, Year (multi), Trade Type (single), Mode (multi)
+- Ports tab: + State, Port
+- Commodities tab: + Commodity Group, Commodity
+- States tab: + State, Port, Mexican State
+- Trade Flows tab: + Port, State, Mexican State
 
-### 5.2 Make the flow pages more interpretive
+### Texas-Mexico Page (sidebar)
+- Metric Toggle, Year (multi), Trade Type (single), Mode (multi)
+- Ports tab: + Region (multi), Port
+- Commodities tab: + Commodity Group, Commodity, Region (convenience), Port
+- States tab: + Region (convenience), Port, Mexican State
+- Trade Flows tab: + U.S. State, Port, Mexican State
 
-The Ports and Commodities tabs are strong because they combine charts with interpretation. The Trade Flows tabs are visually rich, but they would benefit from one or two explicit insight callouts so the user is not left to interpret the Sankey and matrix alone.
-
-### 5.3 Use the existing hero subtitles as true narrative framing
-
-The page heroes already contain good one-sentence takeaways. Keep them, and make sure the written documentation treats them as already implemented rather than proposed future work.
-
-### 5.4 Standardize historical annotations
-
-The app does not use the same annotation set on every line chart. Where appropriate, align the major milestone markers so similar charts tell time in the same language.
-
-### 5.5 Explain caveats where users encounter them
-
-The app already documents weight caveats and export-only OD limitations, but these should be surfaced exactly where users are likely to misread the charts, especially on flow and weight-related views.
-
-### 5.6 Break the Texas commodities tab into visible narrative sections
-
-That tab is one of the strongest in the app, but it is also one of the densest. Simple section headers such as "What moves," "How rankings change," "Which ports specialize," and "How value differs from weight" would make the storytelling easier to follow.
-
----
-
-## Part 6: Filter Recommendations by Page and Tab
-
-The current filter architecture is already good. The best next step is not "more filters everywhere," but filters that match the question each page is helping the user answer.
-
-### Overview
-
-- Make Mode a true multi-select control in the UI, not a single-select dropdown feeding an array.
-- Consider preset chips such as "Mexico only," "Texas focus," or "Truck only" for users who want guided entry points rather than full filter exploration.
-
-### U.S.-Mexico Ports
-
-- Add a border-state or border-region convenience filter above Port so users can jump quickly between Texas, California, Arizona, and New Mexico.
-
-### U.S.-Mexico Commodities
-
-- No urgent change is required.
-- If `state_commodity_trade` is added later, then add U.S. State as a dynamic optional filter on this tab.
-
-### U.S.-Mexico States
-
-- Consider adding Port as an optional filter so users can ask which states are tied specifically to Laredo or another major crossing.
-
-### U.S.-Mexico Trade Flows
-
-- Filters are already strong.
-- The highest-value improvement here is better guided presets, not necessarily more raw filter controls.
-
-### Texas-Mexico Ports
-
-- Current Region and Port filters are appropriate.
-- Add preset region shortcuts if you want faster storytelling entry points.
-
-### Texas-Mexico Commodities
-
-- Add Region as a convenience filter so users can move from individual ports to port clusters without manually selecting multiple ports.
-
-### Texas-Mexico States
-
-- Current Port and Mexican State filtering is useful.
-- Add Region as a convenience layer above Port.
-
-### Texas-Mexico Trade Flows
-
-- Add U.S. State as a dynamic filter. This is the most important missing flow filter in the Texas section because it would let users isolate corridors such as Michigan-through-Laredo or Illinois-through-Eagle Pass.
-- Add Region as a convenience filter above Port.
+Region convenience filter auto-selects all ports in the chosen region (El Paso, Laredo, or Pharr).
 
 ---
 
-## Part 7: Visual Improvement Recommendations
+## Part 5: What Could Still Be Added
 
-- Use `LollipopChart` for growth-rate comparisons so those charts are visually distinct from rank-order bar charts.
-- Add small trend indicators or sparklines to the headline cards where the extra context is helpful.
-- Give the flow pages a stronger explanatory legend and one or two narrative callouts.
-- Use section labels inside the Texas Commodities tab to reduce scroll fatigue.
-- Keep wording aligned with controls: if a map uses a year dropdown, do not describe it as a timeline animation.
+### Lower-priority enhancements
+- Sparklines on stat cards (small inline trend indicators)
+- Preset filter chips ("Mexico only", "Truck only") for guided entry
+- US-MX Ports: border-state convenience grouping
+- Overview Mode: convert from single-select dropdown to proper multi-select
+
+### Stories requiring new pipeline work
+- Containerization and domestic/foreign status analysis (ContCode, DF fields -- niche, needs targeted extracts)
+- Pre-2007 detailed history (pipeline currently excludes pre-2007 from detail datasets by design)
+- Monthly port-by-commodity seasonality (would enable Pharr/Hidalgo produce pressure story at port level)
 
 ---
 
-## Part 8: The Bottom Line
+## Part 6: The Bottom Line
 
-The app already tells a strong story: Texas is the dominant U.S.-Mexico gateway, manufacturing integration is the central economic pattern, and a small number of ports, especially Laredo, anchor the system.
+The dashboard tells 22+ distinct stories across 4 pages and 12 tabs. Every tab has narrative framing, insight callouts, and historical context. The Texas-Mexico Commodities tab alone tells 7 layered stories organized by section headers. Growth-rate charts are visually distinct from ranking charts. Annotations are standardized. Filters include region convenience shortcuts and corridor-level analysis.
 
-The biggest remaining opportunities are not the ones the older story file emphasized. The app already covers freight charges, FTZ growth, commodity trade balance, mode-by-commodity structure, and weight-versus-value on the Texas side. The biggest real gaps now are:
-
-- state-by-commodity storytelling
-- commodity-by-Mexican-state storytelling
-- fastest-growing corridor storytelling
-- seasonal commodity storytelling in the UI
-- optional logistics deep dives using `ContCode` and `DF`
-
-In short, the foundation is strong. The next step is to connect geography, commodity detail, and time more tightly so the dashboard moves from "Texas is the gateway" to "here is exactly how different industries and corridors make Texas the gateway."
+The core story -- Texas as the gateway, manufacturing integration as the engine, Laredo as the linchpin -- is clearly told through multiple complementary angles. The remaining opportunities are refinements (sparklines, presets) and niche stories (containerization, pre-2007 history) rather than structural gaps.
