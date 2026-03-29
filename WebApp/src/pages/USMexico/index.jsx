@@ -245,6 +245,18 @@ export default function USMexicoPage() {
     return { totalTrade, tradeChange, exports, imports, txTrade, txShare, portCount, exportWeightNA, totalWeightNA }
   }, [filteredSummary, filteredPorts, latestYear, prevYear, valueField])
 
+  /* ── Sparkline data (last 6 years of total trade) ────────────── */
+  const sparklineData = useMemo(() => {
+    if (!filteredSummary.length || !latestYear) return null
+    const byYear = new Map()
+    filteredSummary.forEach((d) => {
+      if (!d.Year) return
+      byYear.set(d.Year, (byYear.get(d.Year) || 0) + (d[valueField] || 0))
+    })
+    const years = [...byYear.keys()].sort((a, b) => a - b).slice(-6)
+    return years.map((y) => byYear.get(y) || 0)
+  }, [filteredSummary, latestYear, valueField])
+
   /* ── active filter tags ────────────────────────────────────────────── */
   const activeCount = yearFilter.length + (tradeTypeFilter ? 1 : 0) + modeFilter.length + stateFilter.length
     + portFilter.length + commodityGroupFilter.length + commodityFilter.length + mexStateFilter.length
@@ -299,6 +311,27 @@ export default function USMexicoPage() {
       <FilterMultiSelect label="Mode" value={modeFilter} options={modeOptions} onChange={setModeFilter} />
       {activeTab === 'ports' && (
         <>
+          <div className="flex flex-col gap-1 min-w-0 w-full">
+            <span className="text-base font-medium text-text-secondary uppercase tracking-wider">Border State</span>
+            <div className="flex flex-wrap gap-1.5">
+              {['Texas', 'California', 'Arizona', 'New Mexico'].map((bs) => (
+                <button
+                  key={bs}
+                  type="button"
+                  onClick={() => setStateFilter((prev) =>
+                    prev.includes(bs) ? prev.filter((s) => s !== bs) : [...prev, bs]
+                  )}
+                  className={`px-2.5 py-1 rounded-full text-sm font-medium border transition-colors ${
+                    stateFilter.includes(bs)
+                      ? 'bg-brand-blue text-white border-brand-blue'
+                      : 'bg-white text-text-secondary border-border-light hover:border-brand-blue/40'
+                  }`}
+                >
+                  {bs}
+                </button>
+              ))}
+            </div>
+          </div>
           <FilterMultiSelect label="State" value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
           <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
         </>
@@ -364,6 +397,7 @@ export default function USMexicoPage() {
             value={stats ? (stats.totalWeightNA ? 'N/A' : fmtValue(stats.totalTrade)) : '---'}
             trend={stats && !stats.totalWeightNA && stats.tradeChange > 0 ? 'up' : stats && !stats.totalWeightNA && stats.tradeChange < 0 ? 'down' : undefined}
             trendLabel={stats && !stats.totalWeightNA ? `${(stats.tradeChange * 100).toFixed(1)}% vs ${prevYear}` : ''}
+            sparkline={sparklineData}
             highlight variant="primary" icon={DollarSign} delay={0}
           />
           <StatCard
