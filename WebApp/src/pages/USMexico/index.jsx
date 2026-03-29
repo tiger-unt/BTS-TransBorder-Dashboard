@@ -71,6 +71,7 @@ export default function USMexicoPage() {
       loadDataset('usStateTrade')
       loadDataset('mexicanStateTrade')
       loadDataset('stateCommodityTrade')
+      loadDataset('odStateFlows')  // For Port filter on States tab
     }
     if (activeTab === 'flows') loadDataset('odStateFlows')
   }, [activeTab, loadDataset])
@@ -118,7 +119,11 @@ export default function USMexicoPage() {
       const mx = mexicanStateTrade ? buildCrossFilterOptions(mexicanStateTrade, {
         Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter, MexState: mexStateFilter,
       }, ['MexState']) : {}
-      return { ...common, ...mx }
+      // Port options from OD flows data (if loaded)
+      const portOpts = odStateFlows ? buildCrossFilterOptions(odStateFlows, {
+        Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter, State: stateFilter, Port: portFilter,
+      }, ['Port']) : {}
+      return { ...common, ...mx, ...portOpts }
     }
     if (activeTab === 'flows' && odStateFlows) {
       return buildCrossFilterOptions(odStateFlows, {
@@ -314,6 +319,9 @@ export default function USMexicoPage() {
       {(activeTab === 'states' || activeTab === 'flows') && (
         <>
           <FilterMultiSelect label="State" value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
+          {portOptions.length > 0 && (
+            <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
+          )}
           {mexStateOptions.length > 0 && (
             <FilterMultiSelect label="Mexican State" value={mexStateFilter} options={mexStateOptions} onChange={setMexStateFilter} searchable />
           )}

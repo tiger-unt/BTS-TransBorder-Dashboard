@@ -22,11 +22,7 @@ import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
 import DatasetError from '@/components/ui/DatasetError'
 import { DL, PAGE_COMMODITY_COLS } from '@/lib/downloadColumns'
-
-const ANNOTATIONS = [
-  { x: 2008, x2: 2009, label: '2008 Financial Crisis', color: 'rgba(217,13,13,0.06)', labelColor: '#b91c1c' },
-  { x: 2019.5, x2: 2020.5, label: 'COVID-19', color: 'rgba(217,13,13,0.08)', labelColor: '#d90d0d' },
-]
+import { ANNOTATIONS_MODERN as ANNOTATIONS } from '@/lib/annotations'
 
 export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTrends, loadDataset, _latestYear, datasetError, metric = 'value', tradeTypeFilter = '', modeFilter = [] }) {
   /* ── ensure dataset is loaded ────────────────────────────────────── */
