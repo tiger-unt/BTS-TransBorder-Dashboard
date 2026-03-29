@@ -12,6 +12,7 @@ import ChartCard from '@/components/ui/ChartCard'
 import LineChart from '@/components/charts/LineChart'
 import BarChart from '@/components/charts/BarChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
+import DonutChart from '@/components/charts/DonutChart'
 import DataTable from '@/components/ui/DataTable'
 import InsightCallout from '@/components/ui/InsightCallout'
 import PortMap from '@/components/maps/PortMap'
@@ -26,6 +27,7 @@ export default function PortsTab({
   filteredPortsNoYear,
   filteredSummary,
   filteredSummaryNoYear,
+  containerizationTrade,
   latestYear,
   metric = 'value',
 }) {
@@ -314,6 +316,78 @@ export default function PortsTab({
           <LineChart data={topPortTrendData} xKey="year" yKey="value" seriesKey="Port" formatY={getAxisFormatter(portTrendMax, metric === 'weight' ? '' : '$')} formatValue={fmtValue} annotations={HISTORICAL_ANNOTATIONS} />
         </ChartCard>
       </SectionBlock>
+
+      {/* Containerization & Re-Export Analysis */}
+      {containerizationTrade?.length > 0 && (() => {
+        // Containerization by mode (donut)
+        const CONT_LABELS = { '0': 'Not Containerized', '1': 'Containerized', 'X': 'Not Applicable', 'U': 'Unknown' }
+        const contByType = new Map()
+        containerizationTrade.forEach((d) => {
+          const label = CONT_LABELS[d.ContCode] || d.ContCode
+          contByType.set(label, (contByType.get(label) || 0) + (d.TradeValue || 0))
+        })
+        const contDonutData = Array.from(contByType, ([label, value]) => ({ label, value }))
+          .filter((d) => d.value > 0)
+          .sort((a, b) => b.value - a.value)
+
+        // Re-exports: DF=2 as share of total exports
+        const DF_LABELS = { '1': 'Domestic Origin', '2': 'Re-Exports (Foreign Origin)', 'U': 'Imports (N/A)' }
+        const dfByType = new Map()
+        containerizationTrade.forEach((d) => {
+          if (d.TradeType !== 'Export') return
+          const label = DF_LABELS[d.DF] || d.DF
+          dfByType.set(label, (dfByType.get(label) || 0) + (d.TradeValue || 0))
+        })
+        const dfDonutData = Array.from(dfByType, ([label, value]) => ({ label, value }))
+          .filter((d) => d.value > 0)
+          .sort((a, b) => b.value - a.value)
+
+        // Containerized trade trend
+        const contByYear = new Map()
+        containerizationTrade.forEach((d) => {
+          if (d.ContCode !== '1') return
+          if (!d.Year) return
+          contByYear.set(d.Year, (contByYear.get(d.Year) || 0) + (d.TradeValue || 0))
+        })
+        const contTrend = Array.from(contByYear, ([year, value]) => ({ year, value })).sort((a, b) => a.year - b.year)
+
+        return (
+          <SectionBlock alt>
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center gap-2.5 mb-5">
+                <Globe size={20} className="text-brand-blue" />
+                <h3 className="text-xl font-bold text-text-primary">Logistics Structure</h3>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ChartCard title="Containerization Status" subtitle="Share of U.S.-Mexico trade by containerization — most surface freight moves non-containerized">
+                  <DonutChart data={contDonutData} nameKey="label" valueKey="value" formatValue={formatCurrency} />
+                </ChartCard>
+                <ChartCard title="Export Origin: Domestic vs Re-Exports" subtitle="U.S. exports to Mexico — are goods made in the U.S. or passing through from elsewhere?">
+                  <DonutChart data={dfDonutData} nameKey="label" valueKey="value" formatValue={formatCurrency} />
+                </ChartCard>
+              </div>
+              {contTrend.length > 2 && (
+                <div className="mt-6">
+                  <ChartCard title="Containerized Trade Growth" subtitle="Value of containerized freight crossing the U.S.-Mexico border by year">
+                    <LineChart data={contTrend} xKey="year" yKey="value" formatValue={formatCurrency} showArea annotations={HISTORICAL_ANNOTATIONS} />
+                  </ChartCard>
+                </div>
+              )}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InsightCallout
+                  finding="About 96% of U.S.-Mexico surface freight moves non-containerized — truck trailers and rail cars dominate. Containerized trade is small but has tripled since 2007, mostly on rail."
+                  context="Containerization matters for port infrastructure planning: container handling needs different equipment than trailer-based trade."
+                />
+                <InsightCallout
+                  finding="Roughly 22% of U.S. exports to Mexico are actually re-exports — goods that originated in a third country, passed through the U.S., and were then shipped south."
+                  context="This means the U.S. functions partly as a distribution hub for Mexico, not just a manufacturer."
+                  variant="highlight"
+                />
+              </div>
+            </div>
+          </SectionBlock>
+        )
+      })()}
 
       {/* Port Detail Table */}
       <SectionBlock>

@@ -24,6 +24,8 @@ const DATASET_FILES = {
   monthlyCommodityTrends: 'monthly_commodity_trends.json',
   stateCommodityTrade: 'state_commodity_trade.json',
   commodityMexstateTrade: 'commodity_mexstate_trade.json',
+  containerizationTrade: 'containerization_trade.json',
+  texasMonthlyPortCommodity: 'texas_monthly_port_commodity.json',
 }
 
 const FETCH_TIMEOUT_MS = 30_000
@@ -89,6 +91,8 @@ export const useTransborderStore = create((set, get) => ({
   monthlyCommodityTrends: null,
   stateCommodityTrade: null,
   commodityMexstateTrade: null,
+  containerizationTrade: null,
+  texasMonthlyPortCommodity: null,
 
   // Loading state
   loading: true,

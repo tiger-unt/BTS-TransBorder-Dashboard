@@ -46,7 +46,7 @@ const TAB_CONFIG = [
 
 export default function TexasMexicoPage() {
   const {
-    texasMexicoPorts, texasMexicoCommodities, monthlyTrends, monthlyCommodityTrends,
+    texasMexicoPorts, texasMexicoCommodities, monthlyTrends, monthlyCommodityTrends, texasMonthlyPortCommodity,
     texasMexicanStateTrade, texasOdStateFlows, commodityMexstateTrade,
     loading, datasetErrors, loadDataset,
   } = useTransborderStore()
@@ -95,6 +95,7 @@ export default function TexasMexicoPage() {
     if (activeTab === 'commodities') {
       loadDataset('texasMexicoCommodities')
       loadDataset('monthlyCommodityTrends')
+      loadDataset('texasMonthlyPortCommodity')
     }
     if (activeTab === 'ports') loadDataset('monthlyTrends')
     if (activeTab === 'states') {
@@ -462,6 +463,7 @@ export default function TexasMexicoPage() {
           <CommoditiesTab
             filteredCommodities={filteredCommodities}
             monthlyCommodityTrends={monthlyCommodityTrends}
+            texasMonthlyPortCommodity={texasMonthlyPortCommodity}
             loadDataset={loadDataset}
             latestYear={latestYear}
             datasetError={datasetErrors.texasMexicoCommodities}
