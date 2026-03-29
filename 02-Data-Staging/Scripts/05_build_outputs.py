@@ -592,6 +592,63 @@ def build_commodity_mexstate_trade(conn):
     return run_query(conn, sql)
 
 
+def build_containerization_trade(conn):
+    """Dataset 17: Containerization and domestic/foreign status. Source: DOT1, Mexico only, 2007+.
+
+    Charts: Containerized vs non-containerized trade by mode over time.
+    DF field: 1=domestic origin, 2=foreign origin/re-export (exports only; NULL for imports).
+    ContCode: 0=not containerized, 1=containerized, X=not applicable (pipeline, other).
+    Aggregated by Year/Mode/TradeType/ContCode/DF to keep size small.
+    """
+    sql = f"""
+        SELECT
+            "Year",
+            "Mode",
+            COALESCE("TradeType", 'Unknown') AS "TradeType",
+            COALESCE("ContCode", 'U') AS "ContCode",
+            COALESCE("DF", 'U') AS "DF",
+            ROUND(SUM("TradeValue"), 2) AS "TradeValue",
+            CASE WHEN SUM(CASE WHEN "Weight" IS NOT NULL THEN 1 ELSE 0 END) > 0
+                 THEN ROUND(SUM("Weight"), 2) ELSE NULL END AS "Weight"
+        FROM dot1_state_port
+        WHERE "Country" = 'Mexico' AND "Year" >= {MODERN_START_YEAR}
+        GROUP BY "Year", "Mode", COALESCE("TradeType", 'Unknown'),
+                 COALESCE("ContCode", 'U'), COALESCE("DF", 'U')
+        ORDER BY "Year", "Mode", "TradeType", "ContCode", "DF"
+    """
+    return run_query(conn, sql)
+
+
+def build_texas_monthly_port_commodity(conn, tx_ports):
+    """Dataset 18: Monthly port-by-commodity for TX ports. Source: DOT3, Mexico only, 2007+.
+
+    Charts: Port-level seasonal commodity patterns (Pharr produce winter peaks).
+    Aggregated by Year/Month/Port/CommodityGroup/Mode/TradeType.
+    """
+    port_list = ",".join(f"'{p}'" for p in tx_ports)
+    sql = f"""
+        SELECT
+            "Year",
+            "Month",
+            "PortCode",
+            "Port",
+            "CommodityGroup",
+            "Mode",
+            COALESCE("TradeType", 'Unknown') AS "TradeType",
+            ROUND(SUM("TradeValue"), 2) AS "TradeValue",
+            CASE WHEN SUM(CASE WHEN "Weight" IS NOT NULL THEN 1 ELSE 0 END) > 0
+                 THEN ROUND(SUM("Weight"), 2) ELSE NULL END AS "Weight"
+        FROM dot3_port_commodity
+        WHERE "Country" = 'Mexico'
+          AND "PortCode" IN ({port_list})
+          AND "Year" >= {MODERN_START_YEAR}
+        GROUP BY "Year", "Month", "PortCode", "Port", "CommodityGroup",
+                 "Mode", COALESCE("TradeType", 'Unknown')
+        ORDER BY "Year", "Month", "PortCode", "CommodityGroup", "Mode", "TradeType"
+    """
+    return run_query(conn, sql)
+
+
 def main():
     if not DB_PATH.exists():
         print(f"ERROR: Database not found: {DB_PATH}")
@@ -630,6 +687,8 @@ def main():
         ("monthly_commodity_trends", lambda: build_monthly_commodity_trends(conn)),
         ("state_commodity_trade", lambda: build_state_commodity_trade(conn)),
         ("commodity_mexstate_trade", lambda: build_commodity_mexstate_trade(conn)),
+        ("containerization_trade", lambda: build_containerization_trade(conn)),
+        ("texas_monthly_port_commodity", lambda: build_texas_monthly_port_commodity(conn, tx_ports)),
     ]
 
     print("Building datasets...")

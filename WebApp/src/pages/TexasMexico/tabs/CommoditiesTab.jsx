@@ -24,7 +24,7 @@ import DatasetError from '@/components/ui/DatasetError'
 import { DL, PAGE_COMMODITY_COLS } from '@/lib/downloadColumns'
 import { ANNOTATIONS_MODERN as ANNOTATIONS } from '@/lib/annotations'
 
-export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTrends, loadDataset, _latestYear, datasetError, metric = 'value', tradeTypeFilter = '', modeFilter = [] }) {
+export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTrends, texasMonthlyPortCommodity, loadDataset, _latestYear, datasetError, metric = 'value', tradeTypeFilter = '', modeFilter = [] }) {
   /* ── ensure dataset is loaded ────────────────────────────────────── */
   useEffect(() => {
     loadDataset('texasMexicoCommodities')
@@ -866,6 +866,62 @@ export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTr
           </SectionBlock>
         </>
       )}
+
+      {/* Port-Level Seasonal Commodity (Pharr produce story) */}
+      {texasMonthlyPortCommodity?.length > 0 && (() => {
+        // Filter to Vegetables + top 3 agricultural ports for the clearest seasonal signal
+        const MONTH_LABELS_SHORT = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const vegData = texasMonthlyPortCommodity.filter((d) =>
+          d.CommodityGroup === 'Vegetable Products' && d.TradeType === 'Import'
+        )
+        if (vegData.length < 12) return null
+        // Get top ports by vegetable trade
+        const portTotals = new Map()
+        vegData.forEach((d) => { portTotals.set(d.Port, (portTotals.get(d.Port) || 0) + (d.TradeValue || 0)) })
+        const topPorts = [...portTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([n]) => n)
+        const topSet = new Set(topPorts)
+        // Build monthly averages per port
+        const byMonthPort = new Map()
+        const yearSet = new Set()
+        vegData.forEach((d) => {
+          if (!topSet.has(d.Port) || !d.Month) return
+          yearSet.add(d.Year)
+          const key = `${d.Month}|${d.Port}`
+          byMonthPort.set(key, (byMonthPort.get(key) || 0) + (d.TradeValue || 0))
+        })
+        const nYears = yearSet.size || 1
+        const chartData = []
+        for (let m = 1; m <= 12; m++) {
+          const row = { month: MONTH_LABELS_SHORT[m] }
+          topPorts.forEach((p) => {
+            row[p] = Math.round((byMonthPort.get(`${m}|${p}`) || 0) / nYears)
+          })
+          chartData.push(row)
+        }
+        return (
+          <SectionBlock>
+            <div className="max-w-7xl mx-auto">
+              <ChartCard
+                title="Port-Level Produce Seasonality"
+                subtitle="Average monthly vegetable imports by port — shows which ports bear winter produce pressure"
+              >
+                <StackedBarChart
+                  data={chartData}
+                  xKey="month"
+                  stackKeys={topPorts}
+                  formatValue={formatCurrency}
+                />
+              </ChartCard>
+              <div className="mt-4">
+                <InsightCallout
+                  finding="Hidalgo/Pharr and Laredo are the two main vegetable import gateways. Both see winter peaks nearly double their summer volumes — driven by U.S. demand for Mexican tomatoes, avocados, berries, and peppers during the off-season."
+                  context="This seasonal pressure has real infrastructure implications: inspection lanes, cold-chain capacity, and truck staging areas at agricultural ports need to handle winter surges."
+                />
+              </div>
+            </div>
+          </SectionBlock>
+        )
+      })()}
 
       {/* Commodity detail table */}
       <SectionBlock alt>

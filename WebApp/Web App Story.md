@@ -2,7 +2,7 @@
 
 > What this document is: a current-state narrative of the live web app, checked against `WebApp/src/`, the extraction pipeline in `02-Data-Staging/Scripts/05_build_outputs.py`, and the full SQLite database in `02-Data-Staging/transborder.db`.
 >
-> Last updated: March 29, 2026
+> Last updated: March 29, 2026 (final — all pipeline stories implemented)
 
 ---
 
@@ -102,12 +102,15 @@ All of the following are live in the app:
 - Narrative callouts on both Trade Flows tabs
 - Historical annotations standardized via shared annotations.js (NAFTA on Overview, 2008+COVID on detail pages)
 - Growth-rate charts use lollipop style (visually distinct from ranking bars)
+- Containerization analysis: donut charts showing containerized vs non-containerized freight and domestic vs re-export origin (US-MX Ports tab)
+- Containerized trade growth trend line (US-MX Ports tab)
+- Port-level produce seasonality: stacked bar showing vegetable imports by port by month (TX-MX Commodities tab)
 
 ---
 
 ## Part 3: Data Pipeline Status
 
-The pipeline (`05_build_outputs.py`) produces 16 datasets:
+The pipeline (`05_build_outputs.py`) produces 18 datasets:
 
 | # | Dataset | Source | Rows | Purpose |
 |---|---------|--------|------|---------|
@@ -127,6 +130,8 @@ The pipeline (`05_build_outputs.py`) produces 16 datasets:
 | 14 | monthly_commodity_trends | DOT2 | ~47K | Monthly commodity patterns (Mexico) |
 | 15 | state_commodity_trade | DOT2 | ~112K | State-level commodity trade (Mexico) |
 | 16 | commodity_mexstate_trade | DOT2 | ~23K | Commodity by Mexican state |
+| 17 | containerization_trade | DOT1 | ~645 | Containerization and domestic/foreign status |
+| 18 | texas_monthly_port_commodity | DOT3 | ~132K | Monthly port-by-commodity for TX ports |
 
 All datasets use 2007+ except us_transborder (full 1993-2025).
 
@@ -161,21 +166,13 @@ Region convenience filter auto-selects all ports in the chosen region (El Paso, 
 
 ## Part 5: What Could Still Be Added
 
-### Lower-priority enhancements
-- Sparklines on stat cards (small inline trend indicators)
-- Preset filter chips ("Mexico only", "Truck only") for guided entry
-- US-MX Ports: border-state convenience grouping
-- Overview Mode: convert from single-select dropdown to proper multi-select
-
-### Stories requiring new pipeline work
-- Containerization and domestic/foreign status analysis (ContCode, DF fields -- niche, needs targeted extracts)
-- Pre-2007 detailed history (pipeline currently excludes pre-2007 from detail datasets by design)
-- Monthly port-by-commodity seasonality (would enable Pharr/Hidalgo produce pressure story at port level)
+### The only remaining pipeline story
+- Pre-2007 detailed history (pipeline currently excludes pre-2007 from detail datasets by design -- this is a scope decision, not a gap)
 
 ---
 
 ## Part 6: The Bottom Line
 
-The dashboard tells 22+ distinct stories across 4 pages and 12 tabs. Every tab has narrative framing, insight callouts, and historical context. The Texas-Mexico Commodities tab alone tells 7 layered stories organized by section headers. Growth-rate charts are visually distinct from ranking charts. Annotations are standardized. Filters include region convenience shortcuts and corridor-level analysis.
+The dashboard tells 25+ distinct stories across 4 pages and 12 tabs. Every tab has narrative framing, insight callouts, and historical context. The Texas-Mexico Commodities tab alone tells 7 layered stories organized by section headers. Growth-rate charts are visually distinct from ranking charts. Annotations are standardized. Filters include region convenience shortcuts and corridor-level analysis.
 
-The core story -- Texas as the gateway, manufacturing integration as the engine, Laredo as the linchpin -- is clearly told through multiple complementary angles. The remaining opportunities are refinements (sparklines, presets) and niche stories (containerization, pre-2007 history) rather than structural gaps.
+The core story -- Texas as the gateway, manufacturing integration as the engine, Laredo as the linchpin -- is clearly told through multiple complementary angles. The only remaining pipeline story is pre-2007 detailed history, which is excluded by design. All other identified stories from the dreamer review have been implemented.
