@@ -110,12 +110,32 @@ function useCountUp(displayValue, duration = 1200, startDelay = 0) {
   return shown
 }
 
+/** Tiny inline sparkline SVG — takes an array of numbers and renders a miniature trend line. */
+function Sparkline({ data, highlight, width = 64, height = 20 }) {
+  if (!data || data.length < 2) return null
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width
+    const y = height - ((v - min) / range) * (height - 2) - 1
+    return `${x},${y}`
+  }).join(' ')
+  const color = highlight ? 'rgba(255,255,255,0.6)' : '#93c5fd'
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="inline-block ml-2 align-middle">
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export default function StatCard({
   label,
   value,
   title,
   trend,
   trendLabel,
+  sparkline,
   highlight = false,
   variant = 'default',
   icon: Icon,
@@ -180,14 +200,17 @@ export default function StatCard({
       >
         {label}
       </p>
-      {/* Row 2 — value (pinned to bottom of its row) */}
-      <p
-        className={`text-2xl md:text-3xl font-bold leading-none tracking-tight whitespace-nowrap self-end ${
-          highlight ? 'text-white' : 'text-text-primary'
-        }`}
-      >
-        {typeof value === 'string' ? animatedValue : value}
-      </p>
+      {/* Row 2 — value + sparkline (pinned to bottom of its row) */}
+      <div className="flex items-end gap-1 self-end">
+        <p
+          className={`text-2xl md:text-3xl font-bold leading-none tracking-tight whitespace-nowrap ${
+            highlight ? 'text-white' : 'text-text-primary'
+          }`}
+        >
+          {typeof value === 'string' ? animatedValue : value}
+        </p>
+        {sparkline && <Sparkline data={sparkline} highlight={highlight} />}
+      </div>
       {/* Row 3 — trend (sized to tallest trend across sibling cards) */}
       <div>
         {trendLabel && (

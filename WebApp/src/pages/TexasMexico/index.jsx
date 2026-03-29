@@ -267,6 +267,18 @@ export default function TexasMexicoPage() {
     return { totalTrade, tradeChange, exports, imports, portCount, topMode, latestYear, prevYear, exportWeightNA, totalWeightNA }
   }, [filteredPorts, latestYear, valueField])
 
+  /* ── Sparkline data (last 6 years of total trade) ────────────── */
+  const sparklineData = useMemo(() => {
+    if (!filteredPorts.length || !latestYear) return null
+    const byYear = new Map()
+    filteredPorts.forEach((d) => {
+      if (!d.Year) return
+      byYear.set(d.Year, (byYear.get(d.Year) || 0) + (d[valueField] || 0))
+    })
+    const years = [...byYear.keys()].sort((a, b) => a - b).slice(-6)
+    return years.map((y) => byYear.get(y) || 0)
+  }, [filteredPorts, latestYear, valueField])
+
   /* ── active filter count & reset ───────────────────────────────── */
   const activeCount = yearFilter.length + (tradeTypeFilter ? 1 : 0) + modeFilter.length + regionFilter.length
     + portFilter.length + commodityGroupFilter.length + commodityFilter.length + stateFilter.length + mexStateFilter.length
@@ -414,6 +426,7 @@ export default function TexasMexicoPage() {
             value={stats ? (stats.totalWeightNA ? 'N/A' : fmtValue(stats.totalTrade)) : '—'}
             trend={stats && !stats.totalWeightNA && stats.tradeChange > 0 ? 'up' : stats && !stats.totalWeightNA && stats.tradeChange < 0 ? 'down' : undefined}
             trendLabel={stats && !stats.totalWeightNA ? `${(stats.tradeChange * 100).toFixed(1)}% vs ${stats.prevYear}` : ''}
+            sparkline={sparklineData}
             highlight variant="primary" icon={DollarSign} delay={0}
           />
           <StatCard label={`Exports (${latestYear || '—'})`} value={stats ? (stats.exportWeightNA ? 'N/A' : fmtValue(stats.exports)) : '—'} highlight icon={ArrowUpDown} delay={100} />
