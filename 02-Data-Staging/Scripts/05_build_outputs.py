@@ -1,7 +1,7 @@
 """
 05_build_outputs.py -- Generate chart-driven dashboard JSON + CSV files from SQLite DB.
 
-Produces 14 datasets in two formats (JSON + CSV) in 03-Processed-Data/.
+Produces 19 datasets in two formats (JSON + CSV) in 03-Processed-Data/.
 Each dataset draws from exactly ONE DOT table -- no joins between tables.
 Datasets are designed to serve specific Phase 3 dashboard charts.
 
@@ -255,6 +255,46 @@ def build_texas_mexico_ports(conn, port_coords, tx_ports, port_region):
     """
     records = run_query(conn, sql)
     # Enrich with region and coordinates
+    for r in records:
+        code = r["PortCode"]
+        r["Region"] = port_region.get(code, "")
+        coords = port_coords.get(code, {})
+        r["Lat"] = coords.get("lat")
+        r["Lon"] = coords.get("lon")
+    return records
+
+
+def build_texas_mexico_port_states(conn, port_coords, tx_ports, port_region):
+    """Dataset 3b: Texas border port trade broken down by U.S. state. Source: DOT1, 2007+.
+
+    Same as texas_mexico_ports but with StateCode/State in the GROUP BY,
+    giving per-state granularity for the State (Origin/Dest) sidebar filter.
+    Loaded lazily on the Ports tab only when a state filter is active.
+    """
+    port_list = ",".join(f"'{p}'" for p in tx_ports)
+    sql = f"""
+        SELECT
+            "Year",
+            "PortCode",
+            "Port",
+            "StateCode",
+            "State",
+            "Mode",
+            COALESCE("TradeType", 'Unknown') AS "TradeType",
+            ROUND(SUM("TradeValue"), 2) AS "TradeValue",
+            CASE WHEN SUM(CASE WHEN "Weight" IS NOT NULL THEN 1 ELSE 0 END) > 0
+                 THEN ROUND(SUM("Weight"), 2) ELSE NULL END AS "Weight",
+            CASE WHEN SUM(CASE WHEN "FreightCharges" IS NOT NULL THEN 1 ELSE 0 END) > 0
+                 THEN ROUND(SUM("FreightCharges"), 2) ELSE NULL END AS "FreightCharges"
+        FROM dot1_state_port
+        WHERE "Country" = 'Mexico'
+          AND "PortCode" IN ({port_list})
+          AND "Year" >= {MODERN_START_YEAR}
+        GROUP BY "Year", "PortCode", "Port", "StateCode", "State",
+                 "Mode", COALESCE("TradeType", 'Unknown')
+        ORDER BY "Year", "PortCode", "State", "Mode", "TradeType"
+    """
+    records = run_query(conn, sql)
     for r in records:
         code = r["PortCode"]
         r["Region"] = port_region.get(code, "")
@@ -675,6 +715,7 @@ def main():
         ("us_mexico_ports", lambda: build_us_mexico_ports(conn)),
         ("us_canada_ports", lambda: build_us_canada_ports(conn)),
         ("texas_mexico_ports", lambda: build_texas_mexico_ports(conn, port_coords, tx_ports, port_region)),
+        ("texas_mexico_port_states", lambda: build_texas_mexico_port_states(conn, port_coords, tx_ports, port_region)),
         ("texas_mexico_commodities", lambda: build_texas_mexico_commodities(conn, tx_ports)),
         ("us_state_trade", lambda: build_us_state_trade(conn)),
         ("commodity_detail", lambda: build_commodity_detail(conn)),

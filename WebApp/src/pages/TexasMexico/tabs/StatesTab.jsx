@@ -33,6 +33,8 @@ export default function StatesTab({
   yearFilter,
   tradeTypeFilter,
   modeFilter,
+  stateFilter,
+  portFilter,
   mexStateFilter,
   datasetError,
   metric = 'value',
@@ -104,9 +106,11 @@ export default function StatesTab({
     if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    if (stateFilter?.length) data = data.filter((d) => stateFilter.includes(d.State))
+    if (portFilter?.length) data = data.filter((d) => portFilter.includes(d.Port))
     if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
     return buildMapPorts(data, portCoords)
-  }, [texasOdStateFlows, portCoords, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter])
+  }, [texasOdStateFlows, portCoords, yearFilter, tradeTypeFilter, modeFilter, stateFilter, portFilter, mexStateFilter])
 
   /* ── connectivity: state ↔ port with per-pair trade values ──────── */
   const connections = useMemo(() => {
@@ -118,6 +122,8 @@ export default function StatesTab({
     if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    if (stateFilter?.length) data = data.filter((d) => stateFilter.includes(d.State))
+    if (portFilter?.length) data = data.filter((d) => portFilter.includes(d.Port))
     if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
 
     for (const d of data) {
@@ -132,7 +138,7 @@ export default function StatesTab({
       ps.set(d.MexState, (ps.get(d.MexState) || 0) + val)
     }
     return { stateToPort, portToState }
-  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter, valueField])
+  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter, stateFilter, portFilter, mexStateFilter, valueField])
 
   /* ── bar chart data ────────────────────────────────────────────────── */
   const barData = useMemo(
@@ -183,6 +189,8 @@ export default function StatesTab({
     if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    if (stateFilter?.length) data = data.filter((d) => stateFilter.includes(d.State))
+    if (portFilter?.length) data = data.filter((d) => portFilter.includes(d.Port))
     if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
 
     const portTotals = new Map()
@@ -215,7 +223,7 @@ export default function StatesTab({
     }).filter((l) => l.value > 0)
 
     return { nodes, links }
-  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter, valueField])
+  }, [texasOdStateFlows, yearFilter, tradeTypeFilter, modeFilter, stateFilter, portFilter, mexStateFilter, valueField])
 
   /* ── Mexican state growth rates (earliest vs latest 3-year avg) ── */
   const stateGrowth = useMemo(() => {

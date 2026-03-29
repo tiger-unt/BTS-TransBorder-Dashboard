@@ -46,7 +46,7 @@ const TAB_CONFIG = [
 
 export default function TexasMexicoPage() {
   const {
-    texasMexicoPorts, texasMexicoCommodities, monthlyTrends, monthlyCommodityTrends, texasMonthlyPortCommodity,
+    texasMexicoPorts, texasMexicoPortStates, texasMexicoCommodities, monthlyTrends, monthlyCommodityTrends, texasMonthlyPortCommodity,
     texasMexicanStateTrade, texasOdStateFlows, commodityMexstateTrade,
     loading, datasetErrors, loadDataset,
   } = useTransborderStore()
@@ -97,7 +97,10 @@ export default function TexasMexicoPage() {
       loadDataset('monthlyCommodityTrends')
       loadDataset('texasMonthlyPortCommodity')
     }
-    if (activeTab === 'ports') loadDataset('monthlyTrends')
+    if (activeTab === 'ports') {
+      loadDataset('monthlyTrends')
+      loadDataset('texasMexicoPortStates')
+    }
     if (activeTab === 'states') {
       loadDataset('texasMexicanStateTrade')
       loadDataset('texasOdStateFlows')
@@ -115,13 +118,13 @@ export default function TexasMexicoPage() {
       }, ['Year', 'TradeType', 'Mode', 'CommodityGroup', 'Commodity', 'Port'])
     }
     if (activeTab === 'states') {
-      // Use OD flows data if available (has Port), fall back to state trade data
+      // Use OD flows data if available (has Port + State), fall back to state trade data
       const stateData = texasOdStateFlows || texasMexicanStateTrade
       if (!stateData) return {}
       return buildCrossFilterOptions(stateData, {
         Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter,
-        Port: portFilter, MexState: mexStateFilter,
-      }, ['Year', 'TradeType', 'Mode', 'Port', 'MexState'])
+        Port: portFilter, State: stateFilter, MexState: mexStateFilter,
+      }, ['Year', 'TradeType', 'Mode', 'Port', 'State', 'MexState'])
     }
     if (activeTab === 'flows' && texasOdStateFlows) {
       return buildCrossFilterOptions(texasOdStateFlows, {
@@ -129,15 +132,16 @@ export default function TexasMexicoPage() {
         State: stateFilter, Port: portFilter, MexState: mexStateFilter,
       }, ['Year', 'TradeType', 'Mode', 'State', 'Port', 'MexState'])
     }
-    // Ports tab or fallback
-    if (!texasMexicoPorts) return {}
-    return buildCrossFilterOptions(texasMexicoPorts, {
+    // Ports tab or fallback — use port-states dataset (has State column) when available
+    const portsSource = texasMexicoPortStates || texasMexicoPorts
+    if (!portsSource) return {}
+    return buildCrossFilterOptions(portsSource, {
       Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter,
-      Region: regionFilter, Port: portFilter,
-    }, ['Year', 'TradeType', 'Mode', 'Region', 'Port'])
-  }, [activeTab, texasMexicoPorts, texasMexicoCommodities, texasMexicanStateTrade, texasOdStateFlows,
+      Region: regionFilter, Port: portFilter, State: stateFilter,
+    }, ['Year', 'TradeType', 'Mode', 'Region', 'Port', 'State'])
+  }, [activeTab, texasMexicoPorts, texasMexicoPortStates, texasMexicoCommodities, texasMexicanStateTrade, texasOdStateFlows,
       yearFilter, tradeTypeFilter, modeFilter, regionFilter, portFilter,
-      commodityGroupFilter, commodityFilter, mexStateFilter])
+      commodityGroupFilter, commodityFilter, stateFilter, mexStateFilter])
 
   const yearOptions = useMemo(() => (crossOptions.Year || []).map(String), [crossOptions])
   const tradeTypeOptions = crossOptions.TradeType || []
@@ -152,7 +156,7 @@ export default function TexasMexicoPage() {
   /* ── auto-prune stale multi-select values when options narrow ────── */
   useEffect(() => {
     const prune = (opts, setter, asStr) => {
-      if (!opts) return
+      if (!opts) { setter(prev => prev.length ? [] : prev); return }
       const valid = new Set(asStr ? opts.map(String) : opts)
       setter(prev => {
         if (!prev.length) return prev
@@ -193,10 +197,15 @@ export default function TexasMexicoPage() {
     if (modeFilter.length) result = result.filter((d) => modeFilter.includes(d.Mode))
     if (regionFilter.length) result = result.filter((d) => regionFilter.includes(d.Region))
     if (portFilter.length) result = result.filter((d) => portFilter.includes(d.Port))
+    if (stateFilter.length) result = result.filter((d) => stateFilter.includes(d.State))
     return result
-  }, [yearFilter, tradeTypeFilter, modeFilter, regionFilter, portFilter])
+  }, [yearFilter, tradeTypeFilter, modeFilter, regionFilter, portFilter, stateFilter])
 
-  const filteredPorts = useMemo(() => applyFilters(texasMexicoPorts), [texasMexicoPorts, applyFilters])
+  const filteredPorts = useMemo(() => {
+    // Use port-states dataset (has State column) when state filter is active
+    const source = stateFilter.length && texasMexicoPortStates ? texasMexicoPortStates : texasMexicoPorts
+    return applyFilters(source)
+  }, [texasMexicoPorts, texasMexicoPortStates, stateFilter, applyFilters])
 
   const filteredCommodities = useMemo(() => {
     if (!texasMexicoCommodities) return null
@@ -220,14 +229,16 @@ export default function TexasMexicoPage() {
   }, [monthlyTrends, yearFilter, tradeTypeFilter, modeFilter])
 
   const filteredPortsNoYear = useMemo(() => {
-    if (!texasMexicoPorts) return []
-    let result = texasMexicoPorts
+    const source = stateFilter.length && texasMexicoPortStates ? texasMexicoPortStates : texasMexicoPorts
+    if (!source) return []
+    let result = source
     if (tradeTypeFilter) result = result.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter.length) result = result.filter((d) => modeFilter.includes(d.Mode))
     if (regionFilter.length) result = result.filter((d) => regionFilter.includes(d.Region))
     if (portFilter.length) result = result.filter((d) => portFilter.includes(d.Port))
+    if (stateFilter.length) result = result.filter((d) => stateFilter.includes(d.State))
     return result
-  }, [texasMexicoPorts, tradeTypeFilter, modeFilter, regionFilter, portFilter])
+  }, [texasMexicoPorts, texasMexicoPortStates, stateFilter, tradeTypeFilter, modeFilter, regionFilter, portFilter])
 
   /* ── KPIs ──────────────────────────────────────────────────────── */
   const latestYear = useMemo(() => {
@@ -280,6 +291,10 @@ export default function TexasMexicoPage() {
     return years.map((y) => byYear.get(y) || 0)
   }, [filteredPorts, latestYear, valueField])
 
+  /* ── dynamic state filter label ─────────────────────────────────── */
+  const stateFilterLabel = tradeTypeFilter === 'Export' ? 'State (Origin)'
+    : tradeTypeFilter === 'Import' ? 'State (Destination)' : 'State (Origin/Dest)'
+
   /* ── active filter count & reset ───────────────────────────────── */
   const activeCount = yearFilter.length + (tradeTypeFilter ? 1 : 0) + modeFilter.length + regionFilter.length
     + portFilter.length + commodityGroupFilter.length + commodityFilter.length + stateFilter.length + mexStateFilter.length
@@ -306,13 +321,13 @@ export default function TexasMexicoPage() {
       tags.push({ group: 'Commodity', label: v, onRemove: () => setCommodityFilter((prev) => prev.filter((x) => x !== v)) })
     )
     stateFilter.forEach((v) =>
-      tags.push({ group: 'U.S. State', label: v, onRemove: () => setStateFilter((prev) => prev.filter((x) => x !== v)) })
+      tags.push({ group: stateFilterLabel, label: v, onRemove: () => setStateFilter((prev) => prev.filter((x) => x !== v)) })
     )
     mexStateFilter.forEach((v) =>
       tags.push({ group: 'MX State', label: v, onRemove: () => setMexStateFilter((prev) => prev.filter((x) => x !== v)) })
     )
     return tags
-  }, [metric, yearFilter, tradeTypeFilter, modeFilter, regionFilter, portFilter, commodityGroupFilter, commodityFilter, mexStateFilter])
+  }, [metric, yearFilter, tradeTypeFilter, modeFilter, regionFilter, portFilter, commodityGroupFilter, commodityFilter, stateFilter, stateFilterLabel, mexStateFilter])
 
   const resetFilters = useCallback(() => {
     setMetric('value'); setYearFilter([]); setTradeTypeFilter(''); setModeFilter([])
@@ -353,6 +368,9 @@ export default function TexasMexicoPage() {
         <>
           <FilterMultiSelect label="Region" value={regionFilter} options={regionOptions} onChange={setRegionFilter} />
           <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
+          {stateOptions.length > 0 && (
+            <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
+          )}
         </>
       )}
       {activeTab === 'commodities' && (
@@ -377,12 +395,15 @@ export default function TexasMexicoPage() {
           {portOptions.length > 0 && (
             <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
           )}
+          {stateOptions.length > 0 && (
+            <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
+          )}
         </>
       )}
       {activeTab === 'flows' && (
         <>
           {stateOptions.length > 0 && (
-            <FilterMultiSelect label="U.S. State" value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
+            <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
           )}
           {portOptions.length > 0 && (
             <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
@@ -500,6 +521,8 @@ export default function TexasMexicoPage() {
             yearFilter={yearFilter}
             tradeTypeFilter={tradeTypeFilter}
             modeFilter={modeFilter}
+            stateFilter={stateFilter}
+            portFilter={portFilter}
             mexStateFilter={mexStateFilter}
             datasetError={datasetErrors.texasMexicanStateTrade}
             metric={metric}
