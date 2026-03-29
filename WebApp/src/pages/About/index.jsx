@@ -17,14 +17,21 @@ export default function AboutPage() {
       {/* Hero */}
       <div className="gradient-blue text-white relative overflow-visible">
         <HeroStardust seed={91} animate />
-        <div className="max-w-5xl mx-auto px-6 py-14 md:py-20 relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-white text-balance">
-            About the Data
-          </h2>
-          <p className="text-white/70 mt-3 text-base md:text-lg">
-            How BTS TransBorder freight data was collected, structured, and prepared
-            for this dashboard — and what you should know when interpreting the numbers.
-          </p>
+        <div className="max-w-5xl mx-auto px-6 py-14 md:py-20 relative flex flex-col md:flex-row items-center gap-8">
+          <img
+            src="/assets/Logos/BTS-Logo.svg"
+            alt="Bureau of Transportation Statistics"
+            className="h-32 md:h-40 w-auto flex-shrink-0 drop-shadow-lg"
+          />
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white text-balance">
+              About the Data
+            </h2>
+            <p className="text-white/70 mt-3 text-base md:text-lg">
+              How BTS TransBorder freight data was collected, structured, and prepared
+              for this dashboard — and what you should know when interpreting the numbers.
+            </p>
+          </div>
         </div>
       </div>
 
