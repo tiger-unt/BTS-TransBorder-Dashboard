@@ -19,7 +19,7 @@ export default function AboutPage() {
         <HeroStardust seed={91} animate />
         <div className="max-w-5xl mx-auto px-6 py-14 md:py-20 relative flex flex-col md:flex-row items-center gap-8">
           <img
-            src="/assets/Logos/BTS-Logo.svg"
+            src={`${import.meta.env.BASE_URL}assets/Logos/BTS-Logo.svg`}
             alt="Bureau of Transportation Statistics"
             className="h-32 md:h-40 w-auto flex-shrink-0 drop-shadow-lg"
           />
