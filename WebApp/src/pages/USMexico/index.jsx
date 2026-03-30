@@ -126,11 +126,7 @@ export default function USMexicoPage() {
       const mx = mexicanStateTrade ? buildCrossFilterOptions(mexicanStateTrade, {
         Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter, MexState: mexStateFilter,
       }, ['MexState']) : {}
-      // Port options from OD flows data (if loaded)
-      const portOpts = odStateFlows ? buildCrossFilterOptions(odStateFlows, {
-        Year: yearFilter, TradeType: tradeTypeFilter, Mode: modeFilter, State: stateFilter, Port: portFilter,
-      }, ['Port']) : {}
-      return { ...common, ...mx, ...portOpts }
+      return { ...common, ...mx }
     }
     if (activeTab === 'flows' && odStateFlows) {
       return buildCrossFilterOptions(odStateFlows, {
@@ -158,9 +154,11 @@ export default function USMexicoPage() {
   const mexStateOptions = crossOptions.MexState || []
 
   /* ── auto-prune stale multi-select values when options narrow ────── */
+  /* Only prune filters that the current tab actually exposes — leave others untouched
+     so values survive tab switches without being cleared by absent crossOptions keys. */
   useEffect(() => {
     const prune = (opts, setter, asStr) => {
-      if (!opts) { setter(prev => prev.length ? [] : prev); return }
+      if (!opts) return            // filter not relevant to this tab — leave it alone
       const valid = new Set(asStr ? opts.map(String) : opts)
       setter(prev => {
         if (!prev.length) return prev
@@ -170,13 +168,21 @@ export default function USMexicoPage() {
     }
     prune(crossOptions.Year, setYearFilter, true)
     prune(crossOptions.Mode, setModeFilter)
-    prune(crossOptions.State, setStateFilter)
-    prune(crossOptions.PortState, setPortStateFilter)
-    prune(crossOptions.Port, setPortFilter)
-    prune(crossOptions.CommodityGroup, setCommodityGroupFilter)
-    prune(crossOptions.Commodity, setCommodityFilter)
-    prune(crossOptions.MexState, setMexStateFilter)
-  }, [crossOptions]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (activeTab === 'ports') {
+      prune(crossOptions.PortState, setPortStateFilter)
+    }
+    if (activeTab === 'ports' || activeTab === 'flows') {
+      prune(crossOptions.Port, setPortFilter)
+    }
+    if (activeTab === 'states' || activeTab === 'flows') {
+      prune(crossOptions.State, setStateFilter)
+      prune(crossOptions.MexState, setMexStateFilter)
+    }
+    if (activeTab === 'commodities') {
+      prune(crossOptions.CommodityGroup, setCommodityGroupFilter)
+      prune(crossOptions.Commodity, setCommodityFilter)
+    }
+  }, [crossOptions, activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── auto-prune stale single-select values ─────────────────────── */
   useEffect(() => {
@@ -375,10 +381,15 @@ export default function USMexicoPage() {
           )}
         </>
       )}
-      {activeTab === 'flows' && portOptions.length > 0 && (
-        <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
+      {activeTab === 'states' && (
+        <>
+          <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
+          {mexStateOptions.length > 0 && (
+            <FilterMultiSelect label="Mexican State" value={mexStateFilter} options={mexStateOptions} onChange={setMexStateFilter} searchable />
+          )}
+        </>
       )}
-      {(activeTab === 'states' || activeTab === 'flows') && (
+      {activeTab === 'flows' && (
         <>
           <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
           {portOptions.length > 0 && (

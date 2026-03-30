@@ -154,9 +154,11 @@ export default function TexasMexicoPage() {
   const mexStateOptions = crossOptions.MexState || []
 
   /* ── auto-prune stale multi-select values when options narrow ────── */
+  /* Only prune filters the current tab actually exposes — leave others untouched
+     so values survive tab switches without being cleared by absent crossOptions keys. */
   useEffect(() => {
     const prune = (opts, setter, asStr) => {
-      if (!opts) { setter(prev => prev.length ? [] : prev); return }
+      if (!opts) return            // filter not relevant to this tab — leave it alone
       const valid = new Set(asStr ? opts.map(String) : opts)
       setter(prev => {
         if (!prev.length) return prev
@@ -167,11 +169,17 @@ export default function TexasMexicoPage() {
     prune(crossOptions.Year, setYearFilter, true)
     prune(crossOptions.Mode, setModeFilter)
     prune(crossOptions.Port, setPortFilter)
-    prune(crossOptions.CommodityGroup, setCommodityGroupFilter)
-    prune(crossOptions.Commodity, setCommodityFilter)
-    prune(crossOptions.State, setStateFilter)
-    prune(crossOptions.MexState, setMexStateFilter)
-  }, [crossOptions]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (activeTab === 'commodities') {
+      prune(crossOptions.CommodityGroup, setCommodityGroupFilter)
+      prune(crossOptions.Commodity, setCommodityFilter)
+    }
+    if (activeTab === 'ports' || activeTab === 'states') {
+      prune(crossOptions.State, setStateFilter)
+    }
+    if (activeTab === 'states' || activeTab === 'flows') {
+      prune(crossOptions.MexState, setMexStateFilter)
+    }
+  }, [crossOptions, activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── auto-prune stale single-select values ─────────────────────── */
   useEffect(() => {
@@ -270,7 +278,7 @@ export default function TexasMexicoPage() {
     const modeMap = new Map()
     latest.forEach((d) => {
       if (!d.Mode) return
-      modeMap.set(d.Mode, (modeMap.get(d.Mode) || 0) + (d.TradeValue || 0))
+      modeMap.set(d.Mode, (modeMap.get(d.Mode) || 0) + (d[valueField] || 0))
     })
     let topMode = '—'
     let topModeVal = 0
@@ -379,18 +387,20 @@ export default function TexasMexicoPage() {
           {commodityOptions.length > 0 && (
             <FilterMultiSelect label="Commodity" value={commodityFilter} options={commodityOptions} onChange={setCommodityFilter} searchable />
           )}
-          <FilterSelect label="Region" value={regionFilter.length === 1 ? regionFilter[0] : ''} options={REGIONS} onChange={(v) => {
-            setRegionFilter(v ? [v] : [])
-            setPortFilter(v ? REGION_TO_PORTS[v]?.filter(p => portOptions.includes(p)) || [] : [])
+          <FilterMultiSelect label="Region" value={regionFilter} options={regionOptions.length ? regionOptions : REGIONS} onChange={(regions) => {
+            setRegionFilter(regions)
+            const regionPorts = regions.flatMap(r => REGION_TO_PORTS[r] || []).filter(p => portOptions.includes(p))
+            setPortFilter(regions.length ? regionPorts : [])
           }} />
           <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
         </>
       )}
       {activeTab === 'states' && (
         <>
-          <FilterSelect label="Region" value={regionFilter.length === 1 ? regionFilter[0] : ''} options={REGIONS} onChange={(v) => {
-            setRegionFilter(v ? [v] : [])
-            setPortFilter(v ? REGION_TO_PORTS[v]?.filter(p => portOptions.includes(p)) || [] : [])
+          <FilterMultiSelect label="Region" value={regionFilter} options={regionOptions.length ? regionOptions : REGIONS} onChange={(regions) => {
+            setRegionFilter(regions)
+            const regionPorts = regions.flatMap(r => REGION_TO_PORTS[r] || []).filter(p => portOptions.includes(p))
+            setPortFilter(regions.length ? regionPorts : [])
           }} />
           {portOptions.length > 0 && (
             <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />

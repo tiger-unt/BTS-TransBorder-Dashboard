@@ -129,7 +129,7 @@ export default function OverviewPage() {
     return [...mx, ...ca]
   }, [usMexicoPorts, usCanadaPorts, mxCoords, caCoords])
 
-  /* ── Choropleth: US states by trade value (map-year only, always $) */
+  /* ── Choropleth: US states by trade (map-year, metric-aware) ────── */
   const stateMapData = useMemo(() => {
     if (!usStateTrade?.length) return []
     const yr = Number(mapYear)
@@ -138,12 +138,12 @@ export default function OverviewPage() {
       if (yr && d.Year !== yr) continue
       const st = d.State
       if (!st || st === 'Unknown') continue
-      byState.set(st, (byState.get(st) || 0) + (d.TradeValue || 0))
+      byState.set(st, (byState.get(st) || 0) + (d[valueField] || 0))
     }
     return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-  }, [usStateTrade, mapYear])
+  }, [usStateTrade, mapYear, valueField])
 
-  /* ── Choropleth: Mexican states by trade value (map-year only, always $) */
+  /* ── Choropleth: Mexican states by trade (map-year, metric-aware) ── */
   const mexStateMapData = useMemo(() => {
     if (!odStateFlows?.length) return []
     const yr = Number(mapYear)
@@ -152,12 +152,12 @@ export default function OverviewPage() {
       if (yr && d.Year !== yr) continue
       const st = d.MexState
       if (!st || st === 'Unknown') continue
-      byState.set(st, (byState.get(st) || 0) + (d.TradeValue || 0))
+      byState.set(st, (byState.get(st) || 0) + (d[valueField] || 0))
     }
     return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-  }, [odStateFlows, mapYear])
+  }, [odStateFlows, mapYear, valueField])
 
-  /* ── Choropleth: Canadian provinces by trade value (map-year only, always $) */
+  /* ── Choropleth: Canadian provinces by trade (map-year, metric-aware) */
   const canProvMapData = useMemo(() => {
     if (!odCanadaProvFlows?.length) return []
     const yr = Number(mapYear)
@@ -166,10 +166,10 @@ export default function OverviewPage() {
       if (yr && d.Year !== yr) continue
       const prov = d.CanProv
       if (!prov || prov === 'Unknown') continue
-      byProv.set(prov, (byProv.get(prov) || 0) + (d.TradeValue || 0))
+      byProv.set(prov, (byProv.get(prov) || 0) + (d[valueField] || 0))
     }
     return Array.from(byProv, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-  }, [odCanadaProvFlows, mapYear])
+  }, [odCanadaProvFlows, mapYear, valueField])
 
   /* ── Map layers config ─────────────────────────────────────────── */
   const mapLayers = useMemo(() => {
@@ -185,7 +185,7 @@ export default function OverviewPage() {
     return result
   }, [stateMapData, mexStateMapData, canProvMapData])
 
-  /* ── Connections: US state ↔ port, MX/CA state ↔ port (map-year, always $) */
+  /* ── Connections: US state ↔ port, MX/CA state ↔ port (map-year, metric-aware) */
   const mapConnections = useMemo(() => {
     const yr = Number(mapYear)
     const stateToPort = new Map()   // stateName → Map<portCode, value>
@@ -205,7 +205,7 @@ export default function OverviewPage() {
         if (yr && d.Year !== yr) continue
         if (!d.PortCode) continue
         const code = d.PortCode.replace(/\D/g, '')
-        const val = d.TradeValue || 0
+        const val = d[valueField] || 0
         if (d.State && d.State !== 'Unknown') addConnection(d.State, code, val)
         if (d.MexState && d.MexState !== 'Unknown') addConnection(d.MexState, code, val)
       }
@@ -216,14 +216,14 @@ export default function OverviewPage() {
         if (yr && d.Year !== yr) continue
         if (!d.PortCode) continue
         const code = d.PortCode.replace(/\D/g, '')
-        const val = d.TradeValue || 0
+        const val = d[valueField] || 0
         if (d.State && d.State !== 'Unknown') addConnection(d.State, code, val)
         if (d.CanProv && d.CanProv !== 'Unknown') addConnection(d.CanProv, code, val)
       }
     }
 
     return { stateToPort, portToState }
-  }, [odStateFlows, odCanadaProvFlows, mapYear])
+  }, [odStateFlows, odCanadaProvFlows, mapYear, valueField])
 
   /* ── filtered data based on country + mode + trade type selection ── */
   const filteredData = useMemo(() => {

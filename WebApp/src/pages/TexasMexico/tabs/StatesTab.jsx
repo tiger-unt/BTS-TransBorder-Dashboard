@@ -302,7 +302,7 @@ export default function StatesTab({
     const stateTotals = new Map()
     data.forEach((d) => {
       if (!d.MexState || d.MexState === 'Unknown') return
-      stateTotals.set(d.MexState, (stateTotals.get(d.MexState) || 0) + (d.TradeValue || 0))
+      stateTotals.set(d.MexState, (stateTotals.get(d.MexState) || 0) + (d[valueField] || 0))
     })
     const topStates = [...stateTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n]) => n)
     const topSet = new Set(topStates)
@@ -310,7 +310,7 @@ export default function StatesTab({
     const groupTotals = new Map()
     data.forEach((d) => {
       if (!d.CommodityGroup || !topSet.has(d.MexState)) return
-      groupTotals.set(d.CommodityGroup, (groupTotals.get(d.CommodityGroup) || 0) + (d.TradeValue || 0))
+      groupTotals.set(d.CommodityGroup, (groupTotals.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
     })
     const topGroups = [...groupTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n]) => n)
     // Build stacked data
@@ -319,7 +319,7 @@ export default function StatesTab({
       if (!topSet.has(d.MexState) || !d.CommodityGroup) return
       if (!stateGroupMap.has(d.MexState)) stateGroupMap.set(d.MexState, new Map())
       const gm = stateGroupMap.get(d.MexState)
-      gm.set(d.CommodityGroup, (gm.get(d.CommodityGroup) || 0) + (d.TradeValue || 0))
+      gm.set(d.CommodityGroup, (gm.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
     })
     const chartData = topStates.map((state) => {
       const gm = stateGroupMap.get(state) || new Map()
@@ -333,7 +333,7 @@ export default function StatesTab({
     const keys = [...topGroups]
     if (chartData.some((d) => d['Other'] > 0)) keys.push('Other')
     return { data: chartData, keys }
-  }, [commodityMexstateTrade, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter])
+  }, [commodityMexstateTrade, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter, valueField])
 
   return (
     <>

@@ -67,13 +67,13 @@ export default function PortsTab({
       if (d.State !== 'Texas' || !d.Year) return
       if (!byYear.has(d.Year)) byYear.set(d.Year, { year: d.Year, Exports: 0, Imports: 0 })
       const row = byYear.get(d.Year)
-      if (d.TradeType === 'Export') row.Exports += d.TradeValue || 0
-      else if (d.TradeType === 'Import') row.Imports += d.TradeValue || 0
+      if (d.TradeType === 'Export') row.Exports += d[valueField] || 0
+      else if (d.TradeType === 'Import') row.Imports += d[valueField] || 0
     })
     return Array.from(byYear.values())
       .map((d) => ({ year: d.year, value: d.Exports - d.Imports, BalanceSeries: 'Texas' }))
       .sort((a, b) => a.year - b.year)
-  }, [filteredPortsNoYear, showTexas])
+  }, [filteredPortsNoYear, valueField, showTexas])
 
   // Texas mode breakdown (for callout text)
   const txModeBreakdown = useMemo(() => {
@@ -232,20 +232,20 @@ export default function PortsTab({
       const port = d.Port || 'Unknown'
       if (!byPort.has(port)) byPort.set(port, { Port: port, State: d.State || '—', Total: 0, Exports: 0, Imports: 0, WeightLb: null })
       const row = byPort.get(port)
-      row.Total += (d.TradeValue || 0)
-      if (d.TradeType === 'Export') row.Exports += (d.TradeValue || 0)
-      if (d.TradeType === 'Import') row.Imports += (d.TradeValue || 0)
+      row.Total += (d[valueField] || 0)
+      if (d.TradeType === 'Export') row.Exports += (d[valueField] || 0)
+      if (d.TradeType === 'Import') row.Imports += (d[valueField] || 0)
       if (d.WeightLb != null) row.WeightLb = (row.WeightLb || 0) + d.WeightLb
     })
     return Array.from(byPort.values()).sort((a, b) => b.Total - a.Total)
-  }, [filteredPorts])
+  }, [filteredPorts, valueField])
 
   const portTableColumns = [
     { key: 'Port', label: 'Port' },
     { key: 'State', label: 'State' },
-    { key: 'Total', label: 'Total Trade ($)', render: (v) => formatCurrency(v) },
-    { key: 'Exports', label: 'Exports ($)', render: (v) => formatCurrency(v) },
-    { key: 'Imports', label: 'Imports ($)', render: (v) => formatCurrency(v) },
+    { key: 'Total', label: `Total ${metricLabel}`, render: (v) => fmtValue(v) },
+    { key: 'Exports', label: 'Exports', render: (v) => fmtValue(v) },
+    { key: 'Imports', label: 'Imports', render: (v) => fmtValue(v) },
     { key: 'WeightLb', label: 'Weight (lb)', render: (v) => formatWeight(v) },
   ]
 
@@ -256,13 +256,13 @@ export default function PortsTab({
       if (!d.Year) return
       if (!byYear.has(d.Year)) byYear.set(d.Year, { year: d.Year, Exports: 0, Imports: 0 })
       const row = byYear.get(d.Year)
-      if (d.TradeType === 'Export') row.Exports += d.TradeValue || 0
-      else if (d.TradeType === 'Import') row.Imports += d.TradeValue || 0
+      if (d.TradeType === 'Export') row.Exports += d[valueField] || 0
+      else if (d.TradeType === 'Import') row.Imports += d[valueField] || 0
     })
     return Array.from(byYear.values())
       .map((d) => ({ year: d.year, value: d.Exports - d.Imports }))
       .sort((a, b) => a.year - b.year)
-  }, [filteredSummaryNoYear])
+  }, [filteredSummaryNoYear, valueField])
 
   const tradeMax = Math.max(...tradeTrendData.map((d) => d.value), 0)
   const portMax = Math.max(...topPortsData.map((d) => d.value), 0)
@@ -426,7 +426,7 @@ export default function PortsTab({
         const contByType = new Map()
         containerizationTrade.forEach((d) => {
           const label = CONT_LABELS[d.ContCode] || d.ContCode
-          contByType.set(label, (contByType.get(label) || 0) + (d.TradeValue || 0))
+          contByType.set(label, (contByType.get(label) || 0) + (d[valueField] || 0))
         })
         const contDonutData = Array.from(contByType, ([label, value]) => ({ label, value }))
           .filter((d) => d.value > 0)
@@ -438,7 +438,7 @@ export default function PortsTab({
         containerizationTrade.forEach((d) => {
           if (d.TradeType !== 'Export') return
           const label = DF_LABELS[d.DF] || d.DF
-          dfByType.set(label, (dfByType.get(label) || 0) + (d.TradeValue || 0))
+          dfByType.set(label, (dfByType.get(label) || 0) + (d[valueField] || 0))
         })
         const dfDonutData = Array.from(dfByType, ([label, value]) => ({ label, value }))
           .filter((d) => d.value > 0)
@@ -449,7 +449,7 @@ export default function PortsTab({
         containerizationTrade.forEach((d) => {
           if (d.ContCode !== '1') return
           if (!d.Year) return
-          contByYear.set(d.Year, (contByYear.get(d.Year) || 0) + (d.TradeValue || 0))
+          contByYear.set(d.Year, (contByYear.get(d.Year) || 0) + (d[valueField] || 0))
         })
         const contTrend = Array.from(contByYear, ([year, value]) => ({ year, value })).sort((a, b) => a.year - b.year)
 
@@ -462,16 +462,16 @@ export default function PortsTab({
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <ChartCard title="Containerization Status" subtitle="Share of U.S.-Mexico trade by containerization — most surface freight moves non-containerized">
-                  <DonutChart data={contDonutData} nameKey="label" valueKey="value" formatValue={formatCurrency} />
+                  <DonutChart data={contDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} />
                 </ChartCard>
                 <ChartCard title="Export Origin: Domestic vs Re-Exports" subtitle="U.S. exports to Mexico — are goods made in the U.S. or passing through from elsewhere?">
-                  <DonutChart data={dfDonutData} nameKey="label" valueKey="value" formatValue={formatCurrency} />
+                  <DonutChart data={dfDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} />
                 </ChartCard>
               </div>
               {contTrend.length > 2 && (
                 <div className="mt-6">
-                  <ChartCard title="Containerized Trade Growth" subtitle="Value of containerized freight crossing the U.S.-Mexico border by year">
-                    <LineChart data={contTrend} xKey="year" yKey="value" formatValue={formatCurrency} showArea annotations={HISTORICAL_ANNOTATIONS} />
+                  <ChartCard title="Containerized Trade Growth" subtitle={`${metricLabel} of containerized freight crossing the U.S.-Mexico border by year`}>
+                    <LineChart data={contTrend} xKey="year" yKey="value" formatValue={fmtValue} showArea annotations={HISTORICAL_ANNOTATIONS} />
                   </ChartCard>
                 </div>
               )}
@@ -488,8 +488,8 @@ export default function PortsTab({
               </div>
               {showTexas && (() => {
                 const txCont = containerizationTrade.filter((d) => txPorts.has(d.Port))
-                const txTotal = txCont.reduce((s, d) => s + (d.TradeValue || 0), 0)
-                const natTotal = containerizationTrade.reduce((s, d) => s + (d.TradeValue || 0), 0)
+                const txTotal = txCont.reduce((s, d) => s + (d[valueField] || 0), 0)
+                const natTotal = containerizationTrade.reduce((s, d) => s + (d[valueField] || 0), 0)
                 const pct = natTotal > 0 ? ((txTotal / natTotal) * 100).toFixed(0) : 0
                 return txTotal > 0 ? (
                   <div className="mt-4">
