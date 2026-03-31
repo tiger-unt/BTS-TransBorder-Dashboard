@@ -2,7 +2,7 @@
  * Chart registry — maps pageId/chartId to chart component + data builder.
  * Used by EmbedPage to render standalone charts from URL parameters.
  */
-import { formatCurrency, getMetricFormatter } from '@/lib/chartColors'
+import { formatCurrency } from '@/lib/chartColors'
 
 /* ── Data builder helpers ──────────────────────────────────────────────── */
 

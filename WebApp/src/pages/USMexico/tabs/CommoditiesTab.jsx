@@ -3,8 +3,8 @@
  * Uses the commodityDetail dataset (DOT2) filtered to Country='Mexico'.
  */
 import { useMemo, useState, useEffect } from 'react'
-import { formatCurrency, formatNumber } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { formatCurrency } from '@/lib/transborderHelpers'
+import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
@@ -23,7 +23,7 @@ import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 export default function CommoditiesTab({
   filteredCommodities,
   loadDataset,
-  latestYear,
+  _latestYear,
   datasetError,
   metric = 'value',
   showTexas = true,

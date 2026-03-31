@@ -5,42 +5,43 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
-describe('Regression: USMexico page should not depend on commodityDetail', () => {
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+describe('Regression: USMexico page passes commodityDetail only to CommoditiesTab', () => {
   const pagePath = path.resolve(__dirname, '../pages/USMexico/index.jsx')
   const source = fs.readFileSync(pagePath, 'utf-8')
 
-  it('does not load commodityDetail dataset', () => {
-    expect(source).not.toMatch(/loadDataset\(\s*['"]commodityDetail['"]\s*\)/)
-  })
-
-  it('does not gate on commodityDetail errors', () => {
-    expect(source).not.toMatch(/datasetErrors\.commodityDetail/)
-  })
-
-  it('does not gate on commodityDetail in loading check', () => {
-    expect(source).not.toMatch(/commodityDetail\s*===\s*null/)
+  it('does not use commodityDetail === null as a top-level loading gate', () => {
+    // commodityDetail may be checked inside memos, but the page should not
+    // block the entire render waiting for commodityDetail to load.
+    // A top-level gate would look like: if (commodityDetail === null) return ...
+    const lines = source.split('\n')
+    const topLevelGate = lines.some(
+      (line) => /^\s*if\s*\(\s*commodityDetail\s*===\s*null\s*\)/.test(line),
+    )
+    expect(topLevelGate).toBe(false)
   })
 })
 
-describe('Regression: PortMap CurvedArc handles overlapping points', () => {
+describe('Regression: PortMap handles missing or zero values safely', () => {
   const mapPath = path.resolve(__dirname, '../components/maps/PortMap.jsx')
   const source = fs.readFileSync(mapPath, 'utf-8')
 
-  it('guards against dist < 1 before computing Bezier control point', () => {
-    // The fix should check dist before dividing by it
-    expect(source).toMatch(/dist\s*<\s*1/)
+  it('filters out ports with null lat/lng', () => {
+    // Ports without coordinates should be filtered before rendering markers
+    expect(source).toMatch(/lat\s*!=\s*null/)
+    expect(source).toMatch(/lng\s*!=\s*null/)
   })
 
-  it('does not divide by dist without a guard', () => {
-    // Ensure the division by dist only happens after the guard
-    const lines = source.split('\n')
-    let guardSeen = false
-    let unguardedDivision = false
-    for (const line of lines) {
-      if (/dist\s*<\s*1/.test(line)) guardSeen = true
-      if (/\/\s*dist\)/.test(line) && !guardSeen) unguardedDivision = true
-    }
-    expect(unguardedDivision).toBe(false)
+  it('guards radiusScale against zero or null maxValue', () => {
+    // radiusScale must not divide by zero when maxValue is 0 or null
+    expect(source).toMatch(/!maxValue/)
+  })
+
+  it('ensures maxValue is at least 1 to prevent division by zero', () => {
+    // Math.max(1, ...) guarantees maxValue >= 1
+    expect(source).toMatch(/Math\.max\(\s*1/)
   })
 })

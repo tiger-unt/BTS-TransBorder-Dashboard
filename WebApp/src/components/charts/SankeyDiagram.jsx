@@ -77,7 +77,7 @@ export default function SankeyDiagram({
     }
 
     // Links
-    const linkG = g.selectAll('.sankey-link')
+    g.selectAll('.sankey-link')
       .data(graph.links)
       .join('path')
       .attr('class', 'sankey-link')

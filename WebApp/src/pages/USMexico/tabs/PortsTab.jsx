@@ -4,7 +4,7 @@
  */
 import { useMemo, useState, useEffect } from 'react'
 import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import { usePortCoordinates, buildMapPorts } from '@/hooks/usePortMapData'
 import SectionBlock from '@/components/ui/SectionBlock'
@@ -19,7 +19,7 @@ import PortMap from '@/components/maps/PortMap'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
 import { TrendingDown, Globe, Star } from 'lucide-react'
-import { useTexasOverlay, useTexasPorts, TEXAS_COLOR, formatTexasShare } from '@/hooks/useTexasOverlay'
+import { useTexasOverlay, useTexasPorts, TEXAS_COLOR } from '@/hooks/useTexasOverlay'
 import { DL, PAGE_PORT_COLS, PAGE_TRANSBORDER_COLS } from '@/lib/downloadColumns'
 import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 
@@ -43,7 +43,7 @@ export default function PortsTab({
   const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredPorts)
 
   /* ── Texas overlay data ─────────────────────────────────────────────── */
-  const txOverlay = useTexasOverlay(filteredPorts, valueField, showTexas)
+  const _txOverlay = useTexasOverlay(filteredPorts, valueField, showTexas)
   const txPorts = useTexasPorts(filteredPorts, showTexas)
 
   // Texas trade trend data (for overlay line on the trade trends chart)

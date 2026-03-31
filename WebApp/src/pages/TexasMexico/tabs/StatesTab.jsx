@@ -4,8 +4,8 @@
  * Shows choropleth map of Mexico, rankings, trends, and detail table.
  */
 import { useMemo, useEffect, useState } from 'react'
-import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { getAxisFormatter } from '@/lib/transborderHelpers'
+import { CHART_COLORS, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
@@ -29,7 +29,7 @@ export default function StatesTab({
   texasOdStateFlows,
   commodityMexstateTrade,
   loadDataset,
-  latestYear,
+  _latestYear,
   yearFilter,
   tradeTypeFilter,
   modeFilter,
@@ -266,6 +266,48 @@ export default function StatesTab({
     { key: 'Imports', label: 'Imports', render: (v) => fmtValue(v) },
   ]
 
+  /* ── Mexican state commodity specialization (must be above early returns) ── */
+  const mexStateSpecialization = useMemo(() => {
+    if (!commodityMexstateTrade?.length) return { data: [], keys: [] }
+    let data = commodityMexstateTrade
+    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
+    if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
+    if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
+    const stateTotals = new Map()
+    data.forEach((d) => {
+      if (!d.MexState || d.MexState === 'Unknown') return
+      stateTotals.set(d.MexState, (stateTotals.get(d.MexState) || 0) + (d[valueField] || 0))
+    })
+    const topStates = [...stateTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n]) => n)
+    const topSet = new Set(topStates)
+    const groupTotals = new Map()
+    data.forEach((d) => {
+      if (!d.CommodityGroup || !topSet.has(d.MexState)) return
+      groupTotals.set(d.CommodityGroup, (groupTotals.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
+    })
+    const topGroups = [...groupTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n]) => n)
+    const stateGroupMap = new Map()
+    data.forEach((d) => {
+      if (!topSet.has(d.MexState) || !d.CommodityGroup) return
+      if (!stateGroupMap.has(d.MexState)) stateGroupMap.set(d.MexState, new Map())
+      const gm = stateGroupMap.get(d.MexState)
+      gm.set(d.CommodityGroup, (gm.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
+    })
+    const chartData = topStates.map((state) => {
+      const gm = stateGroupMap.get(state) || new Map()
+      const row = { state }
+      topGroups.forEach((g) => { row[g] = gm.get(g) || 0 })
+      let other = 0
+      gm.forEach((v, g) => { if (!topGroups.includes(g)) other += v })
+      if (other > 0) row['Other'] = other
+      return row
+    })
+    const keys = [...topGroups]
+    if (chartData.some((d) => d['Other'] > 0)) keys.push('Other')
+    return { data: chartData, keys }
+  }, [commodityMexstateTrade, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter, valueField])
+
   if (datasetError) {
     return (
       <SectionBlock>
@@ -289,51 +331,6 @@ export default function StatesTab({
 
   const barMax = Math.max(...barData.map((d) => d.value), 0)
   const trendMax = Math.max(...stateTrends.map((d) => d.value), 0)
-
-  /* ── Mexican state commodity specialization ─────────────────────── */
-  const mexStateSpecialization = useMemo(() => {
-    if (!commodityMexstateTrade?.length) return { data: [], keys: [] }
-    let data = commodityMexstateTrade
-    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
-    if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
-    if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
-    if (mexStateFilter?.length) data = data.filter((d) => mexStateFilter.includes(d.MexState))
-    // Top 8 Mexican states by total trade
-    const stateTotals = new Map()
-    data.forEach((d) => {
-      if (!d.MexState || d.MexState === 'Unknown') return
-      stateTotals.set(d.MexState, (stateTotals.get(d.MexState) || 0) + (d[valueField] || 0))
-    })
-    const topStates = [...stateTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n]) => n)
-    const topSet = new Set(topStates)
-    // Top 5 commodity groups
-    const groupTotals = new Map()
-    data.forEach((d) => {
-      if (!d.CommodityGroup || !topSet.has(d.MexState)) return
-      groupTotals.set(d.CommodityGroup, (groupTotals.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
-    })
-    const topGroups = [...groupTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n]) => n)
-    // Build stacked data
-    const stateGroupMap = new Map()
-    data.forEach((d) => {
-      if (!topSet.has(d.MexState) || !d.CommodityGroup) return
-      if (!stateGroupMap.has(d.MexState)) stateGroupMap.set(d.MexState, new Map())
-      const gm = stateGroupMap.get(d.MexState)
-      gm.set(d.CommodityGroup, (gm.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
-    })
-    const chartData = topStates.map((state) => {
-      const gm = stateGroupMap.get(state) || new Map()
-      const row = { state }
-      topGroups.forEach((g) => { row[g] = gm.get(g) || 0 })
-      let other = 0
-      gm.forEach((v, g) => { if (!topGroups.includes(g)) other += v })
-      if (other > 0) row['Other'] = other
-      return row
-    })
-    const keys = [...topGroups]
-    if (chartData.some((d) => d['Other'] > 0)) keys.push('Other')
-    return { data: chartData, keys }
-  }, [commodityMexstateTrade, yearFilter, tradeTypeFilter, modeFilter, mexStateFilter, valueField])
 
   return (
     <>

@@ -3,8 +3,8 @@
  * Uses usStateTrade (DOT1) and mexicanStateTrade (DOT1) datasets.
  */
 import { useMemo, useEffect, useState } from 'react'
-import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { getAxisFormatter } from '@/lib/transborderHelpers'
+import { CHART_COLORS, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
@@ -27,13 +27,13 @@ export default function StatesTab({
   mexicanStateTrade,
   stateCommodityTrade,
   loadDataset,
-  latestYear,
+  _latestYear,
   yearFilter,
   tradeTypeFilter,
   modeFilter,
   stateFilter,
   mexStateFilter,
-  datasetErrors,
+  _datasetErrors,
   metric = 'value',
   showTexas = true,
 }) {

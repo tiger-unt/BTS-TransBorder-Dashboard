@@ -6,7 +6,7 @@ import {
   Globe, Map as MapIcon, Scale, ArrowUpDown, Lightbulb,
 } from 'lucide-react'
 import { useTransborderStore } from '@/stores/transborderStore'
-import { CHART_COLORS, formatCurrency, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { CHART_COLORS, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import { generateInsights } from '@/lib/insightEngine'
 import MetricToggle from '@/components/filters/MetricToggle'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'

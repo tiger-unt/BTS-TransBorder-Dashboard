@@ -10,8 +10,8 @@ import { useSearchParams } from 'react-router-dom'
 import { MapPin, ShoppingCart, Map as MapIcon, ArrowRightLeft, DollarSign, ArrowUpDown, Package, Truck } from 'lucide-react'
 import HeroStardust from '@/components/ui/HeroStardust'
 import { useTransborderStore } from '@/stores/transborderStore'
-import { formatCurrency, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
-import { buildCrossFilterOptions, applyStandardFilters } from '@/lib/transborderHelpers'
+import { getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { buildCrossFilterOptions } from '@/lib/transborderHelpers'
 import DatasetError from '@/components/ui/DatasetError'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import FilterSelect from '@/components/filters/FilterSelect'
@@ -256,7 +256,7 @@ export default function TexasMexicoPage() {
 
   const valueField = getMetricField(metric)
   const fmtValue = getMetricFormatter(metric)
-  const metricLabel = getMetricLabel(metric)
+  const _metricLabel = getMetricLabel(metric)
 
   const stats = useMemo(() => {
     if (!filteredPorts.length || !latestYear) return null

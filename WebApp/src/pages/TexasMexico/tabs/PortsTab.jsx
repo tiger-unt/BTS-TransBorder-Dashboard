@@ -12,7 +12,7 @@ import LineChart from '@/components/charts/LineChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
 import DataTable from '@/components/ui/DataTable'
 import PortMap from '@/components/maps/PortMap'
-import { CHART_COLORS, formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { CHART_COLORS, formatCurrency, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
@@ -31,8 +31,8 @@ export default function PortsTab({
   filteredPortsNoYear,
   filteredMonthly,
   loadDataset,
-  latestYear,
-  datasetError,
+  _latestYear,
+  _datasetError,
   metric = 'value',
   tradeTypeFilter = '',
   modeFilter = [],

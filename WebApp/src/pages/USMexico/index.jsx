@@ -9,7 +9,7 @@ import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { MapPin, ShoppingCart, Map as MapIcon, ArrowRightLeft, DollarSign, ArrowUpRight, ArrowDownLeft, Award, TrendingUp, Star } from 'lucide-react'
 import { useTransborderStore } from '@/stores/transborderStore'
-import { formatCurrency, buildFilterOptions, applyStandardFilters, buildCrossFilterOptions } from '@/lib/transborderHelpers'
+import { applyStandardFilters, buildCrossFilterOptions } from '@/lib/transborderHelpers'
 import { getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import FilterMultiSelect from '@/components/filters/FilterMultiSelect'
@@ -147,7 +147,7 @@ export default function USMexicoPage() {
   const tradeTypeOptions = crossOptions.TradeType || []
   const modeOptions = crossOptions.Mode || []
   const stateOptions = crossOptions.State || []
-  const portStateOptions = crossOptions.PortState || []
+  const _portStateOptions = crossOptions.PortState || []
   const portOptions = crossOptions.Port || []
   const commodityGroupOptions = crossOptions.CommodityGroup || []
   const commodityOptions = crossOptions.Commodity || []
@@ -231,7 +231,7 @@ export default function USMexicoPage() {
   /* ── metric helpers ───────────────────────────────────────────────── */
   const valueField = getMetricField(metric)
   const fmtValue = getMetricFormatter(metric)
-  const metricLabel = getMetricLabel(metric)
+  const _metricLabel = getMetricLabel(metric)
 
   /* ── KPI StatCards ─────────────────────────────────────────────────── */
   const stats = useMemo(() => {

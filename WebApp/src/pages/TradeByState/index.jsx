@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useTransborderStore } from '@/stores/transborderStore'
-import { formatCurrency, getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import { getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
 import MetricToggle from '@/components/filters/MetricToggle'
 import { buildFilterOptions, applyStandardFilters } from '@/lib/transborderHelpers'
 import { useStateCoordinates, buildMapStates } from '@/hooks/usePortMapData'
@@ -53,7 +53,7 @@ function TradeByStateInner({ data }) {
   const [metric, setMetric] = useState('value')
   const valueField = getMetricField(metric)
   const fmtValue = getMetricFormatter(metric)
-  const metricLabel = getMetricLabel(metric)
+  const _metricLabel = getMetricLabel(metric)
 
   /* ── local filters ──────────────────────────────────────────────── */
   const [selectedYears, setSelectedYears] = useState([])

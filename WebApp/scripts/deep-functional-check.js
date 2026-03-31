@@ -62,7 +62,7 @@ async function openRoute(page, hashPath, expectedText) {
   await page.waitForTimeout(1500)
 }
 
-function chartCardLocator(page, titleSubstr) {
+function _chartCardLocator(page, titleSubstr) {
   const heading = page.getByRole('heading', { name: titleSubstr, exact: false }).first()
   return heading.locator('xpath=ancestor::div[contains(@class,"rounded-xl")][1]')
 }
