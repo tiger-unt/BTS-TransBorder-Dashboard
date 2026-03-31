@@ -3,8 +3,8 @@
  * Uses usStateTrade (DOT1) and mexicanStateTrade (DOT1) datasets.
  */
 import { useMemo, useEffect, useState } from 'react'
-import { formatCurrency, getAxisFormatter } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { getAxisFormatter } from '@/lib/transborderHelpers'
+import { CHART_COLORS, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
@@ -27,13 +27,13 @@ export default function StatesTab({
   mexicanStateTrade,
   stateCommodityTrade,
   loadDataset,
-  latestYear,
+  _latestYear,
   yearFilter,
   tradeTypeFilter,
   modeFilter,
   stateFilter,
   mexStateFilter,
-  datasetErrors,
+  _datasetErrors,
   metric = 'value',
   showTexas = true,
 }) {
@@ -196,7 +196,7 @@ export default function StatesTab({
       const st = d.State || 'Unknown'
       const key = `${d.Year}|${st}`
       if (!byYearState.has(key)) byYearState.set(key, { year: d.Year, state: st, value: 0 })
-      byYearState.get(key).value += d.TradeValue || 0
+      byYearState.get(key).value += d[valueField] || 0
     })
     const years = [...new Set(filteredUSNoYear.map((d) => d.Year))].sort((a, b) => a - b)
     if (years.length < 4) return []
@@ -220,7 +220,7 @@ export default function StatesTab({
       .filter((d) => d.value > 0 && d.value < 10000)
       .sort((a, b) => b.value - a.value)
       .slice(0, growthTopN)
-  }, [filteredUSNoYear, growthTopN])
+  }, [filteredUSNoYear, valueField, growthTopN])
 
   /* ── MX state growth rates (earliest vs latest 3-year avg) ─────── */
   const mxStateGrowth = useMemo(() => {
@@ -230,7 +230,7 @@ export default function StatesTab({
       const st = d.MexState || 'Unknown'
       const key = `${d.Year}|${st}`
       if (!byYearState.has(key)) byYearState.set(key, { year: d.Year, state: st, value: 0 })
-      byYearState.get(key).value += d.TradeValue || 0
+      byYearState.get(key).value += d[valueField] || 0
     })
     const years = [...new Set(filteredMXNoYear.map((d) => d.Year))].sort((a, b) => a - b)
     if (years.length < 4) return []
@@ -254,7 +254,7 @@ export default function StatesTab({
       .filter((d) => d.value > 0 && d.value < 10000)
       .sort((a, b) => b.value - a.value)
       .slice(0, growthTopN)
-  }, [filteredMXNoYear, growthTopN])
+  }, [filteredMXNoYear, valueField, growthTopN])
 
   /* ── US detail table ──────────────────────────────────────────────── */
   const usTableData = useMemo(() => {
@@ -309,7 +309,7 @@ export default function StatesTab({
     const stateTotals = new Map()
     data.forEach((d) => {
       if (!d.State || d.State === 'Unknown') return
-      stateTotals.set(d.State, (stateTotals.get(d.State) || 0) + (d.TradeValue || 0))
+      stateTotals.set(d.State, (stateTotals.get(d.State) || 0) + (d[valueField] || 0))
     })
     const topStates = [...stateTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n]) => n)
     const topStateSet = new Set(topStates)
@@ -317,7 +317,7 @@ export default function StatesTab({
     const groupTotals = new Map()
     data.forEach((d) => {
       if (!d.CommodityGroup || !topStateSet.has(d.State)) return
-      groupTotals.set(d.CommodityGroup, (groupTotals.get(d.CommodityGroup) || 0) + (d.TradeValue || 0))
+      groupTotals.set(d.CommodityGroup, (groupTotals.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
     })
     const topGroups = [...groupTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n]) => n)
     // Build stacked data
@@ -326,7 +326,7 @@ export default function StatesTab({
       if (!topStateSet.has(d.State) || !d.CommodityGroup) return
       if (!stateGroupMap.has(d.State)) stateGroupMap.set(d.State, new Map())
       const gm = stateGroupMap.get(d.State)
-      gm.set(d.CommodityGroup, (gm.get(d.CommodityGroup) || 0) + (d.TradeValue || 0))
+      gm.set(d.CommodityGroup, (gm.get(d.CommodityGroup) || 0) + (d[valueField] || 0))
     })
     const chartData = topStates.map((state) => {
       const gm = stateGroupMap.get(state) || new Map()
@@ -340,7 +340,7 @@ export default function StatesTab({
     const keys = [...topGroups]
     if (chartData.some((d) => d['Other'] > 0)) keys.push('Other')
     return { data: chartData, keys }
-  }, [stateCommodityTrade, yearFilter, tradeTypeFilter, modeFilter])
+  }, [stateCommodityTrade, yearFilter, tradeTypeFilter, modeFilter, valueField])
 
   const isLoading = !usStateTrade || !mexicanStateTrade
 

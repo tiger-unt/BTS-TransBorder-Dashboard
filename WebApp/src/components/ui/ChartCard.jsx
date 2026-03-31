@@ -186,7 +186,7 @@ export default function ChartCard({
             Chart components set their own minHeight based on data/legend needs.
             The flex-1 lets this area grow; the chart's inline minHeight drives expansion.
             When fullscreen is active, hide card children to avoid duplicate Leaflet maps. */}
-        <div ref={chartAreaRef} className={`px-3 flex-1 ${footnote && !emptyState ? 'pb-2' : 'pb-5'}`} style={{ minHeight }} role="img" aria-label={title ? `Chart: ${title}` : undefined}>
+        <div ref={chartAreaRef} className={`px-3 flex-1 ${footnote && !emptyState ? 'pb-2' : 'pb-5'}`} style={{ minHeight }} role="figure" aria-label={title ? `Chart: ${title}` : undefined}>
           {emptyState ? (
             <div className="flex items-center justify-center h-48 text-text-secondary italic text-base px-4 text-center">
               {emptyState}

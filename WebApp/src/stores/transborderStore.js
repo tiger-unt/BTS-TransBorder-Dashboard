@@ -39,7 +39,8 @@ function normalizeRow(d) {
   for (const key of NUMERIC_FIELDS) {
     if (key in out) {
       const v = out[key]
-      out[key] = v === null || v === '' ? null : +v
+      const num = +v
+      out[key] = v === null || v === '' || !Number.isFinite(num) ? null : num
     }
   }
   for (const key of STRING_FIELDS) {
@@ -76,7 +77,7 @@ function getOrReplaceController(key) {
 
 export const useTransborderStore = create((set, get) => ({
   // Data — usTransborder loaded at init, rest lazy
-  usTransborder: [],
+  usTransborder: null,
   usMexicoPorts: null,
   usCanadaPorts: null,
   texasMexicoPorts: null,

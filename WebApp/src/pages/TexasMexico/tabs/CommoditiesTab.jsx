@@ -16,7 +16,7 @@ import DivergingBarChart from '@/components/charts/DivergingBarChart'
 import BarChartRace from '@/components/charts/BarChartRace'
 import InsightCallout from '@/components/ui/InsightCallout'
 import { Factory, Play, Pause, SkipBack, SkipForward, ArrowRight, TrendingDown, Truck } from 'lucide-react'
-import { formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { formatCurrency, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
@@ -36,10 +36,6 @@ export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTr
   const subsetLabel = getDataSubsetLabel(filteredCommodities, { tradeTypeFilter, modeFilter })
   const weightAllNA = metric === 'weight' && isAllSurfaceExports(filteredCommodities || [])
   const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filteredCommodities || [])
-
-  if (datasetError) {
-    return <DatasetError datasetName="Commodity Data" error={datasetError} onRetry={() => loadDataset('texasMexicoCommodities')} />
-  }
 
   const [treemapDrill, setTreemapDrill] = useState(null)
   const [treemapView, setTreemapView] = useState('groups') // 'groups' | 'commodities'
@@ -436,7 +432,11 @@ export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTr
     return { data, keys }
   }, [filteredCommodities, valueField])
 
-  /* ── spinner while loading ───────────────────────────────────────── */
+  /* ── early returns (after all hooks) ─────────────────────────────── */
+  if (datasetError) {
+    return <DatasetError datasetName="Commodity Data" error={datasetError} onRetry={() => loadDataset('texasMexicoCommodities')} />
+  }
+
   if (!filteredCommodities) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">

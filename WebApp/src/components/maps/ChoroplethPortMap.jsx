@@ -58,7 +58,7 @@ function useGeoJSON(url) {
 }
 
 /* ── Load multiple GeoJSON files ─────────────────────────────────────── */
-function useMultiGeoJSON(urls) {
+function _useMultiGeoJSON(urls) {
   const results = urls.map(useGeoJSON)
   const loading = results.some((r) => r.loading)
   return { results, loading }
@@ -512,7 +512,7 @@ export default function ChoroplethPortMap({
       if (flowMode === 'via-ports') {
         // State → Port → Destination (two-hop arcs through ports)
         const usedPorts = new Set()
-        for (const [destName, totalVal] of topDests) {
+        for (const [destName, _totalVal] of topDests) {
           const destCoord = allCentroids[destName]
           if (!destCoord) continue
           const portBreakdown = destViaPort.get(destName) || new Map()

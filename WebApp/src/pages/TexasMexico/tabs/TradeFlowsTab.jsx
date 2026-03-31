@@ -3,8 +3,7 @@
  * Choropleth flow map + bar chart + Sankey + heatmap.
  */
 import { useState, useMemo, useEffect } from 'react'
-import { formatCurrency } from '@/lib/transborderHelpers'
-import { formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'
@@ -66,7 +65,7 @@ export default function TradeFlowsTab({
   }, [filteredNoYear, yearFilter])
 
   const filters = { tradeTypeFilter, modeFilter }
-  const subsetLabel = getDataSubsetLabel(filteredNoYear, filters)
+  const _subsetLabel = getDataSubsetLabel(filteredNoYear, filters)
   const weightAllNA = metric === 'weight' && isAllSurfaceExports(filtered)
   const weightPartial = !weightAllNA && metric === 'weight' && hasSurfaceExports(filtered)
   const subsetLabelWithYear = getDataSubsetLabel(filtered, filters)

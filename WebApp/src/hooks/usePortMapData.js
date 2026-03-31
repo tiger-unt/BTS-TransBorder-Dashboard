@@ -16,17 +16,29 @@ function useCoordFile(filename) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}data/${filename}`)
+    const controller = new AbortController()
+    const timeout = AbortSignal.timeout(30_000)
+    const signal = AbortSignal.any([controller.signal, timeout])
+
+    fetch(`${import.meta.env.BASE_URL}data/${filename}`, { signal })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
       .then(setPortCoords)
       .catch((err) => {
-        console.error(`Failed to load ${filename}:`, err)
-        setError(err.message || 'Unknown error')
+        if (err.name === 'AbortError') return
+        if (err.name === 'TimeoutError') {
+          console.error(`Timed out loading ${filename}`)
+          setError('Request timed out')
+        } else {
+          console.error(`Failed to load ${filename}:`, err)
+          setError(err.message || 'Unknown error')
+        }
         setPortCoords({})
       })
+
+    return () => controller.abort()
   }, [filename])
 
   return { portCoords, portCoordsError: error }

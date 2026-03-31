@@ -3,8 +3,8 @@
  * Uses the commodityDetail dataset (DOT2) filtered to Country='Mexico'.
  */
 import { useMemo, useState, useEffect } from 'react'
-import { formatCurrency, formatNumber } from '@/lib/transborderHelpers'
-import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { formatCurrency } from '@/lib/transborderHelpers'
+import { CHART_COLORS, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
@@ -23,7 +23,7 @@ import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 export default function CommoditiesTab({
   filteredCommodities,
   loadDataset,
-  latestYear,
+  _latestYear,
   datasetError,
   metric = 'value',
   showTexas = true,
@@ -58,8 +58,8 @@ export default function CommoditiesTab({
     const natByGroup = new Map()
     data.forEach((d) => {
       const grp = d.CommodityGroup || 'Other'
-      natByGroup.set(grp, (natByGroup.get(grp) || 0) + (d.TradeValue || 0))
-      if (d.State === 'Texas') txByGroup.set(grp, (txByGroup.get(grp) || 0) + (d.TradeValue || 0))
+      natByGroup.set(grp, (natByGroup.get(grp) || 0) + (d[valueField] || 0))
+      if (d.State === 'Texas') txByGroup.set(grp, (txByGroup.get(grp) || 0) + (d[valueField] || 0))
     })
 
     const txTotal = [...txByGroup.values()].reduce((s, v) => s + v, 0)
@@ -74,7 +74,7 @@ export default function CommoditiesTab({
         share: nat > 0 ? ((txByGroup.get(grp) || 0) / nat * 100).toFixed(0) : 0,
       }))
     return { txTotal, natTotal, share: natTotal > 0 ? txTotal / natTotal : 0, topGroups }
-  }, [showTexas, stateCommodityTrade, yearFilter, tradeTypeFilter, modeFilter])
+  }, [showTexas, stateCommodityTrade, yearFilter, tradeTypeFilter, modeFilter, valueField])
 
   /* ── all years for trend range filter ─────────────────────────────── */
   const allCommodityYears = useMemo(() => {
@@ -184,10 +184,10 @@ export default function CommoditiesTab({
       if (d.Year < trendYearRange.startYear || d.Year > trendYearRange.endYear) return
       const key = `${d.Year}|${grp}`
       if (!byYearGroup.has(key)) byYearGroup.set(key, { year: d.Year, value: 0, CommodityGroup: `TX: ${grp}` })
-      byYearGroup.get(key).value += (d.TradeValue || 0)
+      byYearGroup.get(key).value += (d[valueField] || 0)
     })
     return Array.from(byYearGroup.values()).sort((a, b) => a.year - b.year)
-  }, [showTexas, stateCommodityTrade, groupTrends, tradeTypeFilter, modeFilter, trendYearRange])
+  }, [showTexas, stateCommodityTrade, groupTrends, tradeTypeFilter, modeFilter, trendYearRange, valueField])
 
   // Color overrides for Texas group lines
   const groupTrendColorOverrides = useMemo(() => {

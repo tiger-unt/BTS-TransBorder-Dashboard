@@ -6,8 +6,7 @@
  * 4. Heatmap Matrix — "Explore the full trade matrix"
  */
 import { useState, useMemo, useEffect } from 'react'
-import { formatCurrency } from '@/lib/transborderHelpers'
-import { formatCompact, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'

@@ -62,7 +62,7 @@ async function openRoute(page, hashPath, expectedText) {
   await page.waitForTimeout(1500)
 }
 
-function chartCardLocator(page, titleSubstr) {
+function _chartCardLocator(page, titleSubstr) {
   const heading = page.getByRole('heading', { name: titleSubstr, exact: false }).first()
   return heading.locator('xpath=ancestor::div[contains(@class,"rounded-xl")][1]')
 }
@@ -72,10 +72,11 @@ async function testAllRoutes(page, results) {
   const routes = [
     { path: '/', expect: 'TransBorder Freight Data', name: 'Overview', minSvgs: 2 },
     { path: '/us-mexico', expect: 'Mexico', name: 'US-Mexico', minSvgs: 2 },
-    { path: '/us-mexico/ports', expect: 'Ports of Entry', name: 'US-Mexico Ports', minSvgs: 1 },
-    { path: '/texas-mexico', expect: 'Mexico', name: 'Texas-Mexico', minSvgs: 1 },
+    { path: '/texas-mexico', expect: 'Surface Freight', name: 'Texas-Mexico', minSvgs: 1 },
     { path: '/trade-by-state', expect: 'State', name: 'Trade by State', minSvgs: 2 },
     { path: '/about', expect: 'About', name: 'About', minSvgs: 0 },
+    { path: '/embed/overview/exports-vs-imports', expect: 'TransBorder', name: 'Embed: Exports vs Imports', minSvgs: 1 },
+    { path: '/embed/overview/trade-by-mode', expect: 'Mode', name: 'Embed: Trade by Mode', minSvgs: 1 },
   ]
 
   for (const route of routes) {

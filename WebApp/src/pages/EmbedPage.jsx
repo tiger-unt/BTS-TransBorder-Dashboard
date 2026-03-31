@@ -1,7 +1,8 @@
-import { useMemo, useEffect, lazy, Suspense } from 'react'
+import { useMemo, lazy, Suspense } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTransborderStore } from '@/stores/transborderStore'
 import { CHART_REGISTRY } from '@/lib/chartRegistry'
+import { getMetricField, getMetricFormatter } from '@/lib/chartColors'
 
 const CHART_COMPONENTS = {
   LineChart: lazy(() => import('@/components/charts/LineChart')),
@@ -16,12 +17,14 @@ export default function EmbedPage() {
   const { pageId, chartId } = useParams()
   const [searchParams] = useSearchParams()
 
-  const init = useTransborderStore((s) => s.init)
   const loading = useTransborderStore((s) => s.loading)
   const error = useTransborderStore((s) => s.error)
   const usTransborder = useTransborderStore((s) => s.usTransborder)
 
-  useEffect(() => { init() }, [init])
+  // Metric support: ?metric=weight uses WeightLb, default is TradeValue
+  const metric = searchParams.get('metric') || 'value'
+  const valueField = getMetricField(metric)
+  const formatValue = getMetricFormatter(metric)
 
   // Look up chart config
   const config = CHART_REGISTRY[pageId]?.[chartId]
@@ -53,7 +56,7 @@ export default function EmbedPage() {
     const tradeTypeParam = searchParams.get('tradeType')
     if (tradeTypeParam) {
       const tt = tradeTypeParam.toLowerCase()
-      rows = rows.filter((d) => d.TradeType && d.TradeType.toLowerCase().includes(tt))
+      rows = rows.filter((d) => d.TradeType && d.TradeType.toLowerCase() === tt)
     }
 
     return rows
@@ -62,8 +65,8 @@ export default function EmbedPage() {
   // Build chart data from the registry's build function
   const chartOutput = useMemo(() => {
     if (!config || !filteredData.length) return null
-    return config.build(filteredData)
-  }, [config, filteredData])
+    return config.build(filteredData, valueField)
+  }, [config, filteredData, valueField])
 
   // Loading
   if (loading) {
@@ -115,7 +118,7 @@ export default function EmbedPage() {
     )
   }
 
-  const mergedProps = { ...config.props, ...chartOutput.extraProps, data: chartOutput.data }
+  const mergedProps = { ...config.props, ...chartOutput.extraProps, data: chartOutput.data, formatValue }
 
   return (
     <div className="p-4 h-screen flex flex-col">

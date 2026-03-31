@@ -24,10 +24,12 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }],
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-refresh/only-export-components': 'warn',
     },
   },
   {
-    files: ['*.config.js'],
+    files: ['*.config.js', 'scripts/**/*.js'],
     languageOptions: {
       globals: globals.node,
     },

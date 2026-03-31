@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useTransborderStore } from '@/stores/transborderStore'
-import { formatCurrency } from '@/lib/chartColors'
+import { getMetricField, getMetricFormatter, getMetricLabel } from '@/lib/chartColors'
+import MetricToggle from '@/components/filters/MetricToggle'
 import { buildFilterOptions, applyStandardFilters } from '@/lib/transborderHelpers'
 import { useStateCoordinates, buildMapStates } from '@/hooks/usePortMapData'
 import DashboardLayout from '@/components/layout/DashboardLayout'
@@ -47,6 +48,12 @@ export default function TradeByStatePage() {
 function TradeByStateInner({ data }) {
   /* ── state coordinates for map ─────────────────────────────────── */
   const { portCoords: stateCoords } = useStateCoordinates()
+
+  /* ── metric toggle ──────────────────────────────────────────────── */
+  const [metric, setMetric] = useState('value')
+  const valueField = getMetricField(metric)
+  const fmtValue = getMetricFormatter(metric)
+  const _metricLabel = getMetricLabel(metric)
 
   /* ── local filters ──────────────────────────────────────────────── */
   const [selectedYears, setSelectedYears] = useState([])
@@ -101,12 +108,12 @@ function TradeByStateInner({ data }) {
       const state = d.State || 'Unknown'
       if (!map.has(state)) map.set(state, { State: state, Total: 0, Exports: 0, Imports: 0 })
       const entry = map.get(state)
-      entry.Total += d.TradeValue || 0
-      if (d.TradeType === 'Export') entry.Exports += d.TradeValue || 0
-      if (d.TradeType === 'Import') entry.Imports += d.TradeValue || 0
+      entry.Total += d[valueField] || 0
+      if (d.TradeType === 'Export') entry.Exports += d[valueField] || 0
+      if (d.TradeType === 'Import') entry.Imports += d[valueField] || 0
     }
     return [...map.values()].sort((a, b) => b.Total - a.Total)
-  }, [latestFiltered])
+  }, [latestFiltered, valueField])
 
   /* ── stat cards ─────────────────────────────────────────────────── */
   const totalTrade = useMemo(() => stateAgg.reduce((s, d) => s + d.Total, 0), [stateAgg])
@@ -124,7 +131,7 @@ function TradeByStateInner({ data }) {
     const totals = new Map()
     for (const d of filteredNoYear) {
       const state = d.State || 'Unknown'
-      totals.set(state, (totals.get(state) || 0) + (d.TradeValue || 0))
+      totals.set(state, (totals.get(state) || 0) + (d[valueField] || 0))
     }
     const top5 = [...totals.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -139,18 +146,18 @@ function TradeByStateInner({ data }) {
       if (!top5Set.has(state)) continue
       const key = `${d.Year}-${state}`
       if (!map.has(key)) map.set(key, { Year: d.Year, State: state, TradeValue: 0 })
-      map.get(key).TradeValue += d.TradeValue || 0
+      map.get(key).TradeValue += d[valueField] || 0
     }
     return [...map.values()].sort((a, b) => a.Year - b.Year)
-  }, [filteredNoYear])
+  }, [filteredNoYear, valueField])
 
   /* ── data table ─────────────────────────────────────────────────── */
-  const tableColumns = [
+  const tableColumns = useMemo(() => [
     { key: 'State', label: 'State' },
-    { key: 'Total', label: 'Total', format: formatCurrency },
-    { key: 'Exports', label: 'Exports', format: formatCurrency },
-    { key: 'Imports', label: 'Imports', format: formatCurrency },
-  ]
+    { key: 'Total', label: 'Total', format: fmtValue },
+    { key: 'Exports', label: 'Exports', format: fmtValue },
+    { key: 'Imports', label: 'Imports', format: fmtValue },
+  ], [fmtValue])
 
   /* ── active filter tracking ─────────────────────────────────────── */
   const activeCount =
@@ -203,6 +210,7 @@ function TradeByStateInner({ data }) {
 
   const filterControls = (
     <>
+      <MetricToggle value={metric} onChange={setMetric} />
       <FilterMultiSelect
         label="Year"
         value={selectedYears}
@@ -245,7 +253,7 @@ function TradeByStateInner({ data }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 grid-rows-[auto] items-start">
           <StatCard
             label={`Total Trade (${latestYear || '—'})`}
-            value={formatCurrency(totalTrade)}
+            value={fmtValue(totalTrade)}
             icon={DollarSign}
             highlight
             variant="primary"
@@ -265,7 +273,7 @@ function TradeByStateInner({ data }) {
           />
           <StatCard
             label="Top State Value"
-            value={topState ? formatCurrency(topState.Total) : '$0'}
+            value={topState ? fmtValue(topState.Total) : fmtValue(0)}
             trendLabel={topState?.State || '—'}
             icon={TrendingUp}
             delay={240}
@@ -279,7 +287,7 @@ function TradeByStateInner({ data }) {
           <ChartCard title={`Trade by State (${latestYear || '—'})`} subtitle="States sized by total cross-border trade value">
             <StateMap
               states={mapStates}
-              formatValue={formatCurrency}
+              formatValue={fmtValue}
               height="480px"
             />
           </ChartCard>
@@ -291,7 +299,7 @@ function TradeByStateInner({ data }) {
         <ChartCard title={`Top 15 States by Trade Value (${latestYear || '—'})`} subtitle="States ranked by total cross-border trade value"
           downloadData={{ summary: { data: barData, filename: 'top-15-states', columns: { State: 'State', TradeValue: 'Trade Value ($)' } } }}
         >
-          <BarChart data={barData} xKey="State" yKey="TradeValue" horizontal formatValue={formatCurrency} />
+          <BarChart data={barData} xKey="State" yKey="TradeValue" horizontal formatValue={fmtValue} />
         </ChartCard>
       </SectionBlock>
 
@@ -303,7 +311,7 @@ function TradeByStateInner({ data }) {
             detail: { data: filteredNoYear, filename: 'state-trends-detail', columns: PAGE_STATE_COLS },
           }}
         >
-          <LineChart data={trendData} xKey="Year" yKey="TradeValue" seriesKey="State" formatValue={formatCurrency} annotations={HISTORICAL_ANNOTATIONS} />
+          <LineChart data={trendData} xKey="Year" yKey="TradeValue" seriesKey="State" formatValue={fmtValue} annotations={HISTORICAL_ANNOTATIONS} />
         </ChartCard>
       </SectionBlock>
 

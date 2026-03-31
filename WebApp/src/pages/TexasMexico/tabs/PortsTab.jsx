@@ -12,7 +12,7 @@ import LineChart from '@/components/charts/LineChart'
 import StackedBarChart from '@/components/charts/StackedBarChart'
 import DataTable from '@/components/ui/DataTable'
 import PortMap from '@/components/maps/PortMap'
-import { CHART_COLORS, formatCurrency, formatNumber, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, isSurfaceExport, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
+import { CHART_COLORS, formatCurrency, formatWeight, getMetricField, getMetricFormatter, getMetricLabel, getDataSubsetLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
 import WeightCaveatBanner from '@/components/ui/WeightCaveatBanner'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
@@ -31,8 +31,8 @@ export default function PortsTab({
   filteredPortsNoYear,
   filteredMonthly,
   loadDataset,
-  latestYear,
-  datasetError,
+  _latestYear,
+  _datasetError,
   metric = 'value',
   tradeTypeFilter = '',
   modeFilter = [],
@@ -247,7 +247,7 @@ export default function PortsTab({
     filteredPortsNoYear.forEach((d) => {
       if (!d.Year || d.Mode !== 'Foreign Trade Zones (FTZs)') return
       if (!byYear.has(d.Year)) byYear.set(d.Year, { year: d.Year, value: 0 })
-      byYear.get(d.Year).value += d.TradeValue || 0
+      byYear.get(d.Year).value += d[valueField] || 0
     })
     const data = Array.from(byYear.values()).filter((d) => d.value > 0).sort((a, b) => a.year - b.year)
     if (data.length < 2) return null
@@ -255,7 +255,7 @@ export default function PortsTab({
     const last = data[data.length - 1].value
     const growth = first > 0 ? ((last / first - 1) * 100).toFixed(0) : 0
     return { data, growth, firstYear: data[0].year, lastYear: data[data.length - 1].year, firstVal: first, lastVal: last }
-  }, [filteredPortsNoYear])
+  }, [filteredPortsNoYear, valueField])
 
   /* ── Port detail table ─────────────────────────────────────────────── */
   const portTableData = useMemo(() => {
@@ -274,7 +274,7 @@ export default function PortsTab({
       if (d.WeightLb != null) row.WeightLb = (row.WeightLb || 0) + d.WeightLb
     })
     return Array.from(byKey.values()).sort((a, b) => b.TradeValue - a.TradeValue)
-  }, [filteredPorts])
+  }, [filteredPorts, valueField])
 
   /* ── Trade balance by year ─────────────────────────────────────── */
   const tradeBalance = useMemo(() => {
@@ -283,8 +283,8 @@ export default function PortsTab({
       if (!d.Year) return
       if (!byYear.has(d.Year)) byYear.set(d.Year, { year: d.Year, Exports: 0, Imports: 0, Balance: 0 })
       const row = byYear.get(d.Year)
-      if (d.TradeType === 'Export') row.Exports += d.TradeValue || 0
-      if (d.TradeType === 'Import') row.Imports += d.TradeValue || 0
+      if (d.TradeType === 'Export') row.Exports += d[valueField] || 0
+      if (d.TradeType === 'Import') row.Imports += d[valueField] || 0
     })
     const result = []
     byYear.forEach((row) => {
@@ -292,7 +292,7 @@ export default function PortsTab({
       result.push({ year: row.year, value: row.Balance, TradeType: 'Trade Balance' })
     })
     return result.sort((a, b) => a.year - b.year)
-  }, [filteredPortsNoYear])
+  }, [filteredPortsNoYear, valueField])
 
   /* ── Laredo share of total trade ─────────────────────────────── */
   const laredoShare = useMemo(() => {
@@ -301,13 +301,13 @@ export default function PortsTab({
       if (!d.Year) return
       if (!byYear.has(d.Year)) byYear.set(d.Year, { total: 0, laredo: 0 })
       const row = byYear.get(d.Year)
-      row.total += d.TradeValue || 0
-      if (d.Port === 'Laredo') row.laredo += d.TradeValue || 0
+      row.total += d[valueField] || 0
+      if (d.Port === 'Laredo') row.laredo += d[valueField] || 0
     })
     return Array.from(byYear, ([year, row]) => ({
       year, value: row.total > 0 ? (row.laredo / row.total) * 100 : 0,
     })).sort((a, b) => a.year - b.year)
-  }, [filteredPortsNoYear])
+  }, [filteredPortsNoYear, valueField])
 
   const tableColumns = [
     { key: 'Year', label: 'Year' },
