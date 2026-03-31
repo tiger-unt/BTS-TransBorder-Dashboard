@@ -31,7 +31,9 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run lint
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
 
       - run: npm run test
 

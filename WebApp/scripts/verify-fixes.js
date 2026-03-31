@@ -75,7 +75,6 @@ async function run() {
   await txMxPage.screenshot({ path: path.join(SCREENSHOT_DIR, '03-txmx-value.png'), fullPage: false })
 
   // Check KPI cards are visible
-  const statCards = await txMxPage.locator('[class*="stat-card"], [class*="StatCard"]').count()
   const kpiText = await txMxPage.locator('text=Top Mode').first()
   if (await kpiText.isVisible()) {
     pass('TexasMexico: Top Mode KPI visible')
