@@ -12,6 +12,7 @@ import TopNSelector from '@/components/filters/TopNSelector'
 import SectionBlock from '@/components/ui/SectionBlock'
 import ChartCard from '@/components/ui/ChartCard'
 import BarChart from '@/components/charts/BarChart'
+import LineChart from '@/components/charts/LineChart'
 import SankeyDiagram from '@/components/charts/SankeyDiagram'
 import HeatmapTable from '@/components/charts/HeatmapTable'
 import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
@@ -159,6 +160,39 @@ export default function TradeFlowsTab({
     return { rowLabels, colLabels, cells }
   }, [filtered, valueField])
 
+  /* ── Texas annual trade trend (for Texas Lens overlay) ──────────── */
+  const txTrendData = useMemo(() => {
+    if (!showTexas || !filteredNoYear.length) return []
+    const txData = filteredNoYear.filter((d) => d.State === 'Texas')
+    if (!txData.length) return []
+    const byYear = new Map()
+    txData.forEach((d) => {
+      byYear.set(d.Year, (byYear.get(d.Year) || 0) + (d[valueField] || 0))
+    })
+    return Array.from(byYear, ([year, value]) => ({ year, value }))
+      .sort((a, b) => a.year - b.year)
+  }, [showTexas, filteredNoYear, valueField])
+
+  /* ── Texas top Mexican state corridors ──────────────────────────── */
+  const txCorridorData = useMemo(() => {
+    if (!showTexas || !filtered.length) return []
+    const txData = filtered.filter((d) => d.State === 'Texas')
+    if (!txData.length) return []
+    const byMxState = new Map()
+    txData.forEach((d) => {
+      const mx = d.MexState || 'Unknown'
+      byMxState.set(mx, (byMxState.get(mx) || 0) + (d[valueField] || 0))
+    })
+    return Array.from(byMxState, ([label, value]) => ({ label, value }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+  }, [showTexas, filtered, valueField])
+
+  const txTopCorridorPct = txCorridorData.length > 0
+    ? ((txCorridorData[0].value / txCorridorData.reduce((s, d) => s + d.value, 0)) * 100).toFixed(0)
+    : '0'
+
   if (datasetError) {
     return (
       <SectionBlock>
@@ -241,6 +275,26 @@ export default function TradeFlowsTab({
         </div>
       </SectionBlock>
 
+      {/* Texas Trade Over Time */}
+      {showTexas && txTrendData.length > 0 && (
+        <SectionBlock>
+          <div className="max-w-7xl mx-auto">
+            <ChartCard
+              title="Texas Trade Over Time"
+              subtitle={`Annual export ${metricLabel.toLowerCase()} flowing through Texas (export records only)`}
+            >
+              <LineChart
+                data={txTrendData}
+                xKey="year"
+                yKey="value"
+                formatValue={fmtValue}
+                color={TEXAS_COLOR}
+              />
+            </ChartCard>
+          </div>
+        </SectionBlock>
+      )}
+
       {/* Section 2: Trading Partners */}
       <SectionBlock>
         <ChartCard
@@ -271,6 +325,33 @@ export default function TradeFlowsTab({
           </SectionBlock>
         )
       })()}
+
+      {/* Texas Trade Corridors — Texas's top Mexican state partners */}
+      {showTexas && txCorridorData.length > 0 && (
+        <SectionBlock>
+          <div className="max-w-7xl mx-auto">
+            <ChartCard
+              title="Texas's Top Mexican State Partners"
+              subtitle={`Where does Texas's cross-border trade go? Top Mexican states by ${metricLabel.toLowerCase()}`}
+            >
+              <BarChart
+                data={txCorridorData}
+                horizontal
+                formatValue={fmtValue}
+                maxBars={10}
+                color={TEXAS_COLOR}
+              />
+            </ChartCard>
+            <div className="mt-4">
+              <InsightCallout
+                finding={`Texas's trade with Mexico is concentrated: the top corridor is Texas ↔ ${txCorridorData[0]?.label ?? '—'}, which alone accounts for ${txTopCorridorPct}% of Texas's total trade across these top corridors.`}
+                icon={Star}
+                variant="texas"
+              />
+            </div>
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Section 3: Trade Routes (Sankey Diagram) */}
       <SectionBlock alt>

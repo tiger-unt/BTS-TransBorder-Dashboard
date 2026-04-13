@@ -416,6 +416,7 @@ export default function StatesTab({
               zoom={5}
               height="400px"
               title="Mexican States"
+              highlightFeature={showTexas ? 'Nuevo León' : null}
             />
           </ChartCard>
         </div>
@@ -436,7 +437,7 @@ export default function StatesTab({
             <BarChart data={usBarData} xKey="label" yKey="value" horizontal formatY={getAxisFormatter(usBarMax, axisPrefix, axisSuffix)} color={CHART_COLORS[0]} colorAccessor={showTexas ? (d) => d.label === 'Texas' ? TEXAS_COLOR : CHART_COLORS[0] : undefined} />
           </ChartCard>
           <ChartCard title={`Top ${mxTopN} Mexican States`} subtitle={`Ranked by ${metricLabel.toLowerCase()} with the U.S.`} headerRight={<TopNSelector value={mxTopN} onChange={setMxTopN} />}>
-            <BarChart data={mxBarData} xKey="label" yKey="value" horizontal formatY={getAxisFormatter(mxBarMax, axisPrefix, axisSuffix)} color={CHART_COLORS[3]} />
+            <BarChart data={mxBarData} xKey="label" yKey="value" horizontal formatY={getAxisFormatter(mxBarMax, axisPrefix, axisSuffix)} color={CHART_COLORS[3]} colorAccessor={showTexas ? (d) => ['Nuevo León', 'Chihuahua', 'Tamaulipas'].includes(d.label) ? TEXAS_COLOR : CHART_COLORS[3] : undefined} />
           </ChartCard>
         </div>
       </SectionBlock>
@@ -461,13 +462,31 @@ export default function StatesTab({
         )
       })()}
 
+      {/* Mexican state context for Texas Lens */}
+      {showTexas && mxBarData.length > 0 && (() => {
+        const texasPartners = ['Nuevo León', 'Chihuahua', 'Tamaulipas']
+        const partnersInData = texasPartners.filter(s => mxBarData.some(d => d.label === s))
+        if (!partnersInData.length) return null
+        return (
+          <SectionBlock>
+            <div className="max-w-7xl mx-auto">
+              <InsightCallout
+                finding={`Nuevo León, Chihuahua, and Tamaulipas (highlighted in orange on the Mexican chart) are Texas's primary trading partners — together they carry the bulk of Texas's cross-border commerce. Nuevo León alone, home to Monterrey's industrial hub, anchors the Laredo corridor.`}
+                icon={Star}
+                variant="texas"
+              />
+            </div>
+          </SectionBlock>
+        )
+      })()}
+
       {/* US State Trends + MX State Trends */}
       <SectionBlock alt>
         <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-          <ChartCard title={`Top ${usTrendTopN} U.S. State Trends`} subtitle={`Annual ${metricLabel.toLowerCase()} with Mexico`} headerRight={<><TopNSelector value={usTrendTopN} onChange={setUsTrendTopN} /><YearRangeFilter years={allUSYears} value={usTrendYearRange} onChange={setUsTrendYearRange} /></>}>
+          <ChartCard title={`Top ${usTrendTopN} U.S. State Trends`} subtitle={`Annual ${metricLabel.toLowerCase()} with Mexico`} headerRight={<><TopNSelector value={usTrendTopN} onChange={setUsTrendTopN} /><YearRangeFilter years={allUSYears} startYear={usTrendYearRange.startYear} endYear={usTrendYearRange.endYear} onChange={setUsTrendYearRange} /></>}>
             <LineChart data={usStateTrends} xKey="year" yKey="value" seriesKey="State" formatY={getAxisFormatter(usTrendMax, axisPrefix, axisSuffix)} annotations={HISTORICAL_ANNOTATIONS} colorOverrides={showTexas ? { Texas: TEXAS_COLOR } : undefined} />
           </ChartCard>
-          <ChartCard title={`Top ${mxTrendTopN} Mexican State Trends`} subtitle={`Annual ${metricLabel.toLowerCase()} with the U.S.`} headerRight={<><TopNSelector value={mxTrendTopN} onChange={setMxTrendTopN} /><YearRangeFilter years={allMXYears} value={mxTrendYearRange} onChange={setMxTrendYearRange} /></>}>
+          <ChartCard title={`Top ${mxTrendTopN} Mexican State Trends`} subtitle={`Annual ${metricLabel.toLowerCase()} with the U.S.`} headerRight={<><TopNSelector value={mxTrendTopN} onChange={setMxTrendTopN} /><YearRangeFilter years={allMXYears} startYear={mxTrendYearRange.startYear} endYear={mxTrendYearRange.endYear} onChange={setMxTrendYearRange} /></>}>
             <LineChart data={mxStateTrends} xKey="year" yKey="value" seriesKey="MexState" formatY={getAxisFormatter(mxTrendMax, axisPrefix, axisSuffix)} annotations={HISTORICAL_ANNOTATIONS} />
           </ChartCard>
         </div>

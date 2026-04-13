@@ -71,7 +71,7 @@ export default function CommoditiesTab({
         group: grp,
         national: nat,
         texas: txByGroup.get(grp) || 0,
-        share: nat > 0 ? ((txByGroup.get(grp) || 0) / nat * 100).toFixed(0) : 0,
+        share: nat > 0 ? Math.round((txByGroup.get(grp) || 0) / nat * 100) : 0,
       }))
     return { txTotal, natTotal, share: natTotal > 0 ? txTotal / natTotal : 0, topGroups }
   }, [showTexas, stateCommodityTrade, yearFilter, tradeTypeFilter, modeFilter, valueField])
@@ -344,6 +344,53 @@ export default function CommoditiesTab({
         </SectionBlock>
       )}
 
+      {/* Texas Contribution by Commodity Group */}
+      {showTexas && txCommodityGroupData && txCommodityGroupData.topGroups.length > 0 && (
+        <SectionBlock>
+          <div className="max-w-7xl mx-auto">
+            <ChartCard
+              title="Texas Contribution by Commodity Group"
+              subtitle="Texas's share of each top commodity group — how much of each category flows through Texas"
+            >
+              <BarChart
+                data={txCommodityGroupData.topGroups.map((g) => ({
+                  label: g.group,
+                  value: g.share,
+                }))}
+                xKey="label"
+                yKey="value"
+                horizontal
+                formatValue={(v) => `${v}%`}
+                color={TEXAS_COLOR}
+              />
+              {/* Compact comparison table */}
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-fit text-sm border-collapse">
+                  <thead>
+                    <tr className="text-left text-text-secondary border-b border-border">
+                      <th className="pr-6 py-2 font-medium">Commodity Group</th>
+                      <th className="pr-6 py-2 font-medium text-right">National Total</th>
+                      <th className="pr-6 py-2 font-medium text-right" style={{ color: TEXAS_COLOR }}>Texas Total</th>
+                      <th className="py-2 font-medium text-right" style={{ color: TEXAS_COLOR }}>TX Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {txCommodityGroupData.topGroups.map((g) => (
+                      <tr key={g.group} className="border-b border-border/50 hover:bg-surface-alt/50">
+                        <td className="pr-6 py-2">{g.group}</td>
+                        <td className="pr-6 py-2 text-right tabular-nums">{fmtValue(g.national)}</td>
+                        <td className="pr-6 py-2 text-right tabular-nums font-medium" style={{ color: TEXAS_COLOR }}>{fmtValue(g.texas)}</td>
+                        <td className="py-2 text-right tabular-nums font-medium" style={{ color: TEXAS_COLOR }}>{g.share}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          </div>
+        </SectionBlock>
+      )}
+
       {/* Top N Commodities */}
       <SectionBlock>
         <ChartCard
@@ -427,7 +474,7 @@ export default function CommoditiesTab({
 
       {/* Detail Table */}
       <SectionBlock>
-        <ChartCard title="Commodity Detail" subtitle="Trade by commodity, year, and trade type">
+        <ChartCard title="Commodity Detail" subtitle={showTexas ? `National commodity breakdown — for Texas-specific share by group, see the "Texas Contribution" chart above` : "Trade by commodity, year, and trade type"}>
           <DataTable data={tableData} columns={tableColumns} pageSize={15} fullWidth />
         </ChartCard>
       </SectionBlock>

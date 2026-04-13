@@ -7,7 +7,7 @@
  */
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { MapPin, ShoppingCart, Map as MapIcon, ArrowRightLeft, DollarSign, ArrowUpRight, ArrowDownLeft, Award, TrendingUp, Star } from 'lucide-react'
+import { MapPin, ShoppingCart, Map as MapIcon, ArrowRightLeft, DollarSign, ArrowUpRight, ArrowDownLeft, Award, Star } from 'lucide-react'
 import { useTransborderStore } from '@/stores/transborderStore'
 import { applyStandardFilters, buildCrossFilterOptions } from '@/lib/transborderHelpers'
 import { getMetricField, getMetricFormatter, getMetricLabel, hasSurfaceExports, isAllSurfaceExports } from '@/lib/chartColors'
@@ -319,9 +319,11 @@ export default function USMexicoPage() {
       <MetricToggle value={metric} onChange={setMetric} />
       <div className="flex flex-col gap-1 min-w-0 w-full">
         <span className="text-base font-medium text-text-secondary uppercase tracking-wider">Texas Lens</span>
+        <p className="text-xs text-text-tertiary leading-tight">Overlays Texas share across all charts</p>
         <button
           type="button"
           onClick={toggleTexas}
+          title={showTexas ? 'Texas Lens is ON — overlays Texas data on all charts. Click to turn off.' : 'Texas Lens is OFF — click to add Texas-specific overlays, callouts, and color highlights to all charts.'}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
             showTexas
               ? 'bg-[#bf5700] text-white border-[#bf5700]'
@@ -453,7 +455,7 @@ export default function USMexicoPage() {
           <StatCard
             label={`Texas Share (${latestYear || '---'})`}
             value={stats ? `${(stats.txShare * 100).toFixed(1)}%` : '---'}
-            highlight icon={TrendingUp} delay={300}
+            highlight icon={Star} delay={300}
           />
           <StatCard
             label={`Active Ports (${latestYear || '---'})`}
