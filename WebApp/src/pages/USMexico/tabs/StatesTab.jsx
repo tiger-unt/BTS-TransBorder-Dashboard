@@ -125,7 +125,9 @@ export default function StatesTab({
       const st = d.State || 'Unknown'
       byState.set(st, (byState.get(st) || 0) + (d[valueField] || 0))
     })
-    return Array.from(byState, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+    return Array.from(byState, ([name, value]) => ({ name, value }))
+      .filter((d) => d.name !== 'Unknown' && d.name !== 'State Unknown')
+      .sort((a, b) => b.value - a.value)
   }, [filteredUS, valueField])
 
   /* ── Mexican state choropleth data ────────────────────────────────── */
@@ -267,7 +269,9 @@ export default function StatesTab({
       if (d.TradeType === 'Export') row.Exports += (d[valueField] || 0)
       if (d.TradeType === 'Import') row.Imports += (d[valueField] || 0)
     })
-    return Array.from(byState.values()).sort((a, b) => b.Total - a.Total)
+    return Array.from(byState.values())
+      .filter((d) => d.State !== 'Unknown' && d.State !== 'State Unknown')
+      .sort((a, b) => b.Total - a.Total)
   }, [filteredUS, valueField])
 
   /* ── MX detail table ──────────────────────────────────────────────── */
@@ -294,8 +298,7 @@ export default function StatesTab({
   const mxTableColumns = [
     { key: 'State', label: 'Mexican State' },
     { key: 'Total', label: `Total ${metricLabel}`, render: (v) => fmtValue(v) },
-    { key: 'Exports', label: 'Exports', render: (v) => fmtValue(v) },
-    { key: 'Imports', label: 'Imports', render: (v) => fmtValue(v) },
+    { key: 'Exports', label: 'Exports (U.S. → Mexico)', render: (v) => fmtValue(v) },
   ]
 
   /* ── State-by-commodity specialization ── must be above early return for hook order */

@@ -18,6 +18,7 @@ import HeatmapTable from '@/components/charts/HeatmapTable'
 import TradeFlowChoropleth from '@/components/maps/TradeFlowChoropleth'
 import InsightCallout from '@/components/ui/InsightCallout'
 import { TEXAS_COLOR } from '@/hooks/useTexasOverlay'
+import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 import { Star } from 'lucide-react'
 
 export default function TradeFlowsTab({
@@ -289,6 +290,7 @@ export default function TradeFlowsTab({
                 yKey="value"
                 formatValue={fmtValue}
                 color={TEXAS_COLOR}
+                annotations={HISTORICAL_ANNOTATIONS}
               />
             </ChartCard>
           </div>

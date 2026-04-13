@@ -252,7 +252,7 @@ export default function PortsTab({
     const byPort = new Map()
     filteredPorts.forEach((d) => {
       const port = d.Port || 'Unknown'
-      if (!byPort.has(port)) byPort.set(port, { Port: port, State: d.State || '—', Total: 0, Exports: 0, Imports: 0, WeightLb: null })
+      if (!byPort.has(port)) byPort.set(port, { Port: port, PortState: d.PortState || '—', Total: 0, Exports: 0, Imports: 0, WeightLb: null })
       const row = byPort.get(port)
       row.Total += (d[valueField] || 0)
       if (d.TradeType === 'Export') row.Exports += (d[valueField] || 0)
@@ -264,7 +264,7 @@ export default function PortsTab({
 
   const portTableColumns = [
     { key: 'Port', label: 'Port' },
-    { key: 'State', label: 'State' },
+    { key: 'PortState', label: 'Port State' },
     { key: 'Total', label: `Total ${metricLabel}`, render: (v) => fmtValue(v) },
     { key: 'Exports', label: 'Exports', render: (v) => fmtValue(v) },
     { key: 'Imports', label: 'Imports', render: (v) => fmtValue(v) },
@@ -608,7 +608,7 @@ export default function PortsTab({
             detail: { data: filteredPorts, filename: 'us-mexico-ports-raw', columns: PAGE_PORT_COLS },
           }}
         >
-          <DataTable columns={portTableColumns} data={portTableData} rowClassAccessor={showTexas ? (row) => row.State === 'Texas' ? 'bg-[#bf5700]/[0.06] font-medium' : '' : undefined} />
+          <DataTable columns={portTableColumns} data={portTableData} rowClassAccessor={showTexas ? (row) => row.PortState === 'Texas' ? 'bg-[#bf5700]/[0.06] font-medium' : '' : undefined} />
         </ChartCard>
       </SectionBlock>
     </>

@@ -118,9 +118,7 @@ function HeatmapTableInner({
                 zIndex: 30,
                 backgroundColor: STICKY_BG,
               }}
-            >
-              TX Airport
-            </th>
+            ></th>
             {colLabels.map((col, ci) => {
               const isColHL = hovered?.ci === ci
               return (
