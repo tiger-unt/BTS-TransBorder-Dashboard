@@ -231,6 +231,7 @@ export default function InteractiveFlowMap({
       click: (e) => {
         // Stop event from reaching MapClickReset
         e.originalEvent._stopped = true
+        setTooltip(null)
         if (selection?.type === 'state' && selection.name === name) {
           setSelection(null)
         } else {
@@ -393,6 +394,7 @@ export default function InteractiveFlowMap({
                       mouseout: () => setTooltip(null),
                       click: (e) => {
                         e.originalEvent._stopped = true
+                        setTooltip(null)
                         if (selection?.type === 'port' && selection.id === p.portCode) {
                           setSelection(null)
                         } else {

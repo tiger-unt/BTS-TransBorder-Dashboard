@@ -13,7 +13,7 @@
  */
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import {
@@ -145,15 +145,7 @@ export default function StateMap({
                       },
                       mouseout: () => setTooltip(null),
                     }}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <strong>{s.name}</strong>
-                        <br />
-                        {formatValue(s.value)} {metricLabel}
-                      </div>
-                    </Popup>
-                  </CircleMarker>
+                  />
                 )
               })}
           </MapContainer>

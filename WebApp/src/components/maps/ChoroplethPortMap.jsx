@@ -267,6 +267,7 @@ function ChoroplethLayer({
       },
       click: (e) => {
         e.originalEvent._stopped = true
+        setTooltip(null)
         if (selection?.type === 'state' && selection.name === name) {
           setSelection(null)
         } else {
@@ -682,6 +683,7 @@ export default function ChoroplethPortMap({
                       mouseout: () => setTooltip(null),
                       click: (e) => {
                         e.originalEvent._stopped = true
+                        setTooltip(null)
                         if (selection?.type === 'port' && selection.id === p.portCode) {
                           handleSetSelection(null)
                         } else {
@@ -745,6 +747,7 @@ export default function ChoroplethPortMap({
                     },
                     click: (e) => {
                       e.originalEvent._stopped = true
+                      setTooltip(null)
                       setArcSelection(isArcSelected ? null : { originName: arc.originName, destName: arc.destName, srcState: arc.srcState, dstState: arc.dstState, value: arc.value })
                     },
                   }}

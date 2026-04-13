@@ -248,6 +248,7 @@ function ChoroplethLayer({
         },
         click: (e) => {
           e.originalEvent._stopped = true
+          setTooltip(null)
           if (selection?.type === selectionType && selection.name === name) setSelection(null)
           else setSelection({ type: selectionType, name, id: name })
         },
@@ -801,6 +802,7 @@ export default function TradeFlowChoropleth({
                     },
                     click: (e) => {
                       e.originalEvent._stopped = true
+                      setTooltip(null)
                       setArcSelection(isArcSelected ? null : { originName: arc.originName, destName: arc.destName, usEndpoint: arc.usEndpoint, mxEndpoint: arc.mxEndpoint, value: arc.value })
                     },
                   }}
@@ -850,6 +852,7 @@ export default function TradeFlowChoropleth({
                     mouseout: () => setTooltip(null),
                     click: (e) => {
                       e.originalEvent._stopped = true
+                      setTooltip(null)
                       if (selection?.type === 'port' && selection.id === code) handleSetSelection(null)
                       else handleSetSelection({ type: 'port', name: p.name, id: code })
                     },

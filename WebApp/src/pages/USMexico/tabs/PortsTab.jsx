@@ -225,6 +225,28 @@ export default function PortsTab({
     return { data: rows, stackKeys: modes }
   }, [filteredSummaryNoYear, valueField, trendYearRange])
 
+  /* ── Texas mode composition by year (stacked bar — Texas only) ──── */
+  const txModeByYearData = useMemo(() => {
+    if (!showTexas) return null
+    const byYearMode = new Map()
+    const allModes = new Set()
+    filteredPortsNoYear.forEach((d) => {
+      if (d.State !== 'Texas') return
+      const mode = d.Mode || 'Unknown'
+      allModes.add(mode)
+      const key = d.Year
+      if (!byYearMode.has(key)) byYearMode.set(key, { year: key })
+      const row = byYearMode.get(key)
+      row[mode] = (row[mode] || 0) + (d[valueField] || 0)
+    })
+    const modes = [...allModes].sort()
+    const rows = Array.from(byYearMode.values())
+      .sort((a, b) => a.year - b.year)
+      .filter((d) => d.year >= trendYearRange.startYear && d.year <= trendYearRange.endYear)
+    rows.forEach((row) => modes.forEach((m) => { if (!(m in row)) row[m] = 0 }))
+    return rows.length ? { data: rows, stackKeys: modes } : null
+  }, [showTexas, filteredPortsNoYear, valueField, trendYearRange])
+
   /* ── port detail table ────────────────────────────────────────────── */
   const portTableData = useMemo(() => {
     const byPort = new Map()
@@ -351,30 +373,64 @@ export default function PortsTab({
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <ChartCard
             title={`Trade by Mode (${latestYear || '---'})`}
-            subtitle={`Distribution of ${metricLabel.toLowerCase()} across transportation modes`}
+            subtitle={showTexas
+              ? `National totals — Texas share shown in labels; orange bars indicate Texas handles ≥60%`
+              : `Distribution of ${metricLabel.toLowerCase()} across transportation modes`}
             downloadData={{ summary: { data: modeDonutData, filename: 'us-mexico-trade-by-mode', columns: DL.modeRank } }}
           >
-            <BarChart data={modeDonutData} xKey="label" yKey="value" horizontal formatValue={fmtValue} colorAccessor={(d) => CHART_COLORS[modeDonutData.indexOf(d) % CHART_COLORS.length]} />
+            <BarChart
+              data={modeDonutData}
+              xKey="label"
+              yKey="value"
+              horizontal
+              formatValue={fmtValue}
+              colorAccessor={(d) => {
+                if (showTexas) {
+                  const txRow = txModeCompareData.find((t) => t.label === d.label)
+                  const pct = txRow ? Number(txRow.pct) : 0
+                  return pct >= 60 ? TEXAS_COLOR : CHART_COLORS[modeDonutData.indexOf(d) % CHART_COLORS.length]
+                }
+                return CHART_COLORS[modeDonutData.indexOf(d) % CHART_COLORS.length]
+              }}
+              labelAccessor={showTexas ? (d) => {
+                const txRow = txModeCompareData.find((t) => t.label === d.label)
+                return txRow ? `${fmtValue(d.value)}  ·  TX: ${txRow.pct}%` : fmtValue(d.value)
+              } : undefined}
+            />
           </ChartCard>
           <ChartCard
-            title="Mode Composition by Year"
-            subtitle={`How ${metricLabel.toLowerCase()} is distributed across modes over time`}
+            title={showTexas && txModeByYearData ? 'Texas Mode Composition by Year' : 'Mode Composition by Year'}
+            subtitle={showTexas && txModeByYearData
+              ? `How Texas's ${metricLabel.toLowerCase()} is split across modes — toggle off to see national`
+              : `How ${metricLabel.toLowerCase()} is distributed across modes over time`}
             headerRight={<YearRangeFilter years={allYears} startYear={trendYearRange.startYear} endYear={trendYearRange.endYear} onChange={setTrendYearRange} />}
-            downloadData={{ summary: { data: modeByYearData.data, filename: 'us-mexico-mode-by-year' } }}
+            downloadData={{ summary: { data: (showTexas && txModeByYearData ? txModeByYearData.data : modeByYearData.data), filename: showTexas ? 'texas-mode-by-year' : 'us-mexico-mode-by-year' } }}
           >
-            <StackedBarChart data={modeByYearData.data} xKey="year" stackKeys={modeByYearData.stackKeys} formatY={getAxisFormatter(tradeMax, metric === 'weight' ? '' : '$')} formatValue={fmtValue} />
+            <StackedBarChart
+              data={showTexas && txModeByYearData ? txModeByYearData.data : modeByYearData.data}
+              xKey="year"
+              stackKeys={showTexas && txModeByYearData ? txModeByYearData.stackKeys : modeByYearData.stackKeys}
+              formatY={getAxisFormatter(tradeMax, metric === 'weight' ? '' : '$')}
+              formatValue={fmtValue}
+            />
           </ChartCard>
         </div>
-        {showTexas && txModeCompareData.length > 0 && (
-          <div className="mt-6">
-            <ChartCard
-              title={`Texas Contribution by Mode (${latestYear || '---'})`}
-              subtitle="Texas's share of each transportation mode — how much flows through Texas"
-            >
-              <BarChart data={txModeCompareData} xKey="label" yKey="value" horizontal color={TEXAS_COLOR} labelAccessor={(d) => `${fmtValue(d.value)} (${d.pct}%)`} />
-            </ChartCard>
-          </div>
-        )}
+        {showTexas && txModeCompareData.length > 0 && (() => {
+          const pipeline = txModeCompareData.find((d) => d.label === 'Pipeline')
+          const ftz = txModeCompareData.find((d) => d.label === 'Foreign Trade Zones (FTZs)')
+          const truck = txModeCompareData.find((d) => d.label === 'Truck')
+          if (!truck) return null
+          const specialModes = [pipeline && `Pipeline (${pipeline.pct}%)`, ftz && `FTZ (${ftz.pct}%)`].filter(Boolean)
+          return (
+            <div className="mt-6">
+              <InsightCallout
+                finding={`Texas handles ${truck.pct}% of all Truck freight — and is even more dominant in specialized modes: ${specialModes.join(' and ')}. These reflect Texas's unique energy infrastructure and border geography.`}
+                icon={Star}
+                variant="texas"
+              />
+            </div>
+          )
+        })()}
       </SectionBlock>
 
       {/* Top N Ports */}
