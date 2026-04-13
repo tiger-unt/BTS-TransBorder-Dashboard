@@ -29,6 +29,12 @@ Thumbs.db
 # Scratch files
 dreamer-prompt.txt
 
+# Playwright MCP temporary screenshots (deleted after review)
+.playwright-mcp/
+
+# WebApp test-run screenshots
+WebApp/screenshots/
+
 # Python
 __pycache__/
 *.pyc
