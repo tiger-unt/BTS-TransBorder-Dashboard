@@ -111,6 +111,18 @@ function computeCentroids(geojson, nameProperty = 'name') {
   return out
 }
 
+/* ── Custom pane for flow arcs above choropleth ───────────────────────── */
+function ArcPane() {
+  const map = useMap()
+  useEffect(() => {
+    if (!map.getPane('flowArcs')) {
+      const pane = map.createPane('flowArcs')
+      pane.style.zIndex = '620'
+    }
+  }, [map])
+  return null
+}
+
 /* ── Custom pane for ports above choropleth ───────────────────────────── */
 function PortPane() {
   const map = useMap()
@@ -656,6 +668,7 @@ export default function ChoroplethPortMap({
             <ResetZoomButton center={center} zoom={zoom} />
             <MapResizeHandler />
             <TooltipSync mapRef={mapInstanceRef} tooltip={tooltip} setTooltip={setTooltip} />
+            <ArcPane />
             <PortPane />
             <MapClickReset setSelection={setSelection} />
 
@@ -757,6 +770,7 @@ export default function ChoroplethPortMap({
                   opacity: arc.opacity,
                   lineCap: 'round',
                   dashArray: selection?.type === 'port' ? '6 4' : null,
+                  pane: 'flowArcs',
                 }}
                 bubblingMouseEvents={false}
                 eventHandlers={{

@@ -109,6 +109,17 @@ function radiusScale(value, maxValue) {
    Leaflet sub-components
    ═══════════════════════════════════════════════════════════════════ */
 
+function ArcPane() {
+  const map = useMap()
+  useEffect(() => {
+    if (!map.getPane('flowArcs')) {
+      const pane = map.createPane('flowArcs')
+      pane.style.zIndex = '620'
+    }
+  }, [map])
+  return null
+}
+
 function PortPane() {
   const map = useMap()
   useEffect(() => {
@@ -774,6 +785,7 @@ export default function TradeFlowChoropleth({
             <ResetZoomButton center={center} zoom={zoom} />
             <MapResizeHandler />
             <TooltipSync mapRef={mapInstanceRef} tooltip={tooltip} setTooltip={setTooltip} />
+            <ArcPane />
             <PortPane />
             <MapClickReset setSelection={setSelection} />
 
@@ -822,6 +834,7 @@ export default function TradeFlowChoropleth({
                   weight: arc.weight,
                   opacity: arc.opacity,
                   lineCap: 'round',
+                  pane: 'flowArcs',
                 }}
                 bubblingMouseEvents={false}
                 eventHandlers={{
