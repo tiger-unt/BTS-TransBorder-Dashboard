@@ -224,11 +224,13 @@ export default function FilterMultiSelect({
     const idx = visibleOptions.indexOf(val)
     const isFocused = idx === focusIdx
     return (
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- keyboard handled by parent listbox per WAI-ARIA managed-focus pattern
       <div
         key={val}
         ref={(el) => { if (idx >= 0) optionRefs.current[idx] = el }}
         role="option"
         aria-selected={checked}
+        tabIndex={-1}
         onClick={() => toggle(val)}
         onMouseEnter={() => setFocusIdx(idx)}
         className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left cursor-pointer transition-colors ${checked ? 'bg-brand-blue/10 font-medium text-brand-blue' : ''} ${isFocused ? 'bg-brand-blue/10 outline outline-2 outline-brand-blue/30' : 'hover:bg-brand-blue/5'}`}
@@ -293,6 +295,7 @@ export default function FilterMultiSelect({
       role="listbox"
       aria-multiselectable="true"
       aria-label={label}
+      tabIndex={0}
       onKeyDown={handleKeyDown}
       className="fixed z-[9999] bg-white border border-border rounded-lg shadow-lg flex flex-col overflow-hidden"
       style={{
@@ -305,10 +308,12 @@ export default function FilterMultiSelect({
       }}
     >
       {/* All option */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events -- keyboard handled by parent listbox per WAI-ARIA managed-focus pattern */}
       <div
         ref={(el) => { optionRefs.current[0] = el }}
         role="option"
         aria-selected={allSelected}
+        tabIndex={-1}
         onClick={selectAll}
         onMouseEnter={() => setFocusIdx(0)}
         className={`flex-shrink-0 w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left cursor-pointer transition-colors ${allSelected ? 'bg-brand-blue/10 font-medium text-brand-blue' : ''} ${focusIdx === 0 ? 'bg-brand-blue/10 outline outline-2 outline-brand-blue/30' : 'hover:bg-brand-blue/5'}`}

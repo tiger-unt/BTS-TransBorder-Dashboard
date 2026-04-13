@@ -70,6 +70,7 @@ export default function FilterSidebar({ children, onResetAll, activeCount = 0, a
 
   return (
       <aside
+        aria-label="Filters"
         className={`sticky top-0 self-start h-screen flex-shrink-0 flex flex-col z-40
           bg-[#edf1f7] border-l border-border-light shadow-sm
           transition-all duration-300 ease-in-out
@@ -95,6 +96,8 @@ export default function FilterSidebar({ children, onResetAll, activeCount = 0, a
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expand filters' : 'Collapse filters'}
+            aria-expanded={!collapsed}
             className="p-1 rounded-md text-text-secondary hover:text-brand-blue
                        hover:bg-surface-alt transition-all duration-150"
             title={collapsed ? 'Expand filters' : 'Collapse filters'}

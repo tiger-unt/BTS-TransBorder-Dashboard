@@ -81,8 +81,18 @@ export default function EmbedModal({ isOpen, onClose, chartTitle, embedId, pageI
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Embed: ${chartTitle}`}
+        className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6"
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-text-primary">Embed: {chartTitle}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded"><X size={18} /></button>
