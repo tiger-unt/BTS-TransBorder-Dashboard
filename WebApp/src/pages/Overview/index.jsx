@@ -495,58 +495,30 @@ export default function OverviewPage() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-base font-semibold text-text-primary">Mode</span>
-              <button
-                type="button"
-                onClick={() => setModeFilterArr([])}
-                className={`px-2.5 py-1 rounded-full text-sm font-medium border transition-colors ${
-                  modeFilterArr.length === 0
-                    ? 'bg-brand-blue text-white border-brand-blue'
-                    : 'bg-white text-text-secondary border-border-light hover:border-brand-blue/40'
-                }`}
+            <div className="flex items-center gap-3">
+              <label htmlFor="mode-filter" className="text-base font-semibold text-text-primary">
+                Mode
+              </label>
+              <select
+                id="mode-filter"
+                value={modeFilterArr.length === 0 ? '' : modeFilterArr[0]}
+                onChange={(e) => {
+                  if (e.target.value === '') {
+                    setModeFilterArr([])
+                  } else {
+                    setModeFilterArr([e.target.value])
+                  }
+                }}
+                className="rounded-lg border border-border-light bg-white px-3 py-1.5 text-base text-text-primary
+                           shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/40 focus:border-brand-blue"
               >
-                All
-              </button>
-              {modeOptions.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setModeFilterArr((prev) =>
-                    prev.includes(opt) ? prev.filter((m) => m !== opt) : [...prev, opt]
-                  )}
-                  className={`px-2.5 py-1 rounded-full text-sm font-medium border transition-colors ${
-                    modeFilterArr.includes(opt)
-                      ? 'bg-brand-blue text-white border-brand-blue'
-                      : 'bg-white text-text-secondary border-border-light hover:border-brand-blue/40'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+                <option value="">All</option>
+                {modeOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
             <MetricToggle value={metric} onChange={setMetric} />
-          </div>
-
-          {/* Quick presets */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="text-sm text-text-secondary self-center mr-1">Quick view:</span>
-            {[
-              { label: 'Mexico only', action: () => { setCountryFilter('Mexico'); setTradeTypeFilter(''); setModeFilterArr([]) } },
-              { label: 'Canada only', action: () => { setCountryFilter('Canada'); setTradeTypeFilter(''); setModeFilterArr([]) } },
-              { label: 'Truck only', action: () => { setCountryFilter(''); setTradeTypeFilter(''); setModeFilterArr(['Truck']) } },
-              { label: 'Exports only', action: () => { setCountryFilter(''); setTradeTypeFilter('Export'); setModeFilterArr([]) } },
-              { label: 'Reset all', action: () => { setCountryFilter(''); setTradeTypeFilter(''); setModeFilterArr([]); setMetric('value') } },
-            ].map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                onClick={p.action}
-                className="px-3 py-1 rounded-full text-sm font-medium border border-border-light bg-white text-text-secondary hover:border-brand-blue/40 hover:text-brand-blue transition-colors"
-              >
-                {p.label}
-              </button>
-            ))}
           </div>
 
           {stats && (
