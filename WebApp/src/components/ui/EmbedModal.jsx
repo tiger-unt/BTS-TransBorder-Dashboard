@@ -168,8 +168,10 @@ export default function EmbedModal({ isOpen, onClose, chartTitle, embedId, pageI
         {/* Tab buttons */}
         <div role="tablist" aria-label="Export format" className="flex gap-2 mb-4">
           <button
+            id="tab-iframe"
             role="tab"
             aria-selected={tab === 'iframe'}
+            aria-controls="embed-panel"
             onClick={() => handleTabSwitch('iframe')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
               ${tab === 'iframe' ? 'bg-brand-blue text-white' : 'bg-gray-100 text-text-secondary hover:bg-gray-200'}`}
@@ -177,8 +179,10 @@ export default function EmbedModal({ isOpen, onClose, chartTitle, embedId, pageI
             <Code size={14} /> Iframe
           </button>
           <button
+            id="tab-svg"
             role="tab"
             aria-selected={tab === 'svg'}
+            aria-controls="embed-panel"
             onClick={() => handleTabSwitch('svg')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
               ${tab === 'svg' ? 'bg-brand-blue text-white' : 'bg-gray-100 text-text-secondary hover:bg-gray-200'}`}
@@ -188,7 +192,12 @@ export default function EmbedModal({ isOpen, onClose, chartTitle, embedId, pageI
         </div>
 
         {/* Code display */}
-        <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-text-secondary break-all max-h-40 overflow-y-auto">
+        <div
+          id="embed-panel"
+          role="tabpanel"
+          aria-labelledby={tab === 'iframe' ? 'tab-iframe' : 'tab-svg'}
+          className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-text-secondary break-all max-h-40 overflow-y-auto"
+        >
           {tab === 'iframe'
             ? iframeCode
             : svgString

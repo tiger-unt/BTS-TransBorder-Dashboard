@@ -256,12 +256,12 @@ export default function FilterMultiSelect({
           .filter((sg) => sg.visible.length > 0)
         if (visibleSubs.length === 0) return null
         return (
-          <div key={group.label}>
+          <div key={group.label} role="group" aria-label={group.label}>
             <div className="px-3 py-1.5 text-[11px] font-bold text-text-primary uppercase tracking-wider bg-gray-100 border-t border-border/40 sticky top-0 z-10">
               {group.label}
             </div>
             {visibleSubs.map((sg) => (
-              <div key={sg.label}>
+              <div key={sg.label} role="group" aria-label={sg.label}>
                 <div className="px-3 pl-5 py-1 text-[10px] font-semibold text-text-secondary uppercase tracking-wider bg-gray-50 border-t border-border/20 sticky top-7 z-[9]">
                   {sg.label}
                 </div>
@@ -275,7 +275,7 @@ export default function FilterMultiSelect({
       const visibleOpts = group.options.filter((opt) => matchesSearch(getLbl(opt)))
       if (visibleOpts.length === 0) return null
       return (
-        <div key={group.label}>
+        <div key={group.label} role="group" aria-label={group.label}>
           <div className="px-3 py-1.5 text-[11px] font-semibold text-text-secondary uppercase tracking-wider bg-white border-t border-border/40 sticky top-0 z-10">
             {group.label}
           </div>
@@ -341,6 +341,7 @@ export default function FilterMultiSelect({
             <input
               ref={searchRef}
               type="text"
+              aria-label="Search options"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."

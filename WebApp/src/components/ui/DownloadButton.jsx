@@ -25,7 +25,7 @@
  *   this boilerplate for a new project or dataset. The parent component is
  *   responsible for assembling the summary/detail data objects.
  */
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { Download } from 'lucide-react'
 import { downloadCsv } from '@/lib/downloadCsv'
 
@@ -35,6 +35,8 @@ import { downloadCsv } from '@/lib/downloadCsv'
  * @param {{ summary?: { data: object[], filename: string }, detail?: { data: object[], filename: string } }} props
  */
 export default function DownloadButton({ summary, detail, size = 'default' }) {
+  const id = useId()
+  const menuId = `${id}-menu`
   const [open, setOpen] = useState(false)
   const [focusIdx, setFocusIdx] = useState(-1)
   const ref = useRef(null)
@@ -127,6 +129,7 @@ export default function DownloadButton({ summary, detail, size = 'default' }) {
         onKeyDown={handleKeyDown}
         aria-expanded={!singleOption ? open : false}
         aria-haspopup="menu"
+        aria-controls={open && !singleOption ? menuId : undefined}
         className={
           isFullscreen
             ? 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-base font-medium text-text-secondary bg-surface-alt hover:bg-gray-200 border border-border-light transition-all duration-150'
@@ -141,6 +144,7 @@ export default function DownloadButton({ summary, detail, size = 'default' }) {
 
       {open && !singleOption && (
         <div
+          id={menuId}
           role="menu"
           tabIndex={-1}
           aria-label="Download options"
