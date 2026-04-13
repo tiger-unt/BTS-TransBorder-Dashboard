@@ -84,7 +84,10 @@ export default function DownloadButton({ summary, detail, size = 'default' }) {
   const handleKeyDown = (e) => {
     if (!open) {
       if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-        if (!singleOption) {
+        if (singleOption) {
+          e.preventDefault()
+          handleClick(singleOption)
+        } else {
           e.preventDefault()
           setOpen(true)
           setFocusIdx(0)
@@ -123,7 +126,7 @@ export default function DownloadButton({ summary, detail, size = 'default' }) {
         onClick={() => (singleOption ? handleClick(singleOption) : setOpen((o) => !o))}
         onKeyDown={handleKeyDown}
         aria-expanded={!singleOption ? open : undefined}
-        aria-haspopup={!singleOption ? 'menu' : undefined}
+        aria-haspopup="menu"
         className={
           isFullscreen
             ? 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-base font-medium text-text-secondary bg-surface-alt hover:bg-gray-200 border border-border-light transition-all duration-150'

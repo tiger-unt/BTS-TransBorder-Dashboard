@@ -296,7 +296,7 @@ export default function FilterMultiSelect({
       id={listboxId}
       role="listbox"
       aria-multiselectable="true"
-      aria-label={label}
+      aria-labelledby={labelId}
       aria-activedescendant={focusIdx >= 0 ? `${listboxId}-opt-${focusIdx}` : undefined}
       tabIndex={0}
       onKeyDown={handleKeyDown}
