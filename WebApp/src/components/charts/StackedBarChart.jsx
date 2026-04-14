@@ -67,6 +67,9 @@ function StackedBarChart({
   formatValue = formatCompact,
   animate = true,
   normalize = false,
+  overlayData = [],
+  overlayLabel = 'Texas',
+  overlayColor = '#BF5700',
 }) {
   const containerRef = useRef(null)
   const svgRef = useRef(null)
@@ -120,7 +123,9 @@ function StackedBarChart({
       if (tmpOff + itemW > availLegendW && tmpOff > 0) { legendRows++; tmpOff = 0 }
       tmpOff += itemW
     })
-    const legendSpace = 16 + legendRows * 28
+    const hasOverlay = overlayData.length > 0 && !normalize
+    const overlayAnnotH = hasOverlay ? 24 : 0
+    const legendSpace = 16 + legendRows * 28 + overlayAnnotH
 
     const defaultH = 320 + legendSpace
     // Use computed default height in normal mode to prevent feedback loops
@@ -180,8 +185,15 @@ function StackedBarChart({
       .attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', innerH)
       .attr('stroke', '#9ca3af')
 
+    // Build overlay lookup: xKey → { mode1: val, mode2: val, ... }
+    const overlayMap = hasOverlay
+      ? new Map(overlayData.map((d) => [d[xKey], d]))
+      : null
+
     // Render each stacked layer as a set of rects. Only the topmost layer
     // (last in the array) gets rounded corners so the bar column looks clean.
+    // When overlay is active, main bars render at reduced opacity.
+    const mainOpacity = hasOverlay ? 0.30 : 1
     stacked.forEach((layer, li) => {
       g.selectAll(`.bar-${li}`).data(layer).enter()
         .append('rect')
@@ -190,6 +202,7 @@ function StackedBarChart({
         .attr('width', x.bandwidth())
         .attr('rx', li === stacked.length - 1 ? 3 : 0)
         .attr('fill', colorScale(layer.key))
+        .attr('opacity', mainOpacity)
         .attr('y', innerH)
         .attr('height', 0)
         .transition()
@@ -198,6 +211,75 @@ function StackedBarChart({
         .attr('y', (d) => y(d[1]))
         .attr('height', (d) => y(d[0]) - y(d[1]))
     })
+
+    // ── Overlay bars (e.g. Texas share within each US mode segment) ──
+    if (hasOverlay) {
+      stacked.forEach((layer, li) => {
+        g.selectAll(`.overlay-bar-${li}`).data(layer).enter()
+          .append('rect')
+          .attr('class', `overlay-layer overlay-layer-${li}`)
+          .attr('x', (d) => x(d.data[xKey]))
+          .attr('width', x.bandwidth())
+          .attr('rx', 0)
+          .attr('fill', colorScale(layer.key))
+          .attr('y', innerH)
+          .attr('height', 0)
+          .transition()
+          .duration(animate ? 600 : 0)
+          .delay((d, i) => (animate ? i * 20 + li * 100 : 0))
+          .attr('y', (d) => {
+            const oRow = overlayMap.get(d.data[xKey])
+            const oVal = oRow ? (oRow[layer.key] || 0) : 0
+            const usVal = d.data[layer.key] || 0
+            const segH = y(d[0]) - y(d[1])
+            const ratio = usVal > 0 ? Math.min(oVal / usVal, 1) : 0
+            return y(d[0]) - segH * ratio
+          })
+          .attr('height', (d) => {
+            const oRow = overlayMap.get(d.data[xKey])
+            const oVal = oRow ? (oRow[layer.key] || 0) : 0
+            const usVal = d.data[layer.key] || 0
+            const segH = y(d[0]) - y(d[1])
+            const ratio = usVal > 0 ? Math.min(oVal / usVal, 1) : 0
+            return segH * ratio
+          })
+
+        // Burnt-orange divider line at the top edge of each overlay segment
+        g.selectAll(`.overlay-divider-${li}`).data(layer).enter()
+          .append('line')
+          .attr('class', 'overlay-divider')
+          .attr('x1', (d) => x(d.data[xKey]))
+          .attr('x2', (d) => x(d.data[xKey]) + x.bandwidth())
+          .attr('stroke', overlayColor)
+          .attr('stroke-width', 1.5)
+          .attr('opacity', 0)
+          .transition()
+          .duration(animate ? 600 : 0)
+          .delay((d, i) => (animate ? i * 20 + li * 100 : 0))
+          .attr('opacity', (d) => {
+            const oRow = overlayMap.get(d.data[xKey])
+            const oVal = oRow ? (oRow[layer.key] || 0) : 0
+            const usVal = d.data[layer.key] || 0
+            return (oVal > 0 && oVal < usVal) ? 1 : 0
+          })
+          .attr('y1', (d) => {
+            const oRow = overlayMap.get(d.data[xKey])
+            const oVal = oRow ? (oRow[layer.key] || 0) : 0
+            const usVal = d.data[layer.key] || 0
+            const segH = y(d[0]) - y(d[1])
+            const ratio = usVal > 0 ? Math.min(oVal / usVal, 1) : 0
+            return y(d[0]) - segH * ratio
+          })
+          .attr('y2', (d) => {
+            const oRow = overlayMap.get(d.data[xKey])
+            const oVal = oRow ? (oRow[layer.key] || 0) : 0
+            const usVal = d.data[layer.key] || 0
+            const segH = y(d[0]) - y(d[1])
+            const ratio = usVal > 0 ? Math.min(oVal / usVal, 1) : 0
+            return y(d[0]) - segH * ratio
+          })
+      })
+    }
 
     // ── HTML Tooltip (fixed to viewport, escapes overflow-hidden) ──
     const tipId = tipIdRef.current
@@ -211,7 +293,7 @@ function StackedBarChart({
         background: 'white', border: '1px solid #e2e5e9', borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.10)', padding: '12px 14px',
         fontSize: '16px', lineHeight: '1.6', zIndex: '9999', whiteSpace: 'nowrap',
-        fontFamily: 'inherit', color: '#333f48', maxWidth: '360px',
+        fontFamily: 'inherit', color: '#333f48', maxWidth: hasOverlay ? '520px' : '360px',
       })
       document.body.appendChild(tipDiv)
     }
@@ -232,15 +314,27 @@ function StackedBarChart({
       .attr('fill', 'transparent')
       .on('mouseenter', function (_event, d) {
         tipDiv.style.display = 'block'
-        g.selectAll('.bar-layer').attr('opacity', (bd) => bd.data[xKey] === d[xKey] ? 1 : 0.3)
+        const isActive = (bd) => bd.data[xKey] === d[xKey]
+        g.selectAll('.bar-layer').attr('opacity', (bd) => isActive(bd) ? mainOpacity : mainOpacity * 0.3)
+        if (hasOverlay) {
+          g.selectAll('.overlay-layer').attr('opacity', (bd) => isActive(bd) ? 1 : 0.3)
+        }
       })
       .on('mousemove', function (event, d) {
         const orig = origMap ? origMap.get(d[xKey]) : d
+        const oRow = hasOverlay ? overlayMap.get(d[xKey]) : null
         // Build rows (top-of-stack first)
         const rows = [...stackKeys].reverse()
-          .map((key) => ({ name: key, pct: d[key] || 0, abs: (orig ? orig[key] : d[key]) || 0, color: colorScale(key) }))
+          .map((key) => ({
+            name: key,
+            pct: d[key] || 0,
+            abs: (orig ? orig[key] : d[key]) || 0,
+            color: colorScale(key),
+            overlayVal: oRow ? (oRow[key] || 0) : 0,
+          }))
           .filter((r) => (normalize ? r.abs > 0 : r.pct > 0))
         const totalAbs = rows.reduce((s, r) => s + r.abs, 0)
+        const totalOverlay = hasOverlay ? rows.reduce((s, r) => s + r.overlayVal, 0) : 0
 
         // Build tooltip using safe DOM APIs — textContent and createElement
         // only. Never use innerHTML to prevent XSS from data values.
@@ -252,6 +346,32 @@ function StackedBarChart({
 
         const body = document.createElement('div')
         Object.assign(body.style, { borderTop: '1px solid #e5e7eb', paddingTop: '6px' })
+
+        if (hasOverlay) {
+          // Column headers for comparison tooltip
+          const colHeader = document.createElement('div')
+          Object.assign(colHeader.style, { display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '4px', fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' })
+          const colMode = document.createElement('span')
+          colMode.textContent = 'Mode'
+          const colRight = document.createElement('span')
+          Object.assign(colRight.style, { display: 'flex', gap: '16px' })
+          const colUS = document.createElement('span')
+          colUS.textContent = 'U.S. Total'
+          Object.assign(colUS.style, { width: '80px', textAlign: 'right' })
+          const colTX = document.createElement('span')
+          colTX.textContent = overlayLabel
+          Object.assign(colTX.style, { width: '80px', textAlign: 'right' })
+          const colPct = document.createElement('span')
+          colPct.textContent = 'Share'
+          Object.assign(colPct.style, { width: '44px', textAlign: 'right' })
+          colRight.appendChild(colUS)
+          colRight.appendChild(colTX)
+          colRight.appendChild(colPct)
+          colHeader.appendChild(colMode)
+          colHeader.appendChild(colRight)
+          body.appendChild(colHeader)
+        }
+
         rows.forEach((r) => {
           const row = document.createElement('div')
           Object.assign(row.style, { display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' })
@@ -264,11 +384,31 @@ function StackedBarChart({
           labelSpan.textContent = r.name
           left.appendChild(dot)
           left.appendChild(labelSpan)
-          const valSpan = document.createElement('span')
-          Object.assign(valSpan.style, { fontWeight: '600', marginLeft: '16px' })
-          valSpan.textContent = normalize ? `${r.pct.toFixed(1)}% (${formatValue(r.abs)})` : formatValue(r.pct)
           row.appendChild(left)
-          row.appendChild(valSpan)
+
+          if (hasOverlay) {
+            const right = document.createElement('span')
+            Object.assign(right.style, { display: 'flex', gap: '16px', alignItems: 'baseline' })
+            const usSpan = document.createElement('span')
+            Object.assign(usSpan.style, { fontWeight: '600', width: '80px', textAlign: 'right', opacity: '0.5' })
+            usSpan.textContent = normalize ? `${r.pct.toFixed(1)}% (${formatValue(r.abs)})` : formatValue(r.pct)
+            const txSpan = document.createElement('span')
+            Object.assign(txSpan.style, { fontWeight: '700', width: '80px', textAlign: 'right', color: '#333f48' })
+            txSpan.textContent = formatValue(r.overlayVal)
+            const pctSpan = document.createElement('span')
+            const sharePct = r.pct > 0 ? ((r.overlayVal / r.pct) * 100).toFixed(0) : '0'
+            Object.assign(pctSpan.style, { fontSize: '12px', width: '44px', textAlign: 'right', color: overlayColor, fontWeight: '600' })
+            pctSpan.textContent = `${sharePct}%`
+            right.appendChild(usSpan)
+            right.appendChild(txSpan)
+            right.appendChild(pctSpan)
+            row.appendChild(right)
+          } else {
+            const valSpan = document.createElement('span')
+            Object.assign(valSpan.style, { fontWeight: '600', marginLeft: '16px' })
+            valSpan.textContent = normalize ? `${r.pct.toFixed(1)}% (${formatValue(r.abs)})` : formatValue(r.pct)
+            row.appendChild(valSpan)
+          }
           body.appendChild(row)
         })
         tipDiv.appendChild(body)
@@ -277,10 +417,30 @@ function StackedBarChart({
         Object.assign(footer.style, { borderTop: '1px solid #e5e7eb', marginTop: '6px', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: '700' })
         const totalLabel = document.createElement('span')
         totalLabel.textContent = 'Total'
-        const totalVal = document.createElement('span')
-        totalVal.textContent = normalize ? `100% (${formatValue(totalAbs)})` : formatValue(totalAbs)
-        footer.appendChild(totalLabel)
-        footer.appendChild(totalVal)
+        if (hasOverlay) {
+          const right = document.createElement('span')
+          Object.assign(right.style, { display: 'flex', gap: '16px' })
+          const usTotal = document.createElement('span')
+          Object.assign(usTotal.style, { width: '80px', textAlign: 'right', opacity: '0.5' })
+          usTotal.textContent = normalize ? `100% (${formatValue(totalAbs)})` : formatValue(totalAbs)
+          const txTotal = document.createElement('span')
+          Object.assign(txTotal.style, { width: '80px', textAlign: 'right', color: '#333f48' })
+          txTotal.textContent = formatValue(totalOverlay)
+          const pctTotal = document.createElement('span')
+          const totalShare = totalAbs > 0 ? ((totalOverlay / totalAbs) * 100).toFixed(0) : '0'
+          Object.assign(pctTotal.style, { width: '44px', textAlign: 'right', color: overlayColor, fontWeight: '700', fontSize: '12px' })
+          pctTotal.textContent = `${totalShare}%`
+          right.appendChild(usTotal)
+          right.appendChild(txTotal)
+          right.appendChild(pctTotal)
+          footer.appendChild(totalLabel)
+          footer.appendChild(right)
+        } else {
+          const totalVal = document.createElement('span')
+          totalVal.textContent = normalize ? `100% (${formatValue(totalAbs)})` : formatValue(totalAbs)
+          footer.appendChild(totalLabel)
+          footer.appendChild(totalVal)
+        }
         tipDiv.appendChild(footer)
 
         // Position using viewport coordinates, clamped to stay on-screen
@@ -301,7 +461,8 @@ function StackedBarChart({
       })
       .on('mouseleave', function () {
         tipDiv.style.display = 'none'
-        g.selectAll('.bar-layer').attr('opacity', 1)
+        g.selectAll('.bar-layer').attr('opacity', mainOpacity)
+        if (hasOverlay) g.selectAll('.overlay-layer').attr('opacity', 1)
       })
 
     // X Axis (centered tick marks, thinned labels when crowded)
@@ -350,13 +511,19 @@ function StackedBarChart({
         .on('mouseenter', function () {
           const ki = stackKeys.indexOf(item.key)
           svg.selectAll('.bar-layer').attr('opacity', function () {
-            return d3.select(this).classed(`bar-layer-${ki}`) ? 1 : 0.15
+            return d3.select(this).classed(`bar-layer-${ki}`) ? mainOpacity : 0.08
           })
+          if (hasOverlay) {
+            svg.selectAll('.overlay-layer').attr('opacity', function () {
+              return d3.select(this).classed(`overlay-layer-${ki}`) ? 1 : 0.08
+            })
+          }
           legendG.selectAll('.legend-item').attr('opacity', 0.4)
           d3.select(this).attr('opacity', 1)
         })
         .on('mouseleave', function () {
-          svg.selectAll('.bar-layer').attr('opacity', 1)
+          svg.selectAll('.bar-layer').attr('opacity', mainOpacity)
+          if (hasOverlay) svg.selectAll('.overlay-layer').attr('opacity', 1)
           legendG.selectAll('.legend-item').attr('opacity', 1)
         })
     }
@@ -401,8 +568,31 @@ function StackedBarChart({
       })
     }
 
+    // Overlay legend annotation (below mode legend)
+    if (hasOverlay) {
+      const annotY = legendY + legendRows * 28 + 4
+      const annotG = svg.append('g').attr('transform', `translate(${margin.left}, ${annotY})`)
+
+      // "Solid = Texas" indicator
+      annotG.append('rect')
+        .attr('x', 0).attr('y', -6).attr('width', 14).attr('height', 12)
+        .attr('rx', 2).attr('fill', CHART_COLORS[0])
+      annotG.append('text').attr('x', 20).attr('y', 4)
+        .attr('font-size', `${FS - 1}px`).attr('fill', 'var(--color-text-secondary)')
+        .text(`= ${overlayLabel}`)
+
+      // "Faded = Rest of U.S." indicator
+      const fadedX = 20 + (overlayLabel.length + 2) * (FS * 0.55) + 20
+      annotG.append('rect')
+        .attr('x', fadedX).attr('y', -6).attr('width', 14).attr('height', 12)
+        .attr('rx', 2).attr('fill', CHART_COLORS[0]).attr('opacity', 0.30)
+      annotG.append('text').attr('x', fadedX + 20).attr('y', 4)
+        .attr('font-size', `${FS - 1}px`).attr('fill', 'var(--color-text-secondary)')
+        .text('= Rest of U.S.')
+    }
+
     return () => { document.getElementById(tipId)?.remove() }
-  }, [data, width, containerHeight, isFullscreen, xKey, stackKeys, animate, normalize, formatValue])
+  }, [data, width, containerHeight, isFullscreen, xKey, stackKeys, animate, normalize, formatValue, overlayData, overlayLabel, overlayColor])
 
   // Ensure container expands for legend rows
   const estLegendRows = stackKeys.length > 0 ? Math.max(1, Math.ceil(stackKeys.length / 4)) : 0

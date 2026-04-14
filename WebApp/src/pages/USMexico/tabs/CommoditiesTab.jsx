@@ -17,7 +17,6 @@ import InsightCallout from '@/components/ui/InsightCallout'
 import YearRangeFilter from '@/components/filters/YearRangeFilter'
 import TopNSelector from '@/components/filters/TopNSelector'
 import { Factory, ArrowRight, Star } from 'lucide-react'
-import { TEXAS_COLOR } from '@/hooks/useTexasOverlay'
 import { ANNOTATIONS_MODERN as HISTORICAL_ANNOTATIONS } from '@/lib/annotations'
 
 export default function CommoditiesTab({
@@ -279,8 +278,7 @@ export default function CommoditiesTab({
     return Array.from(byGroup.values())
       .filter((d) => d.exports + d.imports > 0)
       .sort((a, b) => (b.exports + b.imports) - (a.exports + a.imports))
-      .slice(0, divergingTopN)
-  }, [showTexas, stateCommodityTrade, yearFilter, modeFilter, valueField, divergingTopN])
+  }, [showTexas, stateCommodityTrade, yearFilter, modeFilter, valueField])
 
   // Color overrides not needed for share view — uses same commodity group colors
 
@@ -545,14 +543,14 @@ export default function CommoditiesTab({
         <SectionBlock alt>
           <div className="max-w-7xl mx-auto">
             <ChartCard
-              title={showTexas && txMaquiladoraData ? 'Texas Cross-Border Manufacturing Pattern' : 'Cross-Border Manufacturing Pattern'}
+              title="Cross-Border Manufacturing Pattern"
               subtitle={showTexas && txMaquiladoraData
-                ? `Texas imports vs. exports by commodity group — Texas's role in cross-border supply chains`
+                ? `Imports vs. exports by commodity group \u2014 hatched area shows Texas's share`
                 : `Imports (left) vs. exports (right) by commodity group \u2014 reveals maquiladora (cross-border factory) supply chains`}
               headerRight={<TopNSelector value={divergingTopN} onChange={setDivergingTopN} />}
             >
               <DivergingBarChart
-                data={showTexas && txMaquiladoraData ? txMaquiladoraData : maquiladoraData}
+                data={maquiladoraData}
                 labelKey="label"
                 leftKey="imports"
                 rightKey="exports"
@@ -560,6 +558,8 @@ export default function CommoditiesTab({
                 rightLabel="Exports (to Mexico)"
                 formatValue={fmtValue}
                 maxBars={divergingTopN}
+                overlayData={showTexas && txMaquiladoraData ? txMaquiladoraData : []}
+                overlayLabel="Texas"
               />
             </ChartCard>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
