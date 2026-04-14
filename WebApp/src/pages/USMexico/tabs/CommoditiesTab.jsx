@@ -28,6 +28,7 @@ export default function CommoditiesTab({
   metric = 'value',
   showTexas = true,
   stateCommodityTrade,
+  texasMexicoCommodities,
   yearFilter,
   tradeTypeFilter,
   modeFilter,
@@ -205,6 +206,22 @@ export default function CommoditiesTab({
       .sort((a, b) => b.value - a.value)
   }, [showTexas, stateCommodityTrade, yearFilter, tradeTypeFilter, modeFilter, valueField])
 
+  /* ── Texas individual commodity treemap data (from texasMexicoCommodities) ── */
+  const txTreemapCommodityData = useMemo(() => {
+    if (!showTexas || !texasMexicoCommodities?.length) return null
+    const byComm = new Map()
+    texasMexicoCommodities.forEach((d) => {
+      if (yearFilter?.length && !yearFilter.includes(String(d.Year))) return
+      if (tradeTypeFilter && d.TradeType !== tradeTypeFilter) return
+      if (modeFilter?.length && !modeFilter.includes(d.Mode)) return
+      const key = d.Commodity || d.HSCode
+      byComm.set(key, (byComm.get(key) || 0) + (d[valueField] || 0))
+    })
+    return Array.from(byComm, ([name, value]) => ({ name, value }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+  }, [showTexas, texasMexicoCommodities, yearFilter, tradeTypeFilter, modeFilter, valueField])
+
   /* ── Texas cross-border manufacturing pattern (diverging bar) ─────── */
   const txMaquiladoraData = useMemo(() => {
     if (!showTexas || !stateCommodityTrade?.length) return null
@@ -343,7 +360,9 @@ export default function CommoditiesTab({
             drillGroup
               ? 'Individual commodities within group'
               : treemapView === 'commodities'
-              ? `${metricLabel} by individual commodity (HS 2-digit)`
+              ? showTexas && txTreemapCommodityData
+                ? `${metricLabel} by individual commodity (HS 2-digit) — hatched area shows Texas's share of each commodity`
+                : `${metricLabel} by individual commodity (HS 2-digit)`
               : showTexas && txTreemapData
               ? `${metricLabel} by commodity group — hatched area shows Texas's share of each group`
               : `${metricLabel} by commodity group — click to drill down`
@@ -371,11 +390,11 @@ export default function CommoditiesTab({
             nameKey="name"
             valueKey="value"
             formatValue={fmtValue}
-            texasData={showTexas && txTreemapData && treemapView === 'groups' && !drillGroup ? txTreemapData : null}
+            texasData={showTexas && !drillGroup ? (treemapView === 'groups' ? txTreemapData : treemapView === 'commodities' ? txTreemapCommodityData : null) : null}
             onCellClick={treemapView === 'groups' && !drillGroup ? (name) => setDrillGroup(name) : undefined}
           />
           {/* Texas hatch legend */}
-          {showTexas && txTreemapData && treemapView === 'groups' && !drillGroup && (
+          {showTexas && !drillGroup && ((treemapView === 'groups' && txTreemapData) || (treemapView === 'commodities' && txTreemapCommodityData)) && (
             <div className="mt-3 flex items-center gap-2 text-sm" style={{ color: '#bf5700' }}>
               <svg width="22" height="14" style={{ flexShrink: 0 }}>
                 <defs>
@@ -389,7 +408,7 @@ export default function CommoditiesTab({
                   style={{ pointerEvents: 'none' }}
                 />
               </svg>
-              <span style={{ fontWeight: 600 }}>Hatched area = Texas's share of each commodity group</span>
+              <span style={{ fontWeight: 600 }}>Hatched area = Texas's share of each {treemapView === 'commodities' ? 'commodity' : 'commodity group'}</span>
               <span className="text-text-secondary font-normal">— hover any cell for exact % and value</span>
             </div>
           )}

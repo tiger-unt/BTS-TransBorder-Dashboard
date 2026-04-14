@@ -489,50 +489,53 @@ export default function PortsTab({
 
       {/* Containerization & Re-Export Analysis */}
       {containerizationTrade?.length > 0 && (() => {
-        // Containerization by mode (donut)
+        // Split dataset by Scope (National vs Texas) — the Scope field is set in the extraction query
+        const nationalData = containerizationTrade.filter((d) => d.Scope === 'National')
+        const texasData = containerizationTrade.filter((d) => d.Scope === 'Texas')
+        const hasTxData = showTexas && texasData.length > 0
+
+        // Helper: aggregate containerization donut data from a dataset
         const CONT_LABELS = { '0': 'Not Containerized', '1': 'Containerized', 'X': 'Not Applicable', 'U': 'Unknown' }
-        const contByType = new Map()
-        containerizationTrade.forEach((d) => {
-          const label = CONT_LABELS[d.ContCode] || d.ContCode
-          contByType.set(label, (contByType.get(label) || 0) + (d[valueField] || 0))
-        })
-        const contDonutData = Array.from(contByType, ([label, value]) => ({ label, value }))
-          .filter((d) => d.value > 0)
-          .sort((a, b) => b.value - a.value)
+        const buildContDonut = (data) => {
+          const m = new Map()
+          data.forEach((d) => {
+            const label = CONT_LABELS[d.ContCode] || d.ContCode
+            m.set(label, (m.get(label) || 0) + (d[valueField] || 0))
+          })
+          return Array.from(m, ([label, value]) => ({ label, value }))
+            .filter((d) => d.value > 0)
+            .sort((a, b) => b.value - a.value)
+        }
+        const contDonutData = buildContDonut(nationalData)
+        const txContDonutData = hasTxData ? buildContDonut(texasData) : []
 
-        // Re-exports: DF=2 as share of total exports
+        // Helper: aggregate export-origin donut data from a dataset
         const DF_LABELS = { '1': 'Domestic Origin', '2': 'Re-Exports (Foreign Origin)', 'U': 'Imports (N/A)' }
-        const dfByType = new Map()
-        containerizationTrade.forEach((d) => {
-          if (d.TradeType !== 'Export') return
-          const label = DF_LABELS[d.DF] || d.DF
-          dfByType.set(label, (dfByType.get(label) || 0) + (d[valueField] || 0))
-        })
-        const dfDonutData = Array.from(dfByType, ([label, value]) => ({ label, value }))
-          .filter((d) => d.value > 0)
-          .sort((a, b) => b.value - a.value)
+        const buildDfDonut = (data) => {
+          const m = new Map()
+          data.forEach((d) => {
+            if (d.TradeType !== 'Export') return
+            const label = DF_LABELS[d.DF] || d.DF
+            m.set(label, (m.get(label) || 0) + (d[valueField] || 0))
+          })
+          return Array.from(m, ([label, value]) => ({ label, value }))
+            .filter((d) => d.value > 0)
+            .sort((a, b) => b.value - a.value)
+        }
+        const dfDonutData = buildDfDonut(nationalData)
+        const txDfDonutData = hasTxData ? buildDfDonut(texasData) : []
 
-        // Containerized trade trend
-        const contByYear = new Map()
-        containerizationTrade.forEach((d) => {
-          if (d.ContCode !== '1') return
-          if (!d.Year) return
-          contByYear.set(d.Year, (contByYear.get(d.Year) || 0) + (d[valueField] || 0))
-        })
-        const contTrend = Array.from(contByYear, ([year, value]) => ({ year, value })).sort((a, b) => a.year - b.year)
-
-        // Texas containerized trade trend
-        const txContTrend = showTexas
-          ? Array.from(
-              containerizationTrade
-                .filter((d) => d.ContCode === '1' && txPorts.has(d.Port) && d.Year)
-                .reduce((m, d) => {
-                  m.set(d.Year, (m.get(d.Year) || 0) + (d[valueField] || 0))
-                  return m
-                }, new Map()),
-              ([year, value]) => ({ year, value })
-            ).sort((a, b) => a.year - b.year)
-          : []
+        // Helper: aggregate containerized trade trend from a dataset
+        const buildContTrend = (data) => {
+          const m = new Map()
+          data.forEach((d) => {
+            if (d.ContCode !== '1' || !d.Year) return
+            m.set(d.Year, (m.get(d.Year) || 0) + (d[valueField] || 0))
+          })
+          return Array.from(m, ([year, value]) => ({ year, value })).sort((a, b) => a.year - b.year)
+        }
+        const contTrend = buildContTrend(nationalData)
+        const txContTrend = hasTxData ? buildContTrend(texasData) : []
 
         return (
           <SectionBlock alt>
@@ -542,27 +545,63 @@ export default function PortsTab({
                 <h3 className="text-xl font-bold text-text-primary">Logistics Structure</h3>
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <ChartCard title="Containerization Status" subtitle="Share of U.S.-Mexico trade by containerization — most surface freight moves non-containerized">
-                  <DonutChart data={contDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} />
+                <ChartCard
+                  title="Containerization Status"
+                  subtitle={txContDonutData.length > 0
+                    ? 'National vs Texas — how freight is containerized across the border'
+                    : 'Share of U.S.-Mexico trade by containerization — most surface freight moves non-containerized'}
+                >
+                  {txContDonutData.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-text-secondary mb-1">National</p>
+                        <DonutChart data={contDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} maxSize={220} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold mb-1" style={{ color: TEXAS_COLOR }}>Texas</p>
+                        <DonutChart data={txContDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} maxSize={220} />
+                      </div>
+                    </div>
+                  ) : (
+                    <DonutChart data={contDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} />
+                  )}
                 </ChartCard>
-                <ChartCard title="Export Origin: Domestic vs Re-Exports" subtitle="U.S. exports to Mexico — are goods made in the U.S. or passing through from elsewhere?">
-                  <DonutChart data={dfDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} />
+                <ChartCard
+                  title="Export Origin: Domestic vs Re-Exports"
+                  subtitle={txDfDonutData.length > 0
+                    ? 'National vs Texas — are exports domestic or re-exports from elsewhere?'
+                    : 'U.S. exports to Mexico — are goods made in the U.S. or passing through from elsewhere?'}
+                >
+                  {txDfDonutData.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-text-secondary mb-1">National</p>
+                        <DonutChart data={dfDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} maxSize={220} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold mb-1" style={{ color: TEXAS_COLOR }}>Texas</p>
+                        <DonutChart data={txDfDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} maxSize={220} />
+                      </div>
+                    </div>
+                  ) : (
+                    <DonutChart data={dfDonutData} nameKey="label" valueKey="value" formatValue={fmtValue} />
+                  )}
                 </ChartCard>
               </div>
               {contTrend.length > 2 && (
                 <div className="mt-6">
                   <ChartCard title="Containerized Trade Growth" subtitle={`${metricLabel} of containerized freight crossing the U.S.-Mexico border by year`}>
                     <LineChart
-                      data={showTexas && txContTrend.length > 0
+                      data={txContTrend.length > 0
                         ? [...contTrend.map((d) => ({ ...d, Series: 'National' })), ...txContTrend.map((d) => ({ ...d, Series: 'Texas' }))]
                         : contTrend}
                       xKey="year"
                       yKey="value"
-                      seriesKey={showTexas && txContTrend.length > 0 ? 'Series' : undefined}
+                      seriesKey={txContTrend.length > 0 ? 'Series' : undefined}
                       formatValue={fmtValue}
-                      showArea={!(showTexas && txContTrend.length > 0)}
+                      showArea={txContTrend.length === 0}
                       annotations={HISTORICAL_ANNOTATIONS}
-                      colorOverrides={showTexas && txContTrend.length > 0 ? { Texas: TEXAS_COLOR } : undefined}
+                      colorOverrides={txContTrend.length > 0 ? { Texas: TEXAS_COLOR } : undefined}
                     />
                   </ChartCard>
                 </div>
@@ -578,18 +617,17 @@ export default function PortsTab({
                   variant="highlight"
                 />
               </div>
-              {showTexas && (() => {
-                const txCont = containerizationTrade.filter((d) => txPorts.has(d.Port))
-                const txTotal = txCont.reduce((s, d) => s + (d[valueField] || 0), 0)
-                const natTotal = containerizationTrade.reduce((s, d) => s + (d[valueField] || 0), 0)
+              {hasTxData && (() => {
+                const txTotal = texasData.reduce((s, d) => s + (d[valueField] || 0), 0)
+                const natTotal = nationalData.reduce((s, d) => s + (d[valueField] || 0), 0)
                 const sharePct = natTotal > 0 ? ((txTotal / natTotal) * 100).toFixed(0) : 0
 
                 // Texas containerization rate
-                const txContainerized = txCont.filter((d) => d.ContCode === '1').reduce((s, d) => s + (d[valueField] || 0), 0)
+                const txContainerized = texasData.filter((d) => d.ContCode === '1').reduce((s, d) => s + (d[valueField] || 0), 0)
                 const txContRate = txTotal > 0 ? ((txContainerized / txTotal) * 100).toFixed(1) : 0
 
                 // Texas re-export share (exports only)
-                const txExports = txCont.filter((d) => d.TradeType === 'Export')
+                const txExports = texasData.filter((d) => d.TradeType === 'Export')
                 const txTotalExports = txExports.reduce((s, d) => s + (d[valueField] || 0), 0)
                 const txReExports = txExports.filter((d) => d.DF === '2').reduce((s, d) => s + (d[valueField] || 0), 0)
                 const txReExportPct = txTotalExports > 0 ? ((txReExports / txTotalExports) * 100).toFixed(0) : null
@@ -598,7 +636,7 @@ export default function PortsTab({
                 return (
                   <div className="mt-4">
                     <InsightCallout
-                      finding={`Texas ports handle ${sharePct}% of all U.S.-Mexico logistics freight. Only ${txContRate}% of Texas freight is containerized — even lower than the national average — reflecting truck and pipeline dominance.${txReExportPct !== null ? ` Texas's re-export share is ${txReExportPct}% (vs ~22% nationally), consistent with its role as a direct manufacturing and energy gateway.` : ''}`}
+                      finding={`Texas handles ${sharePct}% of all U.S.-Mexico logistics freight. Only ${txContRate}% of Texas freight is containerized — even lower than the national average — reflecting truck and pipeline dominance.${txReExportPct !== null ? ` Texas's re-export share is ${txReExportPct}% (vs ~22% nationally), consistent with its role as a direct manufacturing and energy gateway.` : ''}`}
                       icon={Star}
                       variant="texas"
                     />
