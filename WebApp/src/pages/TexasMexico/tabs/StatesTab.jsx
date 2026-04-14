@@ -440,7 +440,7 @@ export default function StatesTab({
 
       {/* Top 5 State Trends */}
       <SectionBlock alt>
-        <ChartCard title={`Top ${stateTrendTopN} State Trends${subsetLabelNoYear}`} subtitle={`Annual ${metricLabel.toLowerCase()} through Texas ports`} headerRight={<><TopNSelector value={stateTrendTopN} onChange={setStateTrendTopN} /><YearRangeFilter years={allStateYears} value={trendYearRange} onChange={setTrendYearRange} /></>}>
+        <ChartCard title={`Top ${stateTrendTopN} State Trends${subsetLabelNoYear}`} subtitle={`Annual ${metricLabel.toLowerCase()} through Texas ports`} headerRight={<><TopNSelector value={stateTrendTopN} onChange={setStateTrendTopN} /><YearRangeFilter years={allStateYears} startYear={trendYearRange.startYear} endYear={trendYearRange.endYear} onChange={setTrendYearRange} /></>}>
           <LineChart data={stateTrends} xKey="year" yKey="value" seriesKey="MexState" formatY={getAxisFormatter(trendMax, metric === 'weight' ? '' : '$')} annotations={ANNOTATIONS} />
         </ChartCard>
       </SectionBlock>

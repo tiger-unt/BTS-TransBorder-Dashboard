@@ -252,8 +252,8 @@ export default function CommoditiesTab({ filteredCommodities, monthlyCommodityTr
       const key = `${d.Year}|${d.CommodityGroup}`
       if (!byYearGroup.has(key)) byYearGroup.set(key, { year: d.Year, CommodityGroup: d.CommodityGroup, exports: 0, imports: 0 })
       const row = byYearGroup.get(key)
-      if (d.TradeType === 'Export') row.exports += d.TradeValue || 0
-      if (d.TradeType === 'Import') row.imports += d.TradeValue || 0
+      if (d.TradeType === 'Export') row.exports += d[valueField] || 0
+      if (d.TradeType === 'Import') row.imports += d[valueField] || 0
     })
     // Get top 5 groups by total trade to keep chart readable
     const groupTotals = new Map()
