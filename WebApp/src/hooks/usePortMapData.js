@@ -18,7 +18,7 @@ function useCoordFile(filename) {
   useEffect(() => {
     const controller = new AbortController()
     const timeout = AbortSignal.timeout(30_000)
-    const signal = AbortSignal.any([controller.signal, timeout])
+    const signal = AbortSignal.any ? AbortSignal.any([controller.signal, timeout]) : controller.signal
 
     fetch(`${import.meta.env.BASE_URL}data/${filename}`, { signal })
       .then((r) => {
@@ -115,7 +115,7 @@ export function buildMapPorts(filteredPorts, portCoords, group) {
         lat: coords?.lat ?? null,
         lng: coords?.lon ?? null,
         value: 0,
-        portCode: d.PortCode,
+        portCode: code,
         group: group || undefined,
       })
     }

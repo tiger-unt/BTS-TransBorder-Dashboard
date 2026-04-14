@@ -54,7 +54,7 @@ function normalizeRow(d) {
 /** Fetch with an AbortSignal and a timeout. Rejects on timeout with a user-friendly message. */
 function fetchWithTimeout(url, signal) {
   const timeout = AbortSignal.timeout(FETCH_TIMEOUT_MS)
-  const combined = AbortSignal.any([signal, timeout])
+  const combined = AbortSignal.any ? AbortSignal.any([signal, timeout]) : signal
   return fetch(url, { signal: combined }).catch((err) => {
     if (err.name === 'TimeoutError') {
       throw new Error('Request timed out — the server took too long to respond. Please try again.')

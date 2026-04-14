@@ -147,8 +147,10 @@ export default function InteractiveFlowMap({
   const colorScale = useMemo(() => {
     const values = effectiveStateValues.map((d) => d.value).filter((v) => v != null && v > 0)
     if (!values.length) return () => emptyColor
+    const [dMin, dMax] = d3.extent(values)
+    const safeMax = dMax === dMin ? (dMin * 1.001 || 1) : dMax
     return d3.scaleSequential()
-      .domain(d3.extent(values))
+      .domain([dMin, safeMax])
       .interpolator(d3.interpolateRgb(colorRange[0], colorRange[1]))
   }, [effectiveStateValues, colorRange, emptyColor])
 

@@ -448,7 +448,13 @@ export default function TexasMexicoPage() {
       onResetAll={resetFilters}
       activeCount={activeCount}
       activeTags={activeTags}
-      filteredEmpty={!filteredPorts.length}
+      filteredEmpty={
+        activeTab === 'ports' ? !filteredPorts.length :
+        activeTab === 'commodities' ? (filteredCommodities !== null && !filteredCommodities.length) :
+        activeTab === 'states' ? !filteredPorts.length :
+        activeTab === 'flows' ? !filteredPorts.length :
+        !filteredPorts.length
+      }
     >
       {/* KPI Cards */}
       <SectionBlock>

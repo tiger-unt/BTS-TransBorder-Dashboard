@@ -136,9 +136,10 @@ export default function ChoroplethMap({
   const colorScale = useMemo(() => {
     const values = data.map((d) => d.value).filter((v) => v != null && v > 0)
     if (!values.length) return () => emptyColor
-    const extent = d3.extent(values)
+    const [dMin, dMax] = d3.extent(values)
+    const safeMax = dMax === dMin ? (dMin * 1.001 || 1) : dMax
     return d3.scaleSequential()
-      .domain(extent)
+      .domain([dMin, safeMax])
       .interpolator(d3.interpolateRgb(colorRange[0], colorRange[1]))
   }, [data, colorRange, emptyColor])
 
