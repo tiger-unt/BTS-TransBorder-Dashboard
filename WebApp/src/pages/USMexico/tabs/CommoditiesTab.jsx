@@ -137,14 +137,40 @@ export default function CommoditiesTab({
   const topCommodities = useMemo(() => {
     if (!filteredCommodities?.length) return []
     const byComm = new Map()
+    const commToGroup = new Map()
     filteredCommodities.forEach((d) => {
       const key = d.Commodity || d.HSCode
       byComm.set(key, (byComm.get(key) || 0) + (d[valueField] || 0))
+      if (!commToGroup.has(key)) commToGroup.set(key, d.CommodityGroup || 'Other')
     })
-    return Array.from(byComm, ([label, value]) => ({ label, value }))
+    return Array.from(byComm, ([label, value]) => ({ label, value, group: commToGroup.get(label) }))
       .sort((a, b) => b.value - a.value)
       .slice(0, topCommodityN)
   }, [filteredCommodities, valueField, topCommodityN])
+
+  /* ── Texas overlay for top N commodities (estimated from group shares) ── */
+  const txTopCommoditiesOverlay = useMemo(() => {
+    if (!showTexas || !stateCommodityTrade?.length || !topCommodities.length) return null
+    let data = stateCommodityTrade
+    if (yearFilter?.length) data = data.filter((d) => yearFilter.includes(String(d.Year)))
+    if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
+    if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
+    const txByGrp = new Map()
+    const natByGrp = new Map()
+    data.forEach((d) => {
+      const grp = d.CommodityGroup || 'Other'
+      natByGrp.set(grp, (natByGrp.get(grp) || 0) + (d[valueField] || 0))
+      if (d.State === 'Texas') txByGrp.set(grp, (txByGrp.get(grp) || 0) + (d[valueField] || 0))
+    })
+    const groupShareMap = new Map()
+    natByGrp.forEach((nat, grp) => {
+      groupShareMap.set(grp, nat > 0 ? (txByGrp.get(grp) || 0) / nat : 0)
+    })
+    return topCommodities.map((c) => ({
+      label: c.label,
+      texasValue: c.value * (groupShareMap.get(c.group) || 0),
+    }))
+  }, [showTexas, stateCommodityTrade, topCommodities, yearFilter, tradeTypeFilter, modeFilter, valueField])
 
   /* ── top N commodity group trends (line) ─────────────────────────── */
   const groupTrends = useMemo(() => {
@@ -169,25 +195,39 @@ export default function CommoditiesTab({
     return Array.from(byYearGroup.values()).sort((a, b) => a.year - b.year || a.CommodityGroup.localeCompare(b.CommodityGroup))
   }, [filteredCommodities, valueField, groupTrendTopN, trendYearRange])
 
-  /* ── Texas commodity group trends (overlay for line chart) ─────── */
-  const txGroupTrends = useMemo(() => {
+  /* ── Texas share % by commodity group over time (replaces overlay lines) ── */
+  const txGroupShareTrends = useMemo(() => {
     if (!showTexas || !stateCommodityTrade?.length || !groupTrends.length) return []
-    // Get the same top N groups that the national trends show
+    // Build a lookup of national totals by year|group
+    const nationalMap = new Map()
+    groupTrends.forEach((d) => { nationalMap.set(`${d.year}|${d.CommodityGroup}`, d.value) })
     const nationalGroups = new Set(groupTrends.map((d) => d.CommodityGroup))
+
+    // Compute Texas totals by year|group
     let data = stateCommodityTrade.filter((d) => d.State === 'Texas')
     if (tradeTypeFilter) data = data.filter((d) => d.TradeType === tradeTypeFilter)
     if (modeFilter?.length) data = data.filter((d) => modeFilter.includes(d.Mode))
 
-    const byYearGroup = new Map()
+    const txByYearGroup = new Map()
     data.forEach((d) => {
       const grp = d.CommodityGroup || 'Other'
       if (!nationalGroups.has(grp)) return
       if (d.Year < trendYearRange.startYear || d.Year > trendYearRange.endYear) return
       const key = `${d.Year}|${grp}`
-      if (!byYearGroup.has(key)) byYearGroup.set(key, { year: d.Year, value: 0, CommodityGroup: `TX: ${grp}` })
-      byYearGroup.get(key).value += (d[valueField] || 0)
+      txByYearGroup.set(key, (txByYearGroup.get(key) || 0) + (d[valueField] || 0))
     })
-    return Array.from(byYearGroup.values()).sort((a, b) => a.year - b.year)
+
+    // Compute share % for each year|group — iterate national keys so 0% years aren't dropped
+    const result = []
+    nationalMap.forEach((natVal, key) => {
+      if (natVal <= 0) return
+      const idx = key.indexOf('|')
+      const yearStr = key.slice(0, idx)
+      const grp = key.slice(idx + 1)
+      const txVal = txByYearGroup.get(key) || 0
+      result.push({ year: +yearStr, value: (txVal / natVal) * 100, CommodityGroup: grp })
+    })
+    return result.sort((a, b) => a.year - b.year || a.CommodityGroup.localeCompare(b.CommodityGroup))
   }, [showTexas, stateCommodityTrade, groupTrends, tradeTypeFilter, modeFilter, trendYearRange, valueField])
 
   /* ── Texas commodity group treemap data ──────────────────────────── */
@@ -242,13 +282,7 @@ export default function CommoditiesTab({
       .slice(0, divergingTopN)
   }, [showTexas, stateCommodityTrade, yearFilter, modeFilter, valueField, divergingTopN])
 
-  // Color overrides for Texas group lines
-  const groupTrendColorOverrides = useMemo(() => {
-    if (!showTexas || !txGroupTrends.length) return undefined
-    const overrides = {}
-    txGroupTrends.forEach((d) => { overrides[d.CommodityGroup] = TEXAS_COLOR })
-    return overrides
-  }, [showTexas, txGroupTrends])
+  // Color overrides not needed for share view — uses same commodity group colors
 
   /* ── detail table ─────────────────────────────────────────────────── */
   const tableData = useMemo(() => {
@@ -435,41 +469,38 @@ export default function CommoditiesTab({
           <div className="max-w-7xl mx-auto">
             <ChartCard
               title="Texas Contribution by Commodity Group"
-              subtitle="Texas's share of each top commodity group — how much of each category flows through Texas"
+              subtitle={`Top commodity groups by ${metricLabel} — hatched area shows Texas's share`}
             >
               <BarChart
                 data={txCommodityGroupData.topGroups.map((g) => ({
                   label: g.group,
-                  value: g.share,
+                  value: g.national,
                 }))}
                 xKey="label"
                 yKey="value"
                 horizontal
-                formatValue={(v) => `${v}%`}
-                color={TEXAS_COLOR}
+                formatValue={fmtValue}
+                color={CHART_COLORS[1]}
+                labelAccessor={(d) => {
+                  const grp = txCommodityGroupData.topGroups.find((g) => g.group === d.label)
+                  return `${fmtValue(d.value)} (TX: ${grp?.share ?? 0}%)`
+                }}
+                texasOverlay={txCommodityGroupData.topGroups.map((g) => ({
+                  label: g.group,
+                  texasValue: g.texas,
+                }))}
               />
-              {/* Compact comparison table */}
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-fit text-sm border-collapse">
-                  <thead>
-                    <tr className="text-left text-text-secondary border-b border-border">
-                      <th className="pr-6 py-2 font-medium">Commodity Group</th>
-                      <th className="pr-6 py-2 font-medium text-right">National Total</th>
-                      <th className="pr-6 py-2 font-medium text-right" style={{ color: TEXAS_COLOR }}>Texas Total</th>
-                      <th className="py-2 font-medium text-right" style={{ color: TEXAS_COLOR }}>TX Share</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {txCommodityGroupData.topGroups.map((g) => (
-                      <tr key={g.group} className="border-b border-border/50 hover:bg-surface-alt/50">
-                        <td className="pr-6 py-2">{g.group}</td>
-                        <td className="pr-6 py-2 text-right tabular-nums">{fmtValue(g.national)}</td>
-                        <td className="pr-6 py-2 text-right tabular-nums font-medium" style={{ color: TEXAS_COLOR }}>{fmtValue(g.texas)}</td>
-                        <td className="py-2 text-right tabular-nums font-medium" style={{ color: TEXAS_COLOR }}>{g.share}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-3 flex items-center gap-2 text-sm" style={{ color: '#bf5700' }}>
+                <svg width="22" height="14" style={{ flexShrink: 0 }}>
+                  <defs>
+                    <pattern id="bar-legend-hatch-grp" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                      <line x1="0" y1="0" x2="0" y2="8" stroke="white" strokeWidth="3" strokeOpacity="0.42" />
+                    </pattern>
+                  </defs>
+                  <rect width="22" height="14" rx="3" fill={CHART_COLORS[1]} />
+                  <rect width="22" height="14" rx="3" fill="url(#bar-legend-hatch-grp)" style={{ pointerEvents: 'none' }} />
+                </svg>
+                <span style={{ fontWeight: 600 }}>Hatched area = Texas's share</span>
               </div>
             </ChartCard>
           </div>
@@ -480,21 +511,33 @@ export default function CommoditiesTab({
       <SectionBlock>
         <ChartCard
           title={`Top ${topCommodityN} Commodities`}
-          subtitle={`Individual commodities ranked by ${metricLabel}`}
+          subtitle={showTexas && txTopCommoditiesOverlay ? `Individual commodities ranked by ${metricLabel} — hatched area shows Texas's estimated share (by commodity group)` : `Individual commodities ranked by ${metricLabel}`}
           headerRight={<TopNSelector value={topCommodityN} onChange={setTopCommodityN} />}
         >
-          <BarChart data={topCommodities} xKey="label" yKey="value" horizontal formatValue={fmtValue} color={CHART_COLORS[1]} />
+          <BarChart
+            data={topCommodities}
+            xKey="label"
+            yKey="value"
+            horizontal
+            formatValue={fmtValue}
+            color={CHART_COLORS[1]}
+            texasOverlay={txTopCommoditiesOverlay}
+          />
+          {showTexas && txTopCommoditiesOverlay && (
+            <div className="mt-3 flex items-center gap-2 text-sm" style={{ color: '#bf5700' }}>
+              <svg width="22" height="14" style={{ flexShrink: 0 }}>
+                <defs>
+                  <pattern id="bar-legend-hatch-comm" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="8" stroke="white" strokeWidth="3" strokeOpacity="0.42" />
+                  </pattern>
+                </defs>
+                <rect width="22" height="14" rx="3" fill={CHART_COLORS[1]} />
+                <rect width="22" height="14" rx="3" fill="url(#bar-legend-hatch-comm)" style={{ pointerEvents: 'none' }} />
+              </svg>
+              <span style={{ fontWeight: 600 }}>Hatched area = Texas's estimated share (based on commodity group)</span>
+            </div>
+          )}
         </ChartCard>
-        {showTexas && txCommodityGroupData && (
-          <div className="mt-4 max-w-7xl mx-auto">
-            <InsightCallout
-              finding="Individual commodity rankings above are national totals. For Texas-specific commodity detail by port, see the Texas-Mexico page."
-              context={`At the group level, Texas handles ${(txCommodityGroupData.share * 100).toFixed(0)}% of all U.S.-Mexico commodity trade.`}
-              icon={Star}
-              variant="texas"
-            />
-          </div>
-        )}
       </SectionBlock>
 
       {/* Cross-Border Manufacturing Pattern */}
@@ -546,8 +589,8 @@ export default function CommoditiesTab({
       {/* Commodity Group Trends */}
       <SectionBlock alt>
         <ChartCard
-          title={`Top ${groupTrendTopN} Commodity Group Trends`}
-          subtitle={`Annual ${metricLabel} for leading groups`}
+          title={showTexas && txGroupShareTrends.length ? `Texas Share of Top ${groupTrendTopN} Commodity Groups` : `Top ${groupTrendTopN} Commodity Group Trends`}
+          subtitle={showTexas && txGroupShareTrends.length ? `Texas's % of U.S.–Mexico trade by commodity group over time` : `Annual ${metricLabel} for leading groups`}
           headerRight={
             <>
               <TopNSelector value={groupTrendTopN} onChange={setGroupTrendTopN} />
@@ -555,7 +598,14 @@ export default function CommoditiesTab({
             </>
           }
         >
-          <LineChart data={showTexas ? [...groupTrends, ...txGroupTrends] : groupTrends} xKey="year" yKey="value" seriesKey="CommodityGroup" formatValue={fmtValue} annotations={HISTORICAL_ANNOTATIONS} colorOverrides={groupTrendColorOverrides} />
+          <LineChart
+            data={showTexas && txGroupShareTrends.length ? txGroupShareTrends : groupTrends}
+            xKey="year"
+            yKey="value"
+            seriesKey="CommodityGroup"
+            formatValue={showTexas && txGroupShareTrends.length ? (v) => v == null ? 'N/A' : `${v.toFixed(1)}%` : fmtValue}
+            annotations={HISTORICAL_ANNOTATIONS}
+          />
         </ChartCard>
       </SectionBlock>
 

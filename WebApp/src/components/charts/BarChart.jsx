@@ -59,6 +59,11 @@
  * @param {boolean} [animate=true]
  *   Whether bars animate in on first render (600ms staggered transition).
  *
+ * @param {Array<Object>} [texasOverlay]
+ *   Optional array of { [xKey]: label, texasValue: number } objects.
+ *   When provided, draws a white diagonal hatch pattern over each bar
+ *   proportional to the Texas share (texasValue / bar value).
+ *
  * EDGE CASES & LIMITATIONS
  * - If `data` is empty or container width is 0, nothing renders.
  * - Labels longer than 20 characters are truncated with an ellipsis in
@@ -89,6 +94,7 @@ function BarChart({
   selectedBar,
   maxBars = 15,
   animate = true,
+  texasOverlay,
 }) {
   const containerRef = useRef(null)
   const svgRef = useRef(null)
@@ -135,6 +141,24 @@ function BarChart({
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
     svg.attr('width', width).attr('height', height)
+
+    // Texas hatch overlay defs (if texasOverlay provided)
+    const txMap = texasOverlay ? new Map(texasOverlay.map((d) => [d[xKey], d.texasValue])) : null
+    if (txMap && txMap.size) {
+      const defs = svg.append('defs')
+      const patId = `bar-hatch-tx-${Math.random().toString(36).slice(2, 8)}`
+      svg.node().__hatchId = patId
+      defs.append('pattern')
+        .attr('id', patId)
+        .attr('patternUnits', 'userSpaceOnUse')
+        .attr('width', 8)
+        .attr('height', 8)
+        .append('path')
+        .attr('d', 'M-1,1 l2,-2 M0,8 l8,-8 M7,9 l2,-2')
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 3)
+        .attr('stroke-opacity', 0.42)
+    }
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
 
@@ -199,6 +223,28 @@ function BarChart({
         .delay(animate ? 400 : 0)
         .duration(300)
         .attr('opacity', 1)
+
+      // Texas hatch overlay on horizontal bars
+      if (txMap && txMap.size) {
+        const patId = svg.node().__hatchId
+        displayData.forEach((d) => {
+          const txVal = txMap.get(d[xKey])
+          if (!txVal || txVal <= 0) return
+          const barW = x(d[yKey])
+          const share = Math.min(txVal / d[yKey], 1)
+          g.append('rect')
+            .attr('x', 0)
+            .attr('y', y(d[xKey]))
+            .attr('width', 0)
+            .attr('height', y.bandwidth())
+            .attr('rx', 3)
+            .attr('fill', `url(#${patId})`)
+            .attr('pointer-events', 'none')
+            .transition()
+            .duration(animate ? 600 : 0)
+            .attr('width', barW * share)
+        })
+      }
 
       // Y Axis (centered tick marks)
       const yAxisH = g.append('g')
@@ -290,6 +336,28 @@ function BarChart({
         .attr('y', (d) => y(d[yKey]) - 6)
         .attr('opacity', 1)
 
+      // Texas hatch overlay on vertical bars
+      if (txMap && txMap.size) {
+        const patId = svg.node().__hatchId
+        displayData.forEach((d) => {
+          const txVal = txMap.get(d[xKey])
+          if (!txVal || txVal <= 0) return
+          const barH = innerH - y(d[yKey])
+          const share = Math.min(txVal / d[yKey], 1)
+          g.append('rect')
+            .attr('x', x(d[xKey]))
+            .attr('y', y(d[yKey]) + barH * (1 - share))
+            .attr('width', x.bandwidth())
+            .attr('height', 0)
+            .attr('rx', 3)
+            .attr('fill', `url(#${patId})`)
+            .attr('pointer-events', 'none')
+            .transition()
+            .duration(animate ? 600 : 0)
+            .attr('height', barH * share)
+        })
+      }
+
       // X Axis (tick marks only below axis)
       const xAxisV = g.append('g')
         .attr('transform', `translate(0,${innerH})`)
@@ -334,7 +402,7 @@ function BarChart({
         })
     }
 
-  }, [data, width, containerHeight, isFullscreen, xKey, yKey, color, colorAccessor, horizontal, selectedBar, maxBars, animate, labelAccessor, formatValue, onBarClick])
+  }, [data, width, containerHeight, isFullscreen, xKey, yKey, color, colorAccessor, horizontal, selectedBar, maxBars, animate, labelAccessor, formatValue, onBarClick, texasOverlay])
 
   // In horizontal mode, set a minimum height so each bar gets enough space
   // (~32px per bar). This allows the parent grid cell to grow accordingly.
