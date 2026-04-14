@@ -10,6 +10,8 @@ function TreemapChart({
   formatValue = formatCompact,
   animate = true,
   onCellClick,
+  texasData = null,   // optional: same shape as data, values for Texas only
+  texasLabel = 'Texas',
 }) {
   const containerRef = useRef(null)
   const svgRef = useRef(null)
@@ -30,6 +32,12 @@ function TreemapChart({
     svg.selectAll('*').remove()
     svg.attr('width', safeWidth).attr('height', safeHeight)
 
+    // Build Texas lookup map
+    const texasMap = new Map()
+    if (texasData?.length) {
+      texasData.forEach((d) => texasMap.set(d[nameKey], d[valueKey]))
+    }
+
     const colorScale = d3.scaleOrdinal().range(CHART_COLORS)
 
     const root = d3.hierarchy({ children: data.map((d) => ({ name: d[nameKey], value: d[valueKey] })) })
@@ -40,6 +48,33 @@ function TreemapChart({
       .size([safeWidth, safeHeight])
       .padding(3)
       .round(true)(root)
+
+    // ── SVG defs: hatch pattern + per-cell clip paths ──────────────────
+    const defs = svg.append('defs')
+
+    // White diagonal stripe pattern for Texas overlay
+    const pat = defs.append('pattern')
+      .attr('id', 'hatch-texas')
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 8)
+      .attr('height', 8)
+      .attr('patternTransform', 'rotate(45)')
+    pat.append('line')
+      .attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 8)
+      .attr('stroke', 'white')
+      .attr('stroke-width', 3)
+      .attr('stroke-opacity', 0.42)
+
+    // One clip path per leaf (for rounded-corner clipping of hatch overlay)
+    if (texasMap.size) {
+      root.leaves().forEach((d) => {
+        const w = Math.max(0, d.x1 - d.x0)
+        const h = Math.max(0, d.y1 - d.y0)
+        const id = `clip-tx-${d.data.name.replace(/[^a-z0-9]/gi, '-')}`
+        defs.append('clipPath').attr('id', id)
+          .append('rect').attr('width', w).attr('height', h).attr('rx', 4)
+      })
+    }
 
     const cell = svg.selectAll('.cell')
       .data(root.leaves())
@@ -58,6 +93,24 @@ function TreemapChart({
       .duration(animate ? 500 : 0)
       .delay((d, i) => (animate ? i * 30 : 0))
       .attr('opacity', 0.85)
+
+    // ── Texas hatch overlay (drawn after base rects) ────────────────────
+    if (texasMap.size) {
+      cell.each(function (d) {
+        const w = Math.max(0, d.x1 - d.x0)
+        const h = Math.max(0, d.y1 - d.y0)
+        const texasVal = texasMap.get(d.data.name) || 0
+        const share = d.data.value > 0 ? Math.min(1, texasVal / d.data.value) : 0
+        if (share <= 0) return
+        const id = `clip-tx-${d.data.name.replace(/[^a-z0-9]/gi, '-')}`
+        d3.select(this).append('rect')
+          .attr('width', w * share)
+          .attr('height', h)
+          .attr('clip-path', `url(#${id})`)
+          .attr('fill', 'url(#hatch-texas)')
+          .attr('pointer-events', 'none')
+      })
+    }
 
     // Labels via foreignObject for proper CSS text-overflow
     cell.each(function (d) {
@@ -131,6 +184,25 @@ function TreemapChart({
         Object.assign(valDiv.style, { borderTop: '1px solid #e5e7eb', paddingTop: '6px', fontWeight: '600', fontSize: '16px' })
         valDiv.textContent = formatValue(d.data.value)
         tipDiv.appendChild(valDiv)
+        // Texas overlay rows
+        if (texasMap.size) {
+          const txVal = texasMap.get(d.data.name) || 0
+          const txShare = d.data.value > 0 ? Math.round(txVal / d.data.value * 100) : 0
+          const txRow = document.createElement('div')
+          Object.assign(txRow.style, { marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '8px', alignItems: 'center' })
+          const swatch = document.createElement('span')
+          Object.assign(swatch.style, {
+            display: 'inline-block', width: '14px', height: '10px', borderRadius: '2px',
+            background: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.42) 0px, rgba(255,255,255,0.42) 2.5px, transparent 2.5px, transparent 6px), #bf5700',
+            flexShrink: '0',
+          })
+          txRow.appendChild(swatch)
+          const txText = document.createElement('span')
+          Object.assign(txText.style, { color: '#bf5700', fontWeight: '600', fontSize: '15px' })
+          txText.textContent = `${texasLabel}: ${formatValue(txVal)} (${txShare}%)`
+          txRow.appendChild(txText)
+          tipDiv.appendChild(txRow)
+        }
         tipDiv.style.display = 'block'
       })
       .on('mousemove', function (event) {
@@ -156,7 +228,7 @@ function TreemapChart({
       .style('cursor', onCellClick ? 'pointer' : 'default')
 
     return () => { document.getElementById('treemap-tooltip')?.remove() }
-  }, [data, width, containerHeight, isFullscreen, nameKey, valueKey, animate, onCellClick, formatValue])
+  }, [data, texasData, texasLabel, width, containerHeight, isFullscreen, nameKey, valueKey, animate, onCellClick, formatValue])
 
   return (
     <div ref={containerRef} className="w-full relative" style={{ minHeight: 640 }}>

@@ -91,10 +91,10 @@ export default function CommoditiesTab({
     }
   }, [allCommodityYears])
 
-  // Reset drill when switching to commodities view OR when Texas Lens turns on
+  // Reset drill when switching to commodities view
   useEffect(() => {
-    if (treemapView === 'commodities' || showTexas) setDrillGroup(null)
-  }, [treemapView, showTexas])
+    if (treemapView === 'commodities') setDrillGroup(null)
+  }, [treemapView])
 
   /* ── treemap data (groups with drill, or flat commodities) ──────── */
   const treemapData = useMemo(() => {
@@ -333,50 +333,66 @@ export default function CommoditiesTab({
       <SectionBlock alt>
         <ChartCard
           title={
-            showTexas && txTreemapData
-              ? 'Texas Commodity Groups'
-              : drillGroup
+            drillGroup
               ? `${drillGroup} — HS Detail`
               : treemapView === 'commodities'
               ? 'Top 30 Commodities'
               : 'Commodity Groups'
           }
           subtitle={
-            showTexas && txTreemapData
-              ? `Texas's ${metricLabel.toLowerCase()} breakdown by commodity group — toggle off to see national`
-              : drillGroup
+            drillGroup
               ? 'Individual commodities within group'
               : treemapView === 'commodities'
               ? `${metricLabel} by individual commodity (HS 2-digit)`
+              : showTexas && txTreemapData
+              ? `${metricLabel} by commodity group — hatched area shows Texas's share of each group`
               : `${metricLabel} by commodity group — click to drill down`
           }
           headerRight={
-            showTexas && txTreemapData ? null : (
-              <div className="inline-flex rounded-lg border border-border-light overflow-hidden text-sm">
-                <button
-                  onClick={() => setTreemapView('groups')}
-                  className={`px-3 py-1.5 font-medium transition-colors ${treemapView === 'groups' ? 'bg-brand-blue text-white' : 'bg-white text-text-secondary hover:bg-surface-alt'}`}
-                >Groups</button>
-                <button
-                  onClick={() => setTreemapView('commodities')}
-                  className={`px-3 py-1.5 font-medium transition-colors ${treemapView === 'commodities' ? 'bg-brand-blue text-white' : 'bg-white text-text-secondary hover:bg-surface-alt'}`}
-                >Commodities</button>
-              </div>
-            )
+            <div className="inline-flex rounded-lg border border-border-light overflow-hidden text-sm">
+              <button
+                onClick={() => setTreemapView('groups')}
+                className={`px-3 py-1.5 font-medium transition-colors ${treemapView === 'groups' ? 'bg-brand-blue text-white' : 'bg-white text-text-secondary hover:bg-surface-alt'}`}
+              >Groups</button>
+              <button
+                onClick={() => setTreemapView('commodities')}
+                className={`px-3 py-1.5 font-medium transition-colors ${treemapView === 'commodities' ? 'bg-brand-blue text-white' : 'bg-white text-text-secondary hover:bg-surface-alt'}`}
+              >Commodities</button>
+            </div>
           }
         >
-          {!showTexas && drillGroup && (
+          {drillGroup && (
             <button onClick={() => setDrillGroup(null)} className="mb-2 text-sm text-brand-blue hover:underline">
               &larr; Back to all groups
             </button>
           )}
           <TreemapChart
-            data={showTexas && txTreemapData ? txTreemapData : treemapData}
+            data={treemapData}
             nameKey="name"
             valueKey="value"
             formatValue={fmtValue}
-            onCellClick={showTexas && txTreemapData ? undefined : (treemapView === 'groups' && !drillGroup ? (name) => setDrillGroup(name) : undefined)}
+            texasData={showTexas && txTreemapData && treemapView === 'groups' && !drillGroup ? txTreemapData : null}
+            onCellClick={treemapView === 'groups' && !drillGroup ? (name) => setDrillGroup(name) : undefined}
           />
+          {/* Texas hatch legend */}
+          {showTexas && txTreemapData && treemapView === 'groups' && !drillGroup && (
+            <div className="mt-3 flex items-center gap-2 text-sm" style={{ color: '#bf5700' }}>
+              <svg width="22" height="14" style={{ flexShrink: 0 }}>
+                <rect width="22" height="14" rx="3" fill="#6b7280" />
+                <rect width="22" height="14" rx="3"
+                  fill="url(#legend-hatch)"
+                  style={{ pointerEvents: 'none' }}
+                />
+                <defs>
+                  <pattern id="legend-hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="8" stroke="white" strokeWidth="3" strokeOpacity="0.42" />
+                  </pattern>
+                </defs>
+              </svg>
+              <span style={{ fontWeight: 600 }}>Hatched area = Texas's share of each commodity group</span>
+              <span className="text-text-secondary font-normal">— hover any cell for exact % and value</span>
+            </div>
+          )}
         </ChartCard>
       </SectionBlock>
 

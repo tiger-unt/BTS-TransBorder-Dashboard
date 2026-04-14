@@ -319,7 +319,11 @@ export default function USMexicoPage() {
       <MetricToggle value={metric} onChange={setMetric} />
       <div className="flex flex-col gap-1 min-w-0 w-full">
         <span className="text-base font-medium text-text-secondary uppercase tracking-wider">Texas Lens</span>
-        <p className="text-xs text-text-tertiary leading-tight">Overlays Texas share across all charts</p>
+        <p className="text-xs text-text-tertiary leading-tight">
+          {showTexas
+            ? 'Texas data shown in burnt orange — trend overlays, color-coded bars, and Texas callouts are active across all charts.'
+            : 'Turn on to highlight Texas data in burnt orange: trend overlays, color-coded bars, and Texas-specific callouts.'}
+        </p>
         <button
           type="button"
           onClick={toggleTexas}

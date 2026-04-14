@@ -89,6 +89,14 @@ export default function PortsTab({
     return { total, top, byMode }
   }, [filteredPorts, latestYear, valueField, showTexas])
 
+  // Texas share of total filtered port trade (filter-responsive — updates with state/port/mode/year filters)
+  const txPortShareStats = useMemo(() => {
+    const total = filteredPorts.reduce((s, d) => s + (d[valueField] || 0), 0)
+    const txTrade = filteredPorts.filter((d) => d.State === 'Texas').reduce((s, d) => s + (d[valueField] || 0), 0)
+    const pct = total > 0 ? Math.round((txTrade / total) * 100) : 0
+    return { total, txTrade, pct }
+  }, [filteredPorts, valueField])
+
   /* ── chart-level state ─────────────────────────────────────────────── */
   const allYears = useMemo(() => {
     const ys = new Set()
@@ -328,8 +336,12 @@ export default function PortsTab({
       <SectionBlock>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-7xl mx-auto">
           <InsightCallout
-            finding="Texas handles as much U.S.-Mexico trade as all other border states combined — and then some."
-            context="California, Arizona, and New Mexico share the remaining ~34%."
+            finding={txPortShareStats.pct > 0
+              ? `Texas handles ${txPortShareStats.pct}% of U.S.–Mexico surface freight (by ${metricLabel.toLowerCase()}) — more than California, Arizona, and New Mexico combined.`
+              : 'Texas is the dominant U.S.-Mexico trade state — apply the Texas port state filter to see Texas-specific data.'}
+            context={txPortShareStats.pct > 0
+              ? `California, Arizona, and New Mexico share the remaining ${100 - txPortShareStats.pct}%.`
+              : 'Based on current filter selection.'}
           />
           <InsightCallout
             finding="Truck moves ~80% of U.S.–Mexico surface freight by value, a share that has remained remarkably stable since 2007."
