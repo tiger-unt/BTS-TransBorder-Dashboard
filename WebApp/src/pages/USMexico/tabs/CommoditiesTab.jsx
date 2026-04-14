@@ -378,16 +378,16 @@ export default function CommoditiesTab({
           {showTexas && txTreemapData && treemapView === 'groups' && !drillGroup && (
             <div className="mt-3 flex items-center gap-2 text-sm" style={{ color: '#bf5700' }}>
               <svg width="22" height="14" style={{ flexShrink: 0 }}>
-                <rect width="22" height="14" rx="3" fill="#6b7280" />
-                <rect width="22" height="14" rx="3"
-                  fill="url(#legend-hatch)"
-                  style={{ pointerEvents: 'none' }}
-                />
                 <defs>
                   <pattern id="legend-hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
                     <line x1="0" y1="0" x2="0" y2="8" stroke="white" strokeWidth="3" strokeOpacity="0.42" />
                   </pattern>
                 </defs>
+                <rect width="22" height="14" rx="3" fill="#6b7280" />
+                <rect width="22" height="14" rx="3"
+                  fill="url(#legend-hatch)"
+                  style={{ pointerEvents: 'none' }}
+                />
               </svg>
               <span style={{ fontWeight: 600 }}>Hatched area = Texas's share of each commodity group</span>
               <span className="text-text-secondary font-normal">— hover any cell for exact % and value</span>
