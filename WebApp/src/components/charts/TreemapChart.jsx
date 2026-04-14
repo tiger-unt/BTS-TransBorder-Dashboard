@@ -66,11 +66,14 @@ function TreemapChart({
       .attr('stroke-opacity', 0.42)
 
     // One clip path per leaf (for rounded-corner clipping of hatch overlay)
+    const texasClipIds = new Map()
     if (texasMap.size) {
+      let clipIdx = 0
       root.leaves().forEach((d) => {
         const w = Math.max(0, d.x1 - d.x0)
         const h = Math.max(0, d.y1 - d.y0)
-        const id = `clip-tx-${d.data.name.replace(/[^a-z0-9]/gi, '-')}`
+        const id = `clip-tx-${clipIdx++}`
+        texasClipIds.set(d.data.name, id)
         defs.append('clipPath').attr('id', id)
           .append('rect').attr('width', w).attr('height', h).attr('rx', 4)
       })
@@ -102,7 +105,7 @@ function TreemapChart({
         const texasVal = texasMap.get(d.data.name) || 0
         const share = d.data.value > 0 ? Math.min(1, texasVal / d.data.value) : 0
         if (share <= 0) return
-        const id = `clip-tx-${d.data.name.replace(/[^a-z0-9]/gi, '-')}`
+        const id = texasClipIds.get(d.data.name)
         d3.select(this).append('rect')
           .attr('width', w * share)
           .attr('height', h)
