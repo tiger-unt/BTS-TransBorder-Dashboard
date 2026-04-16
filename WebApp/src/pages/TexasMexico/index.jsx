@@ -305,7 +305,7 @@ export default function TexasMexicoPage() {
 
   /* ── active filter count & reset ───────────────────────────────── */
   const activeCount = yearFilter.length + (tradeTypeFilter ? 1 : 0) + modeFilter.length + regionFilter.length
-    + portFilter.length + commodityGroupFilter.length + commodityFilter.length + stateFilter.length + mexStateFilter.length
+    + portFilter.length + commodityGroupFilter.length + commodityFilter.length + mexStateFilter.length
 
   const activeTags = useMemo(() => {
     const tags = []
@@ -327,9 +327,6 @@ export default function TexasMexicoPage() {
     )
     commodityFilter.forEach((v) =>
       tags.push({ group: 'Commodity', label: v, onRemove: () => setCommodityFilter((prev) => prev.filter((x) => x !== v)) })
-    )
-    stateFilter.forEach((v) =>
-      tags.push({ group: stateFilterLabel, label: v, onRemove: () => setStateFilter((prev) => prev.filter((x) => x !== v)) })
     )
     mexStateFilter.forEach((v) =>
       tags.push({ group: 'MX State', label: v, onRemove: () => setMexStateFilter((prev) => prev.filter((x) => x !== v)) })
@@ -376,9 +373,6 @@ export default function TexasMexicoPage() {
         <>
           <FilterMultiSelect label="Region" value={regionFilter} options={regionOptions} onChange={setRegionFilter} />
           <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
-          {stateOptions.length > 0 && (
-            <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
-          )}
         </>
       )}
       {activeTab === 'commodities' && (
@@ -405,16 +399,10 @@ export default function TexasMexicoPage() {
           {portOptions.length > 0 && (
             <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
           )}
-          {stateOptions.length > 0 && (
-            <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
-          )}
         </>
       )}
       {activeTab === 'flows' && (
         <>
-          {stateOptions.length > 0 && (
-            <FilterMultiSelect label={stateFilterLabel} value={stateFilter} options={stateOptions} onChange={setStateFilter} searchable />
-          )}
           {portOptions.length > 0 && (
             <FilterMultiSelect label="Port" value={portFilter} options={portOptions} onChange={setPortFilter} searchable />
           )}
